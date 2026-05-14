@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.ujfe</groupId>
+        <artifactId>ujfe</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ujfe-examples</artifactId>
+    <name>UJFE Examples</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-html</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-router</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-signals</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-live</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-http</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

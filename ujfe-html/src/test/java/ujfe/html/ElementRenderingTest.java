@@ -1,0 +1,227 @@
+package ujfe.html;
+
+import org.junit.jupiter.api.Test;
+import ujfe.core.UjfeContext;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ujfe.html.UI.*;
+
+final class ElementRenderingTest {
+    @Test
+    void rendersEscapedText() {
+        assertEquals("<p>&lt;script&gt;alert(&amp;)&lt;/script&gt;</p>", p("<script>alert(&)</script>").render());
+    }
+
+    @Test
+    void rendersAttributesClassesAndChildren() {
+        String html = div()
+                .css("p-4 flex gap-2")
+                .attr("data-test", "home\"page")
+                .child(h1("Hello"))
+                .child(p("World"))
+                .render();
+
+        assertEquals("<div data-test=\"home&quot;page\" class=\"p-4 flex gap-2\"><h1>Hello</h1><p>World</p></div>", html);
+    }
+
+    @Test
+    void rendersDynamicTextFromSupplier() {
+        AtomicInteger count = new AtomicInteger(1);
+        Element paragraph = p(() -> "Counter: " + count.get());
+
+        assertEquals("<p>Counter: 1</p>", paragraph.render());
+        count.incrementAndGet();
+        assertEquals("<p>Counter: 2</p>", paragraph.render());
+    }
+
+    @Test
+    void rendersClickEventAttributesWhenEventRegistrarExists() {
+        UjfeContext context = UjfeContext.builder()
+                .eventRegistrar(handler -> "evt-1")
+                .build();
+
+        String html = button("Go")
+                .onClick(() -> {
+                })
+                .render(context);
+
+        assertTrue(html.contains("data-ujfe-event=\"evt-1\""));
+        assertTrue(html.contains("id=\"ujfe-1\""));
+    }
+
+    @Test
+    void rendersFormElementsAndInputTypes() {
+        String html = form()
+                .method("post")
+                .action("/signup")
+                .child(label("Nome").forId("name"))
+                .child(inputText()
+                        .id("name")
+                        .name("name")
+                        .placeholder("Seu nome")
+                        .required(true))
+                .child(inputNumber()
+                        .name("age")
+                        .min("0")
+                        .max("120")
+                        .step("1"))
+                .child(inputPassword().name("password"))
+                .child(checkbox().name("terms").checked(true))
+                .child(radio().name("plan").value("pro").checked(false))
+                .child(select()
+                        .name("role")
+                        .child(option("Admin").value("admin").selected(true))
+                        .child(option("User").value("user")))
+                .child(textarea("Observacao").name("notes").rows(3).cols(20))
+                .render();
+
+        assertEquals("<form method=\"post\" action=\"/signup\">"
+                + "<label for=\"name\">Nome</label>"
+                + "<input type=\"text\" id=\"name\" name=\"name\" placeholder=\"Seu nome\" required>"
+                + "<input type=\"number\" name=\"age\" min=\"0\" max=\"120\" step=\"1\">"
+                + "<input type=\"password\" name=\"password\">"
+                + "<input type=\"checkbox\" name=\"terms\" checked>"
+                + "<input type=\"radio\" name=\"plan\" value=\"pro\">"
+                + "<select name=\"role\">"
+                + "<option value=\"admin\" selected>Admin</option>"
+                + "<option value=\"user\">User</option>"
+                + "</select>"
+                + "<textarea name=\"notes\" rows=\"3\" cols=\"20\">Observacao</textarea>"
+                + "</form>", html);
+    }
+
+    @Test
+    void rendersAdditionalFormElements() {
+        String html = fieldset()
+                .child(legend("Preferencias"))
+                .child(select()
+                        .multiple(true)
+                        .child(optgroup()
+                                .attr("label", "Linguagens")
+                                .child(option("Java").value("java"))))
+                .child(inputEmail().name("email"))
+                .child(inputSearch().name("query"))
+                .child(inputTel().name("phone"))
+                .child(inputUrl().name("site"))
+                .child(inputHidden().name("token").value("abc"))
+                .child(inputDate().name("date"))
+                .child(inputTime().name("time"))
+                .child(inputDateTimeLocal().name("createdAt"))
+                .child(inputMonth().name("month"))
+                .child(inputWeek().name("week"))
+                .child(inputColor().name("color"))
+                .child(inputFile().name("avatar"))
+                .child(inputRange().name("volume").min("0").max("10"))
+                .child(inputButton().value("Validar"))
+                .child(inputImage().attr("src", "/submit.png").attr("alt", "Enviar"))
+                .child(inputSubmit().value("Enviar"))
+                .child(inputReset().value("Limpar"))
+                .child(datalist().id("cities").child(option().value("Sao Paulo")))
+                .child(output("42").name("result"))
+                .child(progress().value("3").max("10"))
+                .child(meter().value("0.7").min("0").max("1"))
+                .render();
+
+        assertTrue(html.contains("<fieldset><legend>Preferencias</legend>"));
+        assertTrue(html.contains("<select multiple><optgroup label=\"Linguagens\"><option value=\"java\">Java</option></optgroup></select>"));
+        assertTrue(html.contains("<input type=\"email\" name=\"email\">"));
+        assertTrue(html.contains("<input type=\"search\" name=\"query\">"));
+        assertTrue(html.contains("<input type=\"tel\" name=\"phone\">"));
+        assertTrue(html.contains("<input type=\"url\" name=\"site\">"));
+        assertTrue(html.contains("<input type=\"hidden\" name=\"token\" value=\"abc\">"));
+        assertTrue(html.contains("<input type=\"datetime-local\" name=\"createdAt\">"));
+        assertTrue(html.contains("<input type=\"button\" value=\"Validar\">"));
+        assertTrue(html.contains("<input type=\"image\" src=\"/submit.png\" alt=\"Enviar\">"));
+        assertTrue(html.contains("<datalist id=\"cities\"><option value=\"Sao Paulo\"></option></datalist>"));
+        assertTrue(html.contains("<output name=\"result\">42</output>"));
+        assertTrue(html.contains("<progress value=\"3\" max=\"10\"></progress>"));
+        assertTrue(html.contains("<meter value=\"0.7\" min=\"0\" max=\"1\"></meter>"));
+    }
+
+    @Test
+    void rendersDynamicAttributesAndBooleanAttributes() {
+        AtomicInteger count = new AtomicInteger(1);
+        Element input = inputText()
+                .value(() -> "Counter: " + count.get())
+                .checked(() -> count.get() > 1);
+
+        assertEquals("<input type=\"text\" value=\"Counter: 1\">", input.render());
+        count.incrementAndGet();
+        assertEquals("<input type=\"text\" value=\"Counter: 2\" checked>", input.render());
+    }
+
+    @Test
+    void rendersGlobalAttributesAndMediaElements() {
+        String html = div()
+                .id("media")
+                .title("Media")
+                .lang("pt-BR")
+                .dir("ltr")
+                .role("region")
+                .ariaLabel("Galeria")
+                .data("test-id", "media-panel")
+                .tabindex(0)
+                .accessKey("m")
+                .contentEditable(false)
+                .draggable(true)
+                .spellcheck(false)
+                .translate(false)
+                .hidden(false)
+                .child(canvas().width(320).height(180).ariaLabel("Canvas demo"))
+                .child(video().src("/movie.mp4").poster("/poster.png").controls(true).playsInline(true))
+                .child(audio().controls(true).child(source().src("https://cdn.example.test/audio.mp3").type("audio/mpeg")))
+                .child(picture().child(source().src("/image.webp").attr("media", "(min-width: 800px)")).child(img().src("/image.png").alt("Imagem")))
+                .render();
+
+        assertTrue(html.contains("id=\"media\""));
+        assertTrue(html.contains("title=\"Media\""));
+        assertTrue(html.contains("lang=\"pt-BR\""));
+        assertTrue(html.contains("role=\"region\""));
+        assertTrue(html.contains("aria-label=\"Galeria\""));
+        assertTrue(html.contains("data-test-id=\"media-panel\""));
+        assertTrue(html.contains("accesskey=\"m\""));
+        assertTrue(html.contains("contenteditable=\"false\""));
+        assertTrue(html.contains("draggable=\"true\""));
+        assertTrue(html.contains("spellcheck=\"false\""));
+        assertTrue(html.contains("translate=\"no\""));
+        assertTrue(html.contains("<canvas width=\"320\" height=\"180\" aria-label=\"Canvas demo\"></canvas>"));
+        assertTrue(html.contains("<video src=\"/movie.mp4\" poster=\"/poster.png\" controls playsinline></video>"));
+        assertTrue(html.contains("<audio controls><source src=\"https://cdn.example.test/audio.mp3\" type=\"audio/mpeg\"></audio>"));
+        assertTrue(html.contains("<picture><source src=\"/image.webp\" media=\"(min-width: 800px)\"><img src=\"/image.png\" alt=\"Imagem\"></picture>"));
+    }
+
+    @Test
+    void rejectsUnsafeUrlAttributes() {
+        assertThrows(IllegalArgumentException.class, () -> a("Bad").href("javascript:alert(1)"));
+        assertThrows(IllegalArgumentException.class, () -> img().src("data:text/html,<script>alert(1)</script>"));
+        assertEquals("<img src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==\">",
+                img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==").render());
+    }
+
+    @Test
+    void rendersFormLiveEventAttributesWhenEventRegistrarExists() {
+        AtomicInteger nextEvent = new AtomicInteger();
+        UjfeContext context = UjfeContext.builder()
+                .eventRegistrar(handler -> "evt-" + nextEvent.incrementAndGet())
+                .build();
+
+        String html = form()
+                .onSubmit(() -> {
+                })
+                .child(inputText().onInput(() -> {
+                }))
+                .child(select()
+                        .onChange(() -> {
+                        })
+                        .child(option("Java").value("java")))
+                .render(context);
+
+        assertTrue(html.contains("data-ujfe-event-submit=\"evt-1\""));
+        assertTrue(html.contains("data-ujfe-event-input=\"evt-2\""));
+        assertTrue(html.contains("data-ujfe-event-change=\"evt-3\""));
+    }
+}
