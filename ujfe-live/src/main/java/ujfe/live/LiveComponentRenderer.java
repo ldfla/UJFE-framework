@@ -15,13 +15,14 @@ public final class LiveComponentRenderer {
     private final LiveEventRegistry eventRegistry;
     private final ElementIdGenerator elementIdGenerator;
     private final Supplier<CssTheme> themeSupplier;
+    private final CssMode cssMode;
 
     public LiveComponentRenderer(LiveEventRegistry eventRegistry) {
-        this(eventRegistry, ElementIdGenerator.sequential(), CssTheme::defaultTheme);
+        this(eventRegistry, ElementIdGenerator.sequential(), CssTheme::defaultTheme, CssMode.INTERNAL);
     }
 
     public LiveComponentRenderer(LiveEventRegistry eventRegistry, ElementIdGenerator elementIdGenerator) {
-        this(eventRegistry, elementIdGenerator, CssTheme::defaultTheme);
+        this(eventRegistry, elementIdGenerator, CssTheme::defaultTheme, CssMode.INTERNAL);
     }
 
     public LiveComponentRenderer(
@@ -29,9 +30,19 @@ public final class LiveComponentRenderer {
             ElementIdGenerator elementIdGenerator,
             Supplier<CssTheme> themeSupplier
     ) {
+        this(eventRegistry, elementIdGenerator, themeSupplier, CssMode.INTERNAL);
+    }
+
+    public LiveComponentRenderer(
+            LiveEventRegistry eventRegistry,
+            ElementIdGenerator elementIdGenerator,
+            Supplier<CssTheme> themeSupplier,
+            CssMode cssMode
+    ) {
         this.eventRegistry = Objects.requireNonNull(eventRegistry, "eventRegistry");
         this.elementIdGenerator = Objects.requireNonNull(elementIdGenerator, "elementIdGenerator");
         this.themeSupplier = Objects.requireNonNull(themeSupplier, "themeSupplier");
+        this.cssMode = Objects.requireNonNull(cssMode, "cssMode");
     }
 
     public LiveRenderResult render(Supplier<? extends Node> nodeSupplier, ClientState clientState) {
@@ -46,12 +57,15 @@ public final class LiveComponentRenderer {
 
         Node node = UjfeContext.withCurrent(context, nodeSupplier);
         String html = UjfeContext.withCurrent(context, () -> node.render(context));
-        String css = UtilityCssRenderer.render(context.cssClasses(), themeSupplier.get());
+        String css = renderCss(context.cssClasses());
         return new LiveRenderResult(html, css);
     }
 
     public String renderCss(Collection<String> classes) {
         Objects.requireNonNull(classes, "classes");
+        if (cssMode == CssMode.EXTERNAL) {
+            return "";
+        }
         return UtilityCssRenderer.render(classes, themeSupplier.get());
     }
 

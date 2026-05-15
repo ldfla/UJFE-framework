@@ -33,7 +33,7 @@ final class ConvertCommandTest {
         assertEquals(0, exitCode);
         assertTrue(java.contains("package app.pages;"));
         assertTrue(java.contains("div()"));
-        assertTrue(java.contains(".css(\"p-4\")"));
+        assertTrue(java.contains(".attr(\"class\", \"p-4\")"));
         assertTrue(java.contains("h1()"));
         assertTrue(java.contains("button()"));
     }

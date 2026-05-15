@@ -1,25 +1,28 @@
 package ujfe.cli;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 final class UjfeJavaGenerator {
     private static final Set<String> UI_FACTORIES = Set.of(
-            "div", "header", "main", "aside", "section", "nav",
-            "h1", "h2", "h3", "h4", "h5",
-            "b", "i", "u", "em", "strong", "p", "pre", "code", "br",
-            "img", "picture", "source", "track", "audio", "video", "canvas", "map", "area",
+            "html", "head", "body", "title", "meta", "link", "style", "script", "base",
+            "div", "figure", "figcaption", "details", "summary", "dialog",
+            "header", "main", "aside", "section", "article", "nav", "footer", "address",
+            "h1", "h2", "h3", "h4", "h5", "h6",
+            "b", "i", "u", "em", "strong", "small", "mark", "abbr", "cite",
+            "p", "pre", "code", "blockquote", "q", "br", "hr",
+            "img", "picture", "source", "track", "audio", "video", "canvas", "svg", "map", "area",
             "iframe", "object", "embed", "param",
+            "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
             "form", "label", "input", "button", "a", "select", "option", "optgroup", "textarea",
             "fieldset", "legend", "datalist", "output", "progress", "meter",
-            "li", "ul", "ol", "dt", "dl", "html", "span"
+            "li", "ul", "ol", "dt", "dd", "dl", "span", "template", "slot"
     );
     private static final Set<String> BOOLEAN_ATTRIBUTES = Set.of("autofocus", "autoplay", "checked", "controls",
-            "disabled", "hidden", "loop", "multiple", "muted", "playsinline", "readonly", "required", "selected");
+            "disabled", "formnovalidate", "hidden", "ismap", "itemscope", "loop", "multiple", "muted",
+            "novalidate", "open", "playsinline", "popover", "readonly", "required", "reversed", "selected");
 
     String generate(HtmlParseResult parseResult, Path outputPath) {
         String packageName = packageName(outputPath);
@@ -65,44 +68,21 @@ final class UjfeJavaGenerator {
         }
 
         StringBuilder expression = new StringBuilder(factory(node.tagName()));
-        List<Map.Entry<String, String>> normalAttributes = new ArrayList<>();
 
         for (Map.Entry<String, String> attribute : node.attributes().entrySet()) {
             String name = attribute.getKey();
             String value = attribute.getValue();
-            if ("class".equals(name)) {
-                expression.append("\n")
-                        .append(spaces(indent + 8))
-                        .append(".css(")
-                        .append(quote(value))
-                        .append(")");
-            } else if (BOOLEAN_ATTRIBUTES.contains(name.toLowerCase(Locale.ROOT)) && value.isBlank()) {
-                expression.append("\n")
-                        .append(spaces(indent + 8))
-                        .append(".")
-                        .append(booleanMethod(name))
-                        .append("(true)");
-            } else if (helperMethod(name) != null) {
-                expression.append("\n")
-                        .append(spaces(indent + 8))
-                        .append(".")
-                        .append(helperMethod(name))
-                        .append("(")
-                        .append(quote(value))
-                        .append(")");
-            } else {
-                normalAttributes.add(attribute);
-            }
-        }
-
-        for (Map.Entry<String, String> attribute : normalAttributes) {
             expression.append("\n")
                     .append(spaces(indent + 8))
                     .append(".attr(")
-                    .append(quote(attribute.getKey()))
-                    .append(", ")
-                    .append(quote(attribute.getValue()))
-                    .append(")");
+                    .append(quote(name))
+                    .append(", ");
+            if (BOOLEAN_ATTRIBUTES.contains(name.toLowerCase(java.util.Locale.ROOT)) && value.isBlank()) {
+                expression.append("true");
+            } else {
+                expression.append(quote(value));
+            }
+            expression.append(")");
         }
 
         for (HtmlNode child : node.children()) {
@@ -117,60 +97,10 @@ final class UjfeJavaGenerator {
     }
 
     private static String factory(String tagName) {
-        if ("li".equals(tagName)) {
-            return "le()";
-        }
         if (UI_FACTORIES.contains(tagName)) {
             return tagName + "()";
         }
         return "element(" + quote(tagName) + ")";
-    }
-
-    private static String helperMethod(String attributeName) {
-        switch (attributeName) {
-            case "id":
-            case "title":
-            case "lang":
-            case "dir":
-            case "role":
-            case "type":
-            case "name":
-            case "value":
-            case "placeholder":
-            case "action":
-            case "method":
-            case "src":
-            case "href":
-            case "alt":
-            case "label":
-            case "min":
-            case "max":
-            case "step":
-            case "pattern":
-            case "preload":
-            case "poster":
-            case "crossorigin":
-            case "loading":
-                return attributeName;
-            case "for":
-                return "forId";
-            case "inputmode":
-                return "inputMode";
-            case "referrerpolicy":
-                return "referrerPolicy";
-            default:
-                return null;
-        }
-    }
-
-    private static String booleanMethod(String attributeName) {
-        if ("playsinline".equals(attributeName)) {
-            return "playsInline";
-        }
-        if ("readonly".equals(attributeName)) {
-            return "readonly";
-        }
-        return attributeName;
     }
 
     private static String packageName(Path outputPath) {

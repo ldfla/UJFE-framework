@@ -1,128 +1,102 @@
-package ujfe.http;
+package ujfe.live;
 
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import ujfe.core.ClientState;
-import ujfe.live.LiveClientScript;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveRenderResult;
-import ujfe.live.LiveSession;
 
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private final LiveSession liveSession;
-
-    public UjfeHttpHandler(LiveSession liveSession) {
-        this.liveSession = Objects.requireNonNull(liveSession, "liveSession");
+public final class LiveHttpCodec {
+    private LiveHttpCodec() {
     }
 
-    @Override
-    protected void channelRead0(ChannelHandlerContext context, FullHttpRequest request) {
-        FullHttpResponse response = route(request);
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
-        if (keepAlive) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+    public static String livePayload(LiveRenderResult result) {
+        Objects.requireNonNull(result, "result");
+        return "{\"html\":\"" + jsonEscape(result.html()) + "\",\"css\":\"" + jsonEscape(result.css()) + "\"}";
+    }
+
+    public static Set<String> parseCssClasses(String classes) {
+        Set<String> parsedClasses = new LinkedHashSet<>();
+        if (classes == null || classes.trim().isEmpty()) {
+            return parsedClasses;
         }
 
-        if (keepAlive) {
-            context.writeAndFlush(response);
-        } else {
-            context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        for (String className : classes.trim().split("\\s+")) {
+            if (!className.isBlank()) {
+                parsedClasses.add(className);
+            }
         }
+        return parsedClasses;
     }
 
-    private FullHttpResponse route(FullHttpRequest request) {
-        QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-        String path = decoder.path();
-
-        try {
-            if (request.method().equals(HttpMethod.GET) && "/_ujfe/client.js".equals(path)) {
-                return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", LiveClientScript.script());
-            }
-
-            if (request.method().equals(HttpMethod.GET) && "/_ujfe/dev.js".equals(path)) {
-                return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", ujfe.live.LiveDevToolsScript.script());
-            }
-
-            if (request.method().equals(HttpMethod.GET) && "/_ujfe/css".equals(path)) {
-                String classes = firstQueryValue(decoder, "classes").orElse("");
-                return response(HttpResponseStatus.OK, "text/css; charset=utf-8", liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
-            }
-
-            if (request.method().equals(HttpMethod.POST) && "/_ujfe/event".equals(path)) {
-                String body = request.content().toString(StandardCharsets.UTF_8);
-                String eventId = extractEventId(body);
-                ClientState clientState = extractClientState(body);
-                LiveRenderResult result = liveSession.handleEvent(eventId, clientState);
-                return response(HttpResponseStatus.OK, "application/json; charset=utf-8", livePayload(result));
-            }
-
-            if (request.method().equals(HttpMethod.POST) && "/_ujfe/state".equals(path)) {
-                String body = request.content().toString(StandardCharsets.UTF_8);
-                LiveRenderResult result = liveSession.updateClientState(extractClientState(body));
-                return response(HttpResponseStatus.OK, "application/json; charset=utf-8", livePayload(result));
-            }
-
-            if (request.method().equals(HttpMethod.GET)) {
-                String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
-                String document = liveSession.renderDocument(path, ClientState.of(parseCookies(cookieHeader), Map.of()));
-                return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
-            }
-
-            return response(HttpResponseStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
-        } catch (IllegalArgumentException exception) {
-            return response(HttpResponseStatus.NOT_FOUND, "text/plain; charset=utf-8", exception.getMessage());
-        } catch (RuntimeException exception) {
-            return response(HttpResponseStatus.INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", exception.getMessage());
+    public static String extractEventId(String json) {
+        Objects.requireNonNull(json, "json");
+        int keyIndex = findKey(json, "eventId").orElse(-1);
+        if (keyIndex < 0) {
+            throw new IllegalArgumentException("Missing eventId");
         }
-    }
 
-    static String livePayload(LiveRenderResult result) {
-        return LiveHttpCodec.livePayload(result);
-    }
-
-    static Set<String> parseCssClasses(String classes) {
-        return LiveHttpCodec.parseCssClasses(classes);
-    }
-
-    private static Optional<String> firstQueryValue(QueryStringDecoder decoder, String name) {
-        List<String> values = decoder.parameters().get(name);
-        if (values == null || values.isEmpty()) {
-            return Optional.empty();
+        int colonIndex = json.indexOf(':', keyIndex);
+        if (colonIndex < 0) {
+            throw new IllegalArgumentException("Invalid event payload");
         }
-        return Optional.ofNullable(values.get(0));
+
+        int valueStart = findStringStart(json, colonIndex + 1);
+        StringBuilder value = new StringBuilder();
+        for (int index = valueStart + 1; index < json.length(); index++) {
+            char current = json.charAt(index);
+            if (current == '"') {
+                return value.toString();
+            }
+            if (current == '\\') {
+                index++;
+                if (index >= json.length()) {
+                    throw new IllegalArgumentException("Invalid escaped eventId");
+                }
+                value.append(unescape(json.charAt(index)));
+            } else {
+                value.append(current);
+            }
+        }
+        throw new IllegalArgumentException("Unterminated eventId");
     }
 
-    static String extractEventId(String json) {
-        return LiveHttpCodec.extractEventId(json);
+    public static ClientState extractClientState(String json) {
+        Objects.requireNonNull(json, "json");
+        String cookieHeader = extractStringField(json, "cookies").orElse("");
+        Map<String, String> localStorage = extractStringMapField(json, "localStorage");
+        return ClientState.of(parseCookies(cookieHeader), localStorage);
     }
 
-    static ClientState extractClientState(String json) {
-        return LiveHttpCodec.extractClientState(json);
-    }
+    public static Map<String, String> parseCookies(String cookieHeader) {
+        Map<String, String> cookies = new LinkedHashMap<>();
+        if (cookieHeader == null || cookieHeader.trim().isEmpty()) {
+            return cookies;
+        }
 
-    static Map<String, String> parseCookies(String cookieHeader) {
-        return LiveHttpCodec.parseCookies(cookieHeader);
+        String[] pairs = cookieHeader.split(";");
+        for (String pair : pairs) {
+            String trimmed = pair.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            int separator = trimmed.indexOf('=');
+            if (separator <= 0) {
+                continue;
+            }
+
+            String name = trimmed.substring(0, separator).trim();
+            String value = trimmed.substring(separator + 1).trim();
+            if (!name.isEmpty()) {
+                cookies.put(name, value);
+            }
+        }
+        return cookies;
     }
 
     private static Optional<String> extractStringField(String json, String fieldName) {
@@ -347,35 +321,5 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         private int nextIndex() {
             return nextIndex;
         }
-    }
-
-    private static FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        FullHttpResponse response = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1,
-                status,
-                Unpooled.wrappedBuffer(bytes)
-        );
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
-        applySecurityHeaders(response);
-        return response;
-    }
-
-    static void applySecurityHeaders(FullHttpResponse response) {
-        response.headers().set("X-Content-Type-Options", "nosniff");
-        response.headers().set("X-Frame-Options", "DENY");
-        response.headers().set("Referrer-Policy", "no-referrer");
-        response.headers().set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-        response.headers().set("Content-Security-Policy",
-                "default-src 'self'; "
-                        + "script-src 'self'; "
-                        + "style-src 'self' 'unsafe-inline'; "
-                        + "img-src 'self' data: https:; "
-                        + "media-src 'self' data: https:; "
-                        + "object-src 'none'; "
-                        + "base-uri 'none'; "
-                        + "frame-ancestors 'none'; "
-                        + "form-action 'self'");
     }
 }

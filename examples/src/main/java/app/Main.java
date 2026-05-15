@@ -5,6 +5,7 @@ import app.pages.MainPage;
 import ujfe.http.UjfeServer;
 import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveSessionConfig;
 import ujfe.router.Router;
 
 public final class Main {
@@ -12,13 +13,19 @@ public final class Main {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        AppTheme appTheme = new AppTheme();
-        Router router = new Router()
+        var appTheme = new AppTheme();
+        var router = new Router()
                 .register(new MainPage())
                 .register(new DocumentationPage(appTheme));
 
-        LiveSession liveSession = new LiveSession(router, appTheme::cssTheme, true);
-        UjfeServer server = new UjfeServer(
+        var liveConfig = LiveSessionConfig.builder()
+                .themeSupplier(appTheme::cssTheme)
+                .devToolsEnabled(true)
+                .lang("en")
+                .title("UJFE Example")
+                .build();
+        var liveSession = new LiveSession(router, liveConfig);
+        var server = new UjfeServer(
                 UjfeServerConfig.builder()
                         .host("0.0.0.0")
                         .port(8080)

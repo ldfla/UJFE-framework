@@ -15,8 +15,82 @@ public final class UI {
         return new TextNode(valueSupplier);
     }
 
+    public static Element html(Node... children) {
+        Element html = element("html");
+        Arrays.stream(children).forEach(html::child);
+        return html;
+    }
+
+    public static Element head() {
+        return element("head");
+    }
+
+    public static Element body() {
+        return element("body");
+    }
+
+    public static Element title() {
+        return element("title");
+    }
+
+    public static Element title(String text) {
+        return title().child(text);
+    }
+
+    public static Element meta() {
+        return element("meta");
+    }
+
+    public static Element link() {
+        return element("link");
+    }
+
+    public static Element style() {
+        return element("style");
+    }
+
+    public static Element script() {
+        return element("script");
+    }
+
+    public static Element base() {
+        return element("base");
+    }
+
     public static Element div() {
         return element("div");
+    }
+
+    public static Element figure() {
+        return element("figure");
+    }
+
+    public static Element figcaption() {
+        return element("figcaption");
+    }
+
+    public static Element figcaption(String text) {
+        return figcaption().child(text);
+    }
+
+    public static Element details() {
+        return element("details");
+    }
+
+    public static Element summary() {
+        return element("summary");
+    }
+
+    public static Element summary(String text) {
+        return summary().child(text);
+    }
+
+    public static Element dialog() {
+        return element("dialog");
+    }
+
+    public static Element modal() {
+        return dialog();
     }
 
     public static Element header() {
@@ -35,8 +109,24 @@ public final class UI {
         return element("section");
     }
 
+    public static Element article() {
+        return element("article");
+    }
+
     public static Element nav() {
         return element("nav");
+    }
+
+    public static Element footer() {
+        return element("footer");
+    }
+
+    public static Element address() {
+        return element("address");
+    }
+
+    public static Element address(String text) {
+        return address().child(text);
     }
 
     public static Element h1() {
@@ -79,6 +169,14 @@ public final class UI {
         return h5().child(text);
     }
 
+    public static Element h6() {
+        return element("h6");
+    }
+
+    public static Element h6(String text) {
+        return h6().child(text);
+    }
+
     public static Element b() {
         return element("b");
     }
@@ -119,6 +217,38 @@ public final class UI {
         return strong().child(text);
     }
 
+    public static Element small() {
+        return element("small");
+    }
+
+    public static Element small(String text) {
+        return small().child(text);
+    }
+
+    public static Element mark() {
+        return element("mark");
+    }
+
+    public static Element mark(String text) {
+        return mark().child(text);
+    }
+
+    public static Element abbr() {
+        return element("abbr");
+    }
+
+    public static Element abbr(String text) {
+        return abbr().child(text);
+    }
+
+    public static Element cite() {
+        return element("cite");
+    }
+
+    public static Element cite(String text) {
+        return cite().child(text);
+    }
+
     public static Element p() {
         return element("p");
     }
@@ -143,8 +273,28 @@ public final class UI {
         return code().child(text);
     }
 
+    public static Element blockquote() {
+        return element("blockquote");
+    }
+
+    public static Element blockquote(String text) {
+        return blockquote().child(text);
+    }
+
+    public static Element q() {
+        return element("q");
+    }
+
+    public static Element q(String text) {
+        return q().child(text);
+    }
+
     public static Element br() {
         return element("br");
+    }
+
+    public static Element hr() {
+        return element("hr");
     }
 
     public static Element img() {
@@ -175,6 +325,10 @@ public final class UI {
         return element("canvas");
     }
 
+    public static Element svg() {
+        return element("svg");
+    }
+
     public static Element map() {
         return element("map");
     }
@@ -197,6 +351,58 @@ public final class UI {
 
     public static Element param() {
         return element("param");
+    }
+
+    public static Element table() {
+        return element("table");
+    }
+
+    public static Element thead() {
+        return element("thead");
+    }
+
+    public static Element tbody() {
+        return element("tbody");
+    }
+
+    public static Element tfoot() {
+        return element("tfoot");
+    }
+
+    public static Element tr() {
+        return element("tr");
+    }
+
+    public static Element td() {
+        return element("td");
+    }
+
+    public static Element td(String text) {
+        return td().child(text);
+    }
+
+    public static Element th() {
+        return element("th");
+    }
+
+    public static Element th(String text) {
+        return th().child(text);
+    }
+
+    public static Element caption() {
+        return element("caption");
+    }
+
+    public static Element caption(String text) {
+        return caption().child(text);
+    }
+
+    public static Element colgroup() {
+        return element("colgroup");
+    }
+
+    public static Element col() {
+        return element("col");
     }
 
     public static Element form() {
@@ -405,14 +611,20 @@ public final class UI {
         return element("dt");
     }
 
-    public static Element dl() {
-        return element("dl");
+    public static Element dt(String text) {
+        return dt().child(text);
     }
 
-    public static Element html(Node... children) {
-        Element html = element("html");
-        Arrays.stream(children).forEach(html::child);
-        return html;
+    public static Element dd() {
+        return element("dd");
+    }
+
+    public static Element dd(String text) {
+        return dd().child(text);
+    }
+
+    public static Element dl() {
+        return element("dl");
     }
 
     public static Element span() {
@@ -423,7 +635,15 @@ public final class UI {
         return span().child(text);
     }
 
+    public static Element template() {
+        return element("template");
+    }
+
+    public static Element slot() {
+        return element("slot");
+    }
+
     public static Element element(String tagName) {
-        return new Element(tagName);
+        return Element.of(tagName);
     }
 }

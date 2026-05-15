@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public final class Element implements Node {
@@ -27,6 +28,10 @@ public final class Element implements Node {
     private final Map<String, Runnable> eventHandlers;
     private final List<Node> children;
     private String cssClasses;
+
+    public static Element of(String tagName) {
+        return new Element(tagName);
+    }
 
     public Element(String tagName) {
         this.tagName = validateName(tagName);
@@ -62,6 +67,14 @@ public final class Element implements Node {
         return this;
     }
 
+    public Element attr(String name, boolean enabled) {
+        return boolAttr(name, enabled);
+    }
+
+    public Element attr(String name, BooleanSupplier enabledSupplier) {
+        return boolAttr(name, enabledSupplier);
+    }
+
     public Element attr(String name, Supplier<String> valueSupplier) {
         String validName = validateName(name);
         Objects.requireNonNull(valueSupplier, "valueSupplier");
@@ -86,6 +99,15 @@ public final class Element implements Node {
         } else {
             booleanAttributes.remove(validName);
         }
+        return this;
+    }
+
+    public Element boolAttr(String name, BooleanSupplier enabledSupplier) {
+        String validName = validateName(name);
+        Objects.requireNonNull(enabledSupplier, "enabledSupplier");
+        booleanAttributes.put(validName, enabledSupplier::getAsBoolean);
+        attributes.remove(validName);
+        dynamicAttributes.remove(validName);
         return this;
     }
 
@@ -179,6 +201,10 @@ public final class Element implements Node {
 
     public Element hidden(boolean hidden) {
         return boolAttr("hidden", hidden);
+    }
+
+    public Element open(boolean open) {
+        return boolAttr("open", open);
     }
 
     public Element spellcheck(boolean spellcheck) {
@@ -387,6 +413,14 @@ public final class Element implements Node {
 
     public Element loading(String loading) {
         return attr("loading", loading);
+    }
+
+    public Element popover(String popover) {
+        return attr("popover", popover);
+    }
+
+    public Element popover(boolean enabled) {
+        return boolAttr("popover", enabled);
     }
 
     public String tagName() {

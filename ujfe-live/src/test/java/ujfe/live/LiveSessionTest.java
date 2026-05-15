@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ujfe.html.UI.button;
 import static ujfe.html.UI.div;
@@ -69,6 +70,26 @@ final class LiveSessionTest {
         assertTrue(css.contains(".gap-10{gap:2.5rem;}"));
         assertTrue(css.contains(".border-primary-300{border-color:var(--ujfe-primary-300);}"));
         assertTrue(css.contains(".bg-primary-200{background-color:var(--ujfe-primary-200);}"));
+    }
+
+    @Test
+    void supportsExternalCssAndDocumentHeadConfiguration() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .cssMode(CssMode.EXTERNAL)
+                .lang("pt-BR")
+                .title("UJFE <External>")
+                .externalStylesheet("/app.css")
+                .build();
+        LiveSession session = new LiveSession(new Router().register(new CounterPage()), config);
+
+        String document = session.renderDocument("/", ClientState.empty());
+
+        assertTrue(document.contains("<html lang=\"pt-BR\">"));
+        assertTrue(document.contains("<title>UJFE &lt;External&gt;</title>"));
+        assertTrue(document.contains("<link rel=\"stylesheet\" href=\"/app.css\">"));
+        assertFalse(document.contains("data-ujfe-css"));
+        assertFalse(document.contains(".bg-blue-600"));
+        assertTrue(session.renderCss(Set.of("bg-blue-600")).isEmpty());
     }
 
     private static String extractEventId(String html) {

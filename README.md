@@ -1,21 +1,23 @@
 # UJFE
 
-UJFE means **Using Java For Everything**. It is a Java-first reactive SSR framework that renders HTML, server-side utility CSS, live events, routing, signals, and a small Netty-based HTTP runtime without a JavaScript build pipeline.
+UJFE means **Using Java For Everything**. It is a Java-first reactive SSR framework that renders HTML, server-side utility CSS, live events, routing, signals, a standalone Netty runtime, and Spring MVC integration without a JavaScript build pipeline.
 
 ## Modules
 
 - `ujfe-core`: shared rendering contracts, context, escaping, client state, and REST client.
-- `ujfe-html`: Java HTML DSL and server-side utility CSS renderer.
+- `ujfe-html`: Java HTML DSL, generic element core, HTML helpers, and optional server-side utility CSS renderer.
 - `ujfe-signals`: mutable signals and computed values.
 - `ujfe-router`: `@Page` routing and page rendering.
 - `ujfe-live`: live event registry, page re-rendering, client script, and dev tools script.
 - `ujfe-http`: Netty HTTP runtime for UJFE sessions.
+- `ujfe-spring`: Spring Boot/MVC integration that serves UJFE routes through the same DispatcherServlet/Tomcat port as the application.
 - `ujfe-cli`: CLI entry point and HTML-to-UJFE conversion command.
 - `examples`: runnable example application.
 
 ## Requirements
 
 - JDK compatible with the Maven compiler release in `pom.xml`.
+- Full reactor builds that include `ujfe-spring` require Java 17 or newer because Spring Boot 4 / Spring Framework 7 are compiled for Java 17+. Java 25 is the recommended runtime for the Spring Boot 4 setup below.
 - Maven Wrapper from this repository.
 
 ## Build And Test
@@ -55,6 +57,7 @@ Available example routes:
 package app.pages;
 
 import ujfe.html.Node;
+import ujfe.html.Element;
 import ujfe.router.Page;
 
 import static ujfe.html.UI.*;
@@ -65,8 +68,100 @@ public final class HomePage {
         return main()
                 .css("min-h-screen bg-slate-50 text-slate-900 p-6")
                 .child(h1("UJFE"))
-                .child(p("Server-rendered UI written in Java."));
+                .child(p("Server-rendered UI written in Java."))
+                .child(Element.of("dialog")
+                        .attr("open", true)
+                        .child(p("Generic tags work without a framework release.")));
     }
+}
+```
+
+## HTML DSL Principles
+
+`Element.of("tag-name")` is the architectural source of HTML support. Helpers such as `div()`, `section()`, `dialog()`, `table()`, `template()`, and `slot()` are convenience methods only.
+
+```java
+section()
+        .child(h1("Dashboard"))
+        .child(Element.of("dialog")
+                .attr("open", true)
+                .child(p("Example")))
+        .child(input()
+                .attr("type", "text")
+                .attr("placeholder", "Name")
+                .attr("required", true));
+```
+
+The DSL validates element and attribute names for safe rendering, but it does not maintain a whitelist of supported HTML tags. New HTML tags and custom elements can be rendered through `Element.of(...)` or `element(...)`.
+
+Current helpers include document tags (`html`, `head`, `body`, `title`, `meta`, `link`, `style`, `script`, `base`), semantic/layout tags, text tags, grouping tags, lists, media and embedded tags (`img`, `picture`, `source`, `track`, `audio`, `video`, `canvas`, `svg`, `map`, `area`, `iframe`, `object`, `embed`, `param`), table tags (`table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th`, `caption`, `colgroup`, `col`), form tags, `details`, `summary`, `dialog`, `template`, and `slot`.
+
+## Modern Java Examples
+
+UJFE examples prefer modern Java syntax when it improves readability: `var` for local values, records for immutable view models, streams and lambdas for collection-to-node mapping, and switch expressions for compact branching.
+
+```java
+record Metric(String label, int value, String status) {}
+
+var metrics = List.of(
+        new Metric("Users", 42, "ok"),
+        new Metric("Errors", 2, "warn")
+);
+
+var rows = metrics.stream()
+        .map(metric -> {
+            var tone = switch (metric.status()) {
+                case "ok" -> "text-emerald-700";
+                case "warn" -> "text-amber-700";
+                default -> "text-slate-700";
+            };
+            return tr()
+                    .child(td(metric.label()))
+                    .child(td(String.valueOf(metric.value())).css(tone));
+        })
+        .toList();
+
+table()
+        .child(caption("Metrics"))
+        .child(colgroup().child(col()).child(col()))
+        .child(thead().child(tr().child(th("Label")).child(th("Value"))))
+        .child(tbody().children(rows))
+        .child(tfoot().child(tr().child(td().attr("colspan", "2").child("Generated from Java data"))));
+```
+
+For quick experiments with Java 25, source-file execution lets you run a compact demo without creating a Maven project or declaring an explicit class:
+
+```java
+// Demo.java - run with: java Demo.java
+import java.util.List;
+import ujfe.core.ClientState;
+import ujfe.core.Node;
+import ujfe.live.LiveSession;
+import ujfe.router.Router;
+
+import static ujfe.html.UI.*;
+
+record Metric(String label, int value) {}
+
+record MetricsPage(List<Metric> metrics) {
+    public Node render() {
+        var rows = metrics.stream()
+                .map(metric -> tr()
+                        .child(td(metric.label()))
+                        .child(td(String.valueOf(metric.value()))))
+                .toList();
+
+        return table()
+                .child(caption("Metrics"))
+                .child(tbody().children(rows));
+    }
+}
+
+void main() {
+    var metrics = List.of(new Metric("Users", 42));
+    var router = new Router().register("/", () -> new MetricsPage(metrics));
+    var liveSession = new LiveSession(router);
+    System.out.println(liveSession.renderDocument("/", ClientState.empty()));
 }
 ```
 
@@ -79,16 +174,21 @@ import app.pages.HomePage;
 import ujfe.http.UjfeServer;
 import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveSessionConfig;
 import ujfe.router.Router;
 
 public final class Main {
     public static void main(String[] args) throws InterruptedException {
-        Router router = new Router()
+        var router = new Router()
                 .register(new HomePage());
 
-        LiveSession liveSession = new LiveSession(router);
+        var config = LiveSessionConfig.builder()
+                .lang("en")
+                .title("UJFE")
+                .build();
+        var liveSession = new LiveSession(router, config);
 
-        UjfeServer server = new UjfeServer(
+        var server = new UjfeServer(
                 UjfeServerConfig.builder()
                         .host("0.0.0.0")
                         .port(8080)
@@ -138,7 +238,11 @@ public Node renderForm() {
     return form()
             .onSubmit(this::submit)
             .child(label("Name").forId("name"))
-            .child(inputText().id("name").name("name").required(true))
+            .child(input()
+                    .attr("type", "text")
+                    .attr("id", "name")
+                    .attr("name", "name")
+                    .attr("required", true))
             .child(label("Role").forId("role"))
             .child(select().id("role").name("role")
                     .child(option("Backend").value("backend"))
@@ -166,11 +270,11 @@ String theme = Ujfe.localStorage("theme").orElse("system");
 import ujfe.core.RestClient;
 import ujfe.core.RestResponse;
 
-RestClient client = RestClient.create();
-RestResponse response = client.get("https://brasilapi.com.br/api/banks/v1");
+var client = RestClient.create();
+var response = client.get("https://brasilapi.com.br/api/banks/v1");
 
 if (response.statusCode() == 200) {
-    String json = response.body();
+    var json = response.body();
 }
 ```
 
@@ -181,6 +285,54 @@ java -cp ujfe-cli/target/classes ujfe.cli.UjfeCli convert page.html --out src/ma
 ```
 
 The convert command reads an HTML file and writes a Java page using the UJFE DSL.
+
+The generated code prefers attributes-first output:
+
+```java
+section()
+        .attr("class", "p-4")
+        .child(h1().attr("title", "Hero").child(text("Hello")));
+```
+
+## CSS Modes
+
+UJFE can run with its internal server-side utility CSS renderer or with external CSS managed by Tailwind, Bootstrap, CSS files, CSS Modules, or an enterprise design system. With the bundled Netty runtime, keep external stylesheets same-origin so they fit the default CSP. With Spring MVC integration, the same configuration is rendered by Tomcat through the application port.
+
+Internal CSS is the default:
+
+```java
+LiveSession liveSession = new LiveSession(router);
+```
+
+External CSS disables the UJFE stylesheet and adds regular head nodes:
+
+```java
+import ujfe.live.CssMode;
+import ujfe.live.LiveSessionConfig;
+
+LiveSessionConfig config = LiveSessionConfig.builder()
+        .cssMode(CssMode.EXTERNAL)
+        .externalStylesheet("/app.css")
+        .title("UJFE App")
+        .build();
+
+LiveSession liveSession = new LiveSession(router, config);
+```
+
+## Public API Reference
+
+The public API is documented in English so the project can be used globally. The high-level surface is intentionally small:
+
+- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`.
+- `ujfe.html.UI`: optional helper factories for official HTML tags. Helpers delegate to `Element.of(...)`; they are convenience methods, not the source of HTML support.
+- `ujfe.live.LiveSessionConfig`: document-level runtime configuration for language, title, head nodes, CSS mode, theme supplier, and dev tools.
+- `ujfe.live.CssMode`: `INTERNAL` generates UJFE's server-side utility stylesheet; `EXTERNAL` disables it so teams can use Tailwind, Bootstrap, CSS files, CSS Modules, or enterprise design systems.
+- `ujfe.router.Router` and `@Page`: register page instances, page classes, or explicit route factories.
+- `ujfe.http.UjfeServer`: standalone Netty runtime for UJFE sessions.
+- `ujfe.spring`: Spring Boot/MVC adapter that serves UJFE routes through the same DispatcherServlet/Tomcat port as the application.
+- `ujfe.signals.Signal` and `Signals`: mutable and computed state primitives for live server-rendered components.
+- `ujfe.core.RestClient` and `RestResponse`: small Java HttpClient wrapper for server-side API calls.
+- `ujfe.cli.UjfeCli`: command-line entry point, including HTML-to-UJFE conversion.
 
 ## Documentation Pattern
 
@@ -197,8 +349,12 @@ Use the example documentation route as the preferred structure for framework doc
 - Text nodes and attributes are escaped during server-side rendering.
 - URL attributes such as `href`, `src`, `action`, and `poster` are sanitized.
 - Live event handlers are registered server-side and rendered as opaque event ids.
-- CSS classes used during rendering are collected and rendered into a minimal stylesheet.
-- The example app enables live dev tooling through the `LiveSession` constructor.
+- `Element.of(...)` and `element(...)` support any valid HTML/custom tag name without a framework release.
+- Helpers cover common modern HTML tags and delegate to the generic element core.
+- Boolean attributes can be written as `.attr("required", true)` or through optional sugar such as `.required(true)`.
+- In internal CSS mode, classes used during rendering are collected and rendered into a minimal stylesheet.
+- In external CSS mode, UJFE does not inject its internal stylesheet and regular `<link rel="stylesheet">` nodes can be configured in the document head.
+- The example app enables live dev tooling through `LiveSessionConfig`.
 
 ## Spring Initializr Project Setup
 
@@ -250,7 +406,7 @@ Use the UJFE version installed in `~/.m2`. The current local project version is:
 <ujfe.version>0.1.0-SNAPSHOT</ujfe.version>
 ```
 
-Add the UJFE dependency to the generated Spring project:
+Add the UJFE Spring dependency to the generated Spring project:
 
 ```xml
 <properties>
@@ -269,11 +425,13 @@ Add the UJFE dependency to the generated Spring project:
     </dependency>
     <dependency>
         <groupId>dev.ujfe</groupId>
-        <artifactId>ujfe-html</artifactId>
+        <artifactId>ujfe-spring</artifactId>
         <version>${ujfe.version}</version>
     </dependency>
 </dependencies>
 ```
+
+Do not add `ujfe-http` to a Spring Boot application unless you intentionally want a separate standalone Netty server. The Spring adapter uses Spring MVC request handling, so UJFE pages, live events, dev scripts, and CSS endpoints are served by the same Tomcat port as the rest of the application.
 
 After UJFE is published to Maven Central, keep the same coordinates and use the published version instead of the local snapshot.
 
@@ -293,10 +451,14 @@ Create a UJFE page at `src/main/java/com/example/ujfespringdemo/web/HomePage.jav
 ```java
 package com.example.ujfespringdemo.web;
 
+import org.springframework.stereotype.Component;
 import ujfe.core.Node;
+import ujfe.router.Page;
 
 import static ujfe.html.UI.*;
 
+@Page("/")
+@Component
 public final class HomePage {
 
     public Node render() {
@@ -316,40 +478,47 @@ public final class HomePage {
 }
 ```
 
-Create a Spring Web controller that renders the UJFE page at `src/main/java/com/example/ujfespringdemo/web/UjfePageController.java`:
+Register the UJFE router at `src/main/java/com/example/ujfespringdemo/web/UjfeConfig.java`:
 
 ```java
 package com.example.ujfespringdemo.web;
 
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-import ujfe.core.UjfeContext;
-import ujfe.html.UtilityCssRenderer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import ujfe.live.LiveSessionConfig;
+import ujfe.router.Router;
 
-@RestController
-public final class UjfePageController {
-    private final HomePage homePage = new HomePage();
-
-    @GetMapping(value = "/", produces = MediaType.TEXT_HTML_VALUE)
-    public String home() {
-        UjfeContext context = UjfeContext.create();
-        String body = UjfeContext.withCurrent(context, () -> homePage.render().render(context));
-        String css = UtilityCssRenderer.render(context.cssClasses());
-
-        return """
-                <!doctype html>
-                <html lang="en">
-                <head>
-                    <meta charset="utf-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1">
-                    <title>UJFE Spring Demo</title>
-                    <style>%s</style>
-                </head>
-                <body>%s</body>
-                </html>
-                """.formatted(css, body);
+@Configuration
+public class UjfeConfig {
+    @Bean
+    Router ujfeRouter(HomePage homePage) {
+        return new Router()
+                .register(homePage);
     }
+
+    @Bean
+    LiveSessionConfig ujfeLiveSessionConfig() {
+        return LiveSessionConfig.builder()
+                .lang("en")
+                .title("UJFE Spring Demo")
+                .build();
+    }
+}
+```
+
+When a `Router` bean exists, `ujfe-spring` auto-configures `LiveSession`, `UjfeSpringHandler`, and `UjfeSpringHandlerMapping`. The handler mapping only claims routes registered in the UJFE `Router` plus internal `/_ujfe/*` endpoints, so regular Spring controllers and static resources keep working normally.
+
+Use external CSS the same way when the Spring app owns the stylesheet pipeline:
+
+```java
+@Bean
+LiveSessionConfig ujfeLiveSessionConfig() {
+    return LiveSessionConfig.builder()
+            .cssMode(CssMode.EXTERNAL)
+            .externalStylesheet("/app.css")
+            .lang("en")
+            .title("UJFE Spring Demo")
+            .build();
 }
 ```
 

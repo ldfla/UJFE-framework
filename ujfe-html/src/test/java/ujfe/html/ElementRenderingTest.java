@@ -6,6 +6,7 @@ import ujfe.core.UjfeContext;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ujfe.html.UI.*;
@@ -192,6 +193,65 @@ final class ElementRenderingTest {
         assertTrue(html.contains("<video src=\"/movie.mp4\" poster=\"/poster.png\" controls playsinline></video>"));
         assertTrue(html.contains("<audio controls><source src=\"https://cdn.example.test/audio.mp3\" type=\"audio/mpeg\"></audio>"));
         assertTrue(html.contains("<picture><source src=\"/image.webp\" media=\"(min-width: 800px)\"><img src=\"/image.png\" alt=\"Imagem\"></picture>"));
+    }
+
+    @Test
+    void rendersGenericAndModernHtmlElements() {
+        String html = section()
+                .child(Element.of("dialog")
+                        .attr("open", true)
+                        .child(p("Example")))
+                .child(details()
+                        .attr("open", true)
+                        .child(summary("More"))
+                        .child(p("Details body")))
+                .child(template()
+                        .child(slot().attr("name", "content")))
+                .child(table()
+                        .child(caption("Metrics"))
+                        .child(colgroup().child(col().attr("span", "2")))
+                        .child(thead().child(tr().child(th("Name")).child(th("Value"))))
+                        .child(tbody().child(tr().child(td("Users")).child(td("42"))))
+                        .child(tfoot().child(tr().child(td("Total")).child(td("42")))))
+                .child(figure()
+                        .child(svg().attr("viewBox", "0 0 10 10")
+                                .child(element("path").attr("d", "M0 0h10v10H0z")))
+                        .child(figcaption("Vector")))
+                .child(div().popover(true).child("Popover"))
+                .render();
+
+        assertTrue(html.contains("<dialog open><p>Example</p></dialog>"));
+        assertTrue(html.contains("<details open><summary>More</summary><p>Details body</p></details>"));
+        assertTrue(html.contains("<template><slot name=\"content\"></slot></template>"));
+        assertTrue(html.contains("<caption>Metrics</caption>"));
+        assertTrue(html.contains("<col span=\"2\">"));
+        assertTrue(html.contains("<thead><tr><th>Name</th><th>Value</th></tr></thead>"));
+        assertTrue(html.contains("<tbody><tr><td>Users</td><td>42</td></tr></tbody>"));
+        assertTrue(html.contains("<tfoot><tr><td>Total</td><td>42</td></tr></tfoot>"));
+        assertTrue(html.contains("<svg viewBox=\"0 0 10 10\"><path d=\"M0 0h10v10H0z\"></path></svg>"));
+        assertTrue(html.contains("<div popover>Popover</div>"));
+    }
+
+    @Test
+    void exposesHelpersForRequestedHtmlTags() {
+        Element[] helpers = {
+                html(), head(), body(), title(), meta(), link(), style(), script(), base(),
+                main(), section(), article(), aside(), header(), footer(), nav(), address(),
+                h1(), h2(), h3(), h4(), h5(), h6(), p(), span(), strong(), em(), small(), mark(), abbr(), cite(),
+                code(), pre(), blockquote(), q(), br(), hr(),
+                div(), figure(), figcaption(), details(), summary(), dialog(), modal(),
+                ul(), ol(), li(), dl(), dt(), dd(),
+                a(),
+                img(), picture(), source(), audio(), video(), track(), canvas(), svg(), map(), area(), iframe(), embed(), object(), param(),
+                table(), thead(), tbody(), tfoot(), tr(), td(), th(), caption(), colgroup(), col(),
+                form(), input(), textarea(), button(), select(), option(), optgroup(), label(), fieldset(), legend(),
+                datalist(), output(), progress(), meter(),
+                template(), slot()
+        };
+
+        for (Element helper : helpers) {
+            assertNotNull(helper.tagName());
+        }
     }
 
     @Test
