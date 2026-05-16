@@ -27,7 +27,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>11</maven.compiler.release>
         <junit.version>5.10.2</junit.version>
-        <netty.version>4.1.126.Final</netty.version>
+        <netty.version>4.1.132.Final</netty.version>
         <spring.boot.version>4.0.6</spring.boot.version>
         <spring.framework.version>7.0.7</spring.framework.version>
         <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
