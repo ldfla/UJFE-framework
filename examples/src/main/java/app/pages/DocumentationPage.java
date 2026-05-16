@@ -86,7 +86,7 @@ public final class DocumentationPage implements Component {
                                 .child(le().child(strong("Forms")).child(" with inputs and events"))
                                 .child(le().child(strong("CSS")).child(" with utilities and color scales"))
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
-                                .child(le().child(strong("Security")).child(" with escaping, safe URLs, raw HTML boundaries, and headers"))
+                                .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
                                 .child(le().child(strong("CLI")).child(" with HTML-to-UJFE conversion"))
                                 .child(le().child(strong("Dev Preview")).child(" with a visual inspector"))));
@@ -272,18 +272,21 @@ public final class DocumentationPage implements Component {
         return section()
                 .css("rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm flex flex-col gap-4")
                 .child(h2("Security by default").css("text-2xl font-bold text-rose-700"))
-                .child(p("Text and attributes are escaped during SSR. URL attributes such as href, src, action, and poster reject dangerous protocols before rendering. Trusted raw HTML has a deliberately unsafe name so security review can find it.")
+                .child(p("Text and attributes are escaped during SSR. Attribute names are validated to block inline event handlers and malformed names. URL attributes are sanitized through a configurable UrlPolicy that blocks dangerous schemes. Trusted raw HTML has a deliberately unsafe name so security review can find it.")
                         .css("text-base text-slate-700 leading-relaxed"))
                 .child(
                         div()
                                 .css("grid grid-cols-3 gap-3")
-                                .child(cssPill("A03 Injection", "HTML/attribute escaping and safe URLs"))
+                                .child(cssPill("A03 Injection", "HTML/attribute escaping, attribute validation, and safe URLs"))
+                                .child(cssPill("Attribute validation", "on* handlers blocked, malformed names rejected"))
+                                .child(cssPill("URL policy", "javascript: and vbscript: always blocked"))
                                 .child(cssPill("A05 Misconfiguration", "CSP, nosniff, frame-ancestors"))
+                                .child(cssPill("Configurable schemes", "http:, mailto:, tel: opt-in via UrlPolicy"))
                                 .child(cssPill("Unsafe raw HTML", "only unsafeHtml(...) bypasses escaping"))
                 )
                 .child(
                         div()
-                                .css("grid grid-cols-2 gap-3")
+                                .css("grid grid-cols-3 gap-3")
                                 .child(
                                         div()
                                                 .css("rounded-lg border border-emerald-200 bg-white p-4 flex flex-col gap-2")
@@ -291,6 +294,14 @@ public final class DocumentationPage implements Component {
                                                 .child(p("Use normal text and element helpers for application UI, user content, and request data.")
                                                         .css("text-sm text-slate-700 leading-relaxed"))
                                                 .child(codeBlock("p(\"<script>\")\n// <p>&lt;script&gt;</p>\n"))
+                                )
+                                .child(
+                                        div()
+                                                .css("rounded-lg border border-rose-200 bg-white p-4 flex flex-col gap-2")
+                                                .child(h3("Blocked attributes").css("text-lg font-bold text-rose-700"))
+                                                .child(p("Inline event handlers and malformed attribute names are rejected before rendering.")
+                                                        .css("text-sm text-slate-700 leading-relaxed"))
+                                                .child(codeBlock("// Throws IllegalArgumentException:\ndiv().attr(\"onclick\", \"alert(1)\")\ndiv().attr(\"my attr\", \"value\")\n"))
                                 )
                                 .child(
                                         div()
@@ -678,16 +689,36 @@ public final class DocumentationPage implements Component {
     }
 
     private String securityCode() {
-        return "a(\"Safe\").href(\"https://example.com\")\n"
-                + "img().src(\"data:image/png;base64,...\").alt(\"Preview\")\n"
-                + "div().title(\"Title\").ariaLabel(\"Region\").data(\"test-id\", \"hero\")\n\n"
+        return "// Safe attributes:\n"
+                + "input().attr(\"placeholder\", \"Name\").attr(\"required\", true)\n"
+                + "div().attr(\"aria-label\", \"Close\")\n"
+                + "div().attr(\"data-id\", \"123\")\n"
+                + "div().attr(\"hx-get\", \"/fragment\")\n\n"
+                + "// Blocked: inline event handler attributes (on*):\n"
+                + "div().attr(\"onclick\", \"alert(1)\")  // throws\n"
+                + "img().attr(\"onload\", \"steal()\")    // throws\n"
+                + "// Use server-side live events instead:\n"
+                + "button(\"Save\").on(\"click\", this::save)\n\n"
+                + "// Safe URLs:\n"
+                + "a(\"Safe\").href(\"/home\")\n"
+                + "a(\"Safe\").href(\"https://example.com\")\n"
+                + "a(\"Safe\").href(\"../settings\")\n"
+                + "a(\"Safe\").href(\"#section\")\n"
+                + "img().src(\"data:image/png;base64,...\").alt(\"Preview\")\n\n"
+                + "// Blocked URL schemes:\n"
+                + "a(\"XSS\").href(\"javascript:alert(1)\")  // always blocked\n"
+                + "a(\"XSS\").href(\"vbscript:MsgBox(1)\")   // always blocked\n\n"
+                + "// Configurable URL policy (startup):\n"
+                + "UrlPolicy.setDefault(UrlPolicy.builder()\n"
+                + "    .allowHttp()\n"
+                + "    .allowMailto()\n"
+                + "    .allowTel()\n"
+                + "    .build());\n\n"
                 + "// Safe text remains escaped:\n"
                 + "p(\"<script>\") // renders &lt;script&gt;\n\n"
                 + "// Trusted raw HTML must be explicit and reviewed:\n"
                 + "unsafeHtml(\"<strong>Trusted fragment</strong>\")\n"
                 + "UnsafeHtml.of(\"<p>Trusted CMS block</p>\")\n\n"
-                + "// Rejected before rendering:\n"
-                + "a(\"XSS\").href(\"javascript:alert(1)\")\n\n"
                 + "// The server also emits headers such as CSP, nosniff,\n"
                 + "// Referrer-Policy, Permissions-Policy, and frame-ancestors.\n";
     }

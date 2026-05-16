@@ -17,8 +17,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public final class Element implements Node {
-    private static final Set<String> URL_ATTRIBUTES = Set.of("action", "cite", "data", "formaction", "href",
-            "poster", "src");
+    private static final Set<String> URL_ATTRIBUTES = Set.of("action", "background", "cite", "data",
+            "formaction", "href", "poster", "src");
 
     private final String tagName;
     private final ElementNamespace namespace;
