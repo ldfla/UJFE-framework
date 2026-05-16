@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+## Version 0.8.0 - 16/05/2026
+
+- Updated the Maven project version to `0.8.0-SNAPSHOT`.
+- Introduced server-side runtime extension points in the new `ujfe.runtime.action` package.
+- Added `RuntimeActionRegistry` and `RuntimeActionRegistryBuilder` with builder API for registering actions across six extension points.
+- Added `BeforeRenderAction` and `AfterRenderAction` for rendering lifecycle participation.
+- Added `BeforeEventAction` and `AfterEventAction` for live event lifecycle participation.
+- Added `ErrorAction` for centralized runtime error handling.
+- Added `HeadContributionAction` for dynamic document `<head>` contributions.
+- Added `ActionOrder` with `FIRST`, `EARLY`, `NORMAL`, `LATE`, and `LAST` priority constants.
+- Added `ActionChain` for deterministic, ordered action execution.
+- Added `RenderContext`, `RenderResult`, `LiveEventContext`, `LiveEventResult`, and `RuntimeErrorContext` context objects with defensive metadata copies.
+- Added `HeadContributionContext` as a mutable collector for head node contributions.
+- Added `RuntimePhase` enum: `RENDER`, `EVENT`, `HEAD_CONTRIBUTION`, `INTERNAL`.
+- Integrated `RuntimeActionRegistry` into `LiveSessionConfig` via `runtimeActions(registry)` builder method.
+- Wired hooks into `LiveSession`: `beforeRender`/`afterRender` in `renderPath()`, `beforeEvent`/`afterEvent` in `handleEvent()`, head contributions in `renderDocument()`.
+- Empty registry is the default; all existing constructors and behavior remain backward-compatible.
+- Exceptions in actions are routed to `onError` and re-thrown; exceptions in `onError` are logged to stderr without recursion.
+- Added trace IDs (UUID) and timestamps to all runtime operations.
+- Documented extension points in `docs/runtime-extension-points.md`.
+- Added `RuntimeActionsPage` example page at `/runtime-actions`.
+
+
 ## Version 0.7.0 - 16/05/2026
 
 - Updated the Maven project version to `0.7.0-SNAPSHOT`.

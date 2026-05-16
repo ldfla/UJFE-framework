@@ -10,7 +10,11 @@ import java.util.Objects;
 public final class PageRenderer {
     public Node render(RouteDefinition route) {
         Objects.requireNonNull(route, "route");
-        Object page = route.createPage();
+        return render(route.createPage());
+    }
+
+    public Node render(Object page) {
+        Objects.requireNonNull(page, "page");
         if (page instanceof Component) {
             return ((Component) page).render();
         }

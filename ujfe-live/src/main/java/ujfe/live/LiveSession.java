@@ -10,9 +10,21 @@ import ujfe.html.CssTheme;
 import ujfe.router.PageRenderer;
 import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
+import ujfe.runtime.action.LiveEventContext;
+import ujfe.runtime.action.LiveEventResult;
+import ujfe.runtime.action.RenderContext;
+import ujfe.runtime.action.RenderResult;
+import ujfe.runtime.action.RuntimeActionRegistry;
+import ujfe.runtime.action.RuntimeErrorContext;
+import ujfe.runtime.action.RuntimePhase;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 public final class LiveSession {
@@ -21,6 +33,7 @@ public final class LiveSession {
     private final LiveEventRegistry eventRegistry;
     private final LiveComponentRenderer componentRenderer;
     private final LiveSessionConfig config;
+    private final RuntimeActionRegistry runtimeActions;
     private String currentPath = "/";
     private ClientState clientState = ClientState.empty();
 
@@ -83,6 +96,7 @@ public final class LiveSession {
         this.pageRenderer = Objects.requireNonNull(pageRenderer, "pageRenderer");
         this.eventRegistry = Objects.requireNonNull(eventRegistry, "eventRegistry");
         this.config = Objects.requireNonNull(config, "config");
+        this.runtimeActions = config.runtimeActions();
         this.componentRenderer = new LiveComponentRenderer(
                 eventRegistry,
                 ElementIdGenerator.sequential(),
@@ -92,17 +106,72 @@ public final class LiveSession {
     }
 
     public synchronized LiveRenderResult renderPath(String path) {
-        RouteDefinition route = router.resolve(path)
-                .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
-        LiveRenderResult result = componentRenderer.render(() -> pageRenderer.render(route), clientState);
-        currentPath = route.path();
+        String traceId = nextTraceId();
+        Instant start = Instant.now();
+        RouteDefinition route;
+        Object page;
+
+        try {
+            route = router.resolve(path)
+                    .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
+            page = route.createPage();
+        } catch (Exception exception) {
+            runtimeActions.executeOnError(new RuntimeErrorContext(
+                    exception, RuntimePhase.RENDER, path, null, traceId, null));
+            throw exception;
+        }
+
+        RenderContext renderContext = new RenderContext(
+                route.path(), page, this, Map.of(), clientState, start, traceId, Map.of());
+        runtimeActions.executeBeforeRender(renderContext);
+
+        LiveRenderResult result;
+        try {
+            result = componentRenderer.render(() -> pageRenderer.render(page), clientState);
+            currentPath = route.path();
+        } catch (Exception exception) {
+            runtimeActions.executeOnError(new RuntimeErrorContext(
+                    exception, RuntimePhase.RENDER, route.path(), null, traceId, null));
+            throw exception;
+        }
+
+        Duration duration = Duration.between(start, Instant.now());
+        RenderResult renderResult = new RenderResult(
+                result.html(), result.css(), currentPath, duration, traceId,
+                config.headNodes(), Map.of(), Map.of(), Map.of());
+        runtimeActions.executeAfterRender(renderResult);
+
         return result;
     }
 
     public synchronized LiveRenderResult handleEvent(String eventId, ClientState nextClientState) {
-        mergeClientState(nextClientState);
-        componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId));
-        return renderPath(currentPath);
+        String traceId = nextTraceId();
+        Instant start = Instant.now();
+
+        ClientState eventClientState = clientState.mergeCookiesAndReplaceLocalStorage(nextClientState);
+
+        LiveEventContext eventContext = new LiveEventContext(
+                eventId, "live", this, Map.of(), eventClientState, null, Map.of(), traceId, Map.of());
+        runtimeActions.executeBeforeEvent(eventContext);
+
+        LiveRenderResult result;
+        try {
+            clientState = eventClientState;
+            componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId));
+            result = renderPath(currentPath);
+        } catch (Exception exception) {
+            runtimeActions.executeOnError(new RuntimeErrorContext(
+                    exception, RuntimePhase.EVENT, currentPath, eventId, traceId, null));
+            throw exception;
+        }
+
+        Duration duration = Duration.between(start, Instant.now());
+        LiveEventResult eventResult = new LiveEventResult(
+                result.html(), eventId, duration, traceId,
+                Map.of("eventType", "live"), Map.of("path", currentPath), clientStateMetadata(), Map.of());
+        runtimeActions.executeAfterEvent(eventResult);
+
+        return result;
     }
 
     public synchronized LiveRenderResult updateClientState(ClientState nextClientState) {
@@ -120,6 +189,7 @@ public final class LiveSession {
                 + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
                 + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
                 + renderHeadNodes()
+                + renderActionHeadContributions()
                 + renderInternalCss(result.css())
                 + "</head>"
                 + "<body>"
@@ -151,10 +221,34 @@ public final class LiveSession {
         return html.toString();
     }
 
+    private String renderActionHeadContributions() {
+        List<Node> contributions = runtimeActions.executeHeadContributions();
+        if (contributions.isEmpty()) {
+            return "";
+        }
+        UjfeContext context = UjfeContext.create();
+        StringBuilder html = new StringBuilder();
+        for (Node node : contributions) {
+            html.append(node.render(context));
+        }
+        return html.toString();
+    }
+
     private String renderInternalCss(String css) {
         if (config.cssMode() == CssMode.EXTERNAL) {
             return "";
         }
         return "<style data-ujfe-css>" + css + "</style>";
+    }
+
+    private Map<String, Object> clientStateMetadata() {
+        return Map.of(
+                "cookies", clientState.cookies(),
+                "localStorage", clientState.localStorage()
+        );
+    }
+
+    private static String nextTraceId() {
+        return UUID.randomUUID().toString();
     }
 }

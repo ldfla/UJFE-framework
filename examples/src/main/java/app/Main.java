@@ -2,11 +2,13 @@ package app;
 
 import app.pages.DocumentationPage;
 import app.pages.MainPage;
+import app.pages.RuntimeActionsPage;
 import ujfe.http.UjfeServer;
 import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
 import ujfe.router.Router;
+import ujfe.runtime.action.RuntimeActionRegistry;
 
 public final class Main {
     private Main() {
@@ -14,15 +16,20 @@ public final class Main {
 
     public static void main(String[] args) throws InterruptedException {
         var appTheme = new AppTheme();
+        var runtimeActionsPage = new RuntimeActionsPage();
         var router = new Router()
                 .register(new MainPage())
-                .register(new DocumentationPage(appTheme));
+                .register(new DocumentationPage(appTheme))
+                .register(runtimeActionsPage);
+
+        RuntimeActionRegistry actions = RuntimeActionsPage.sampleRegistry();
 
         var liveConfig = LiveSessionConfig.builder()
                 .themeSupplier(appTheme::cssTheme)
                 .devToolsEnabled(true)
                 .lang("en")
                 .title("UJFE Example")
+                .runtimeActions(actions)
                 .build();
         var liveSession = new LiveSession(router, liveConfig);
         var server = new UjfeServer(

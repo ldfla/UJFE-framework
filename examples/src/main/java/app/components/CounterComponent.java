@@ -13,16 +13,28 @@ public final class CounterComponent implements Component {
     @Override
     public Node render() {
         return div()
-                .css("rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm flex flex-col gap-3")
-                .child(h2("Counter live").css("text-2xl font-bold text-amber-800"))
-                .child(h3("Estado mantido no servidor").css("text-lg font-semibold text-slate-700"))
-                .child(p(() -> "Counter: " + count.get()).css("text-3xl font-bold text-slate-900"))
+                .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col justify-between gap-5")
                 .child(
-                        button("Incrementar")
-                                .css("px-4 py-2 rounded bg-blue-600 text-white font-semibold")
-                                .onClick(() -> count.update(value -> value + 1))
+                        div()
+                                .css("flex flex-col gap-2")
+                                .child(h2("Counter live").css("text-lg font-bold text-slate-900"))
+                                .child(p("Estado mantido no servidor por meio de arquitetura baseada em Signals.")
+                                        .css("text-xs text-slate-500 leading-relaxed"))
                 )
-                .child(p("O clique envia um POST para /_ujfe/event, executa o Runnable Java e re-renderiza este trecho.")
-                        .css("text-sm text-slate-700 leading-relaxed"));
+                .child(
+                        div()
+                                .css("py-4 text-center")
+                                .child(
+                                        p()
+                                                .css("text-5xl font-black text-slate-900 leading-none")
+                                                .child("Counter: ")
+                                                .child(span().child(() -> String.valueOf(count.get())).css("text-indigo-600"))
+                                )
+                )
+                .child(
+                        button("Incrementar via RPC")
+                                .css("w-full px-4 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
+                                .onClick(() -> count.update(value -> value + 1))
+                );
     }
 }

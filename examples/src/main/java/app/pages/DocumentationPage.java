@@ -40,6 +40,7 @@ public final class DocumentationPage implements Component {
                                                 .child(cssSection())
                                                 .child(springSection())
                                                 .child(securitySection())
+                                                .child(runtimeActionsSection())
                                                 .child(restSection())
                                                 .child(cliSection())
                                                 .child(devPreviewSection())
@@ -81,12 +82,13 @@ public final class DocumentationPage implements Component {
                         .child(ul()
                                 .css("flex flex-col gap-2 text-sm text-slate-700")
                                 .child(le().child(strong("Theme")).child(" with dynamic primary/secondary palettes"))
-                                .child(le().child(strong("Modern Java")).child(" with var, records, streams, switch expressions, and script-style source files"))
+                                .child(le().child(strong("Modern Java")).child(" with Java 11 classes, var, lambdas, and streams"))
                                 .child(le().child(strong("Elements")).child(" with API usage examples"))
                                 .child(le().child(strong("Forms")).child(" with inputs and events"))
                                 .child(le().child(strong("CSS")).child(" with utilities and color scales"))
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
                                 .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
+                                .child(le().child(strong("Runtime Actions")).child(" with server-side extension points for rendering, events, errors, and head contributions"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
                                 .child(le().child(strong("CLI")).child(" with HTML-to-UJFE conversion"))
                                 .child(le().child(strong("Dev Preview")).child(" with a visual inspector"))));
@@ -315,6 +317,28 @@ public final class DocumentationPage implements Component {
                 .child(codeBlock(securityCode()));
     }
 
+    private Node runtimeActionsSection() {
+        return section()
+                .css("rounded-lg border border-indigo-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .child(h2("Runtime extension points").css("text-2xl font-bold text-indigo-700"))
+                .child(p("Register server-side Java actions for rendering, live events, errors, and document head contributions without introducing Spring, Servlet, or Netty coupling into the core API.")
+                        .css("text-base text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(cssPill("Rendering", "beforeRender and afterRender"))
+                                .child(cssPill("Events", "beforeEvent and afterEvent"))
+                                .child(cssPill("Errors", "onError with runtime phase metadata"))
+                                .child(cssPill("Head", "ordered meta, link, style, script, and custom nodes"))
+                                .child(cssPill("Ordering", "ActionOrder preserves deterministic execution"))
+                                .child(cssPill("Runtime agnostic", "wired through LiveSessionConfig"))
+                )
+                .child(codeBlock(runtimeActionsCode()))
+                .child(a("Open runtime actions example")
+                        .attr("href", "/runtime-actions")
+                        .css("text-sm font-semibold text-indigo-700"));
+    }
+
     private Node restSection() {
         return section()
                 .css("rounded-lg border border-secondary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
@@ -509,39 +533,55 @@ public final class DocumentationPage implements Component {
     }
 
     private String modernJavaCode() {
-        return "// Demo.java - run with: java Demo.java\n"
-                + "import java.util.List;\n"
+        return "import java.util.List;\n"
+                + "import java.util.stream.Collectors;\n"
                 + "import ujfe.core.ClientState;\n"
                 + "import ujfe.core.Node;\n"
                 + "import ujfe.live.LiveSession;\n"
                 + "import ujfe.router.Router;\n"
                 + "import static ujfe.html.UI.*;\n\n"
-                + "record Metric(String label, int value, String status) {}\n\n"
-                + "record MetricsPage(List<Metric> metrics) {\n"
-                + "    public Node render() {\n"
-                + "        var rows = metrics.stream()\n"
-                + "            .map(metric -> tr()\n"
-                + "                .child(td(metric.label()))\n"
-                + "                .child(td(String.valueOf(metric.value())).css(switch (metric.status()) {\n"
-                + "                    case \"ok\" -> \"text-emerald-700\";\n"
-                + "                    case \"warn\" -> \"text-amber-700\";\n"
-                + "                    default -> \"text-slate-700\";\n"
-                + "                })))\n"
-                + "            .toList();\n\n"
-                + "        return table()\n"
-                + "            .child(caption(\"Metrics\"))\n"
-                + "            .child(thead().child(tr().child(th(\"Label\")).child(th(\"Value\"))))\n"
-                + "            .child(tbody().children(rows));\n"
+                + "public final class Demo {\n"
+                + "    static final class Metric {\n"
+                + "        private final String label;\n"
+                + "        private final int value;\n"
+                + "        private final String status;\n\n"
+                + "        Metric(String label, int value, String status) {\n"
+                + "            this.label = label;\n"
+                + "            this.value = value;\n"
+                + "            this.status = status;\n"
+                + "        }\n"
+                + "    }\n\n"
+                + "    static final class MetricsPage {\n"
+                + "        private final List<Metric> metrics;\n\n"
+                + "        MetricsPage(List<Metric> metrics) {\n"
+                + "            this.metrics = metrics;\n"
+                + "        }\n\n"
+                + "        public Node render() {\n"
+                + "            var rows = metrics.stream()\n"
+                + "                .map(metric -> tr()\n"
+                + "                    .child(td(metric.label))\n"
+                + "                    .child(td(String.valueOf(metric.value)).css(tone(metric.status))))\n"
+                + "                .collect(Collectors.toList());\n\n"
+                + "            return table()\n"
+                + "                .child(caption(\"Metrics\"))\n"
+                + "                .child(thead().child(tr().child(th(\"Label\")).child(th(\"Value\"))))\n"
+                + "                .child(tbody().children(rows));\n"
+                + "        }\n"
+                + "    }\n\n"
+                + "    public static void main(String[] args) {\n"
+                + "        var metrics = List.of(\n"
+                + "            new Metric(\"Users\", 42, \"ok\"),\n"
+                + "            new Metric(\"Errors\", 2, \"warn\")\n"
+                + "        );\n\n"
+                + "        var router = new Router().register(\"/\", () -> new MetricsPage(metrics));\n"
+                + "        var liveSession = new LiveSession(router);\n"
+                + "        System.out.println(liveSession.renderDocument(\"/\", ClientState.empty()));\n"
+                + "    }\n\n"
+                + "    private static String tone(String status) {\n"
+                + "        if (\"ok\".equals(status)) return \"text-emerald-700\";\n"
+                + "        if (\"warn\".equals(status)) return \"text-amber-700\";\n"
+                + "        return \"text-slate-700\";\n"
                 + "    }\n"
-                + "}\n\n"
-                + "void main() {\n"
-                + "    var metrics = List.of(\n"
-                + "        new Metric(\"Users\", 42, \"ok\"),\n"
-                + "        new Metric(\"Errors\", 2, \"warn\")\n"
-                + "    );\n\n"
-                + "    var router = new Router().register(\"/\", () -> new MetricsPage(metrics));\n"
-                + "    var liveSession = new LiveSession(router);\n"
-                + "    System.out.println(liveSession.renderDocument(\"/\", ClientState.empty()));\n"
                 + "}\n";
     }
 
@@ -580,23 +620,30 @@ public final class DocumentationPage implements Component {
     }
 
     private String modernHtmlCode() {
-        return "record Metric(String name, int value, String status) {}\n\n"
+        return "final class Metric {\n"
+                + "    final String name;\n"
+                + "    final int value;\n"
+                + "    final String status;\n\n"
+                + "    Metric(String name, int value, String status) {\n"
+                + "        this.name = name;\n"
+                + "        this.value = value;\n"
+                + "        this.status = status;\n"
+                + "    }\n"
+                + "}\n\n"
                 + "var metrics = List.of(\n"
                 + "    new Metric(\"Users\", 42, \"ok\"),\n"
                 + "    new Metric(\"Errors\", 2, \"warn\")\n"
                 + ");\n\n"
                 + "var rows = metrics.stream()\n"
                 + "    .map(metric -> {\n"
-                + "        var tone = switch (metric.status()) {\n"
-                + "            case \"ok\" -> \"text-emerald-700\";\n"
-                + "            case \"warn\" -> \"text-amber-700\";\n"
-                + "            default -> \"text-slate-700\";\n"
-                + "        };\n"
+                + "        var tone = \"text-slate-700\";\n"
+                + "        if (\"ok\".equals(metric.status)) tone = \"text-emerald-700\";\n"
+                + "        if (\"warn\".equals(metric.status)) tone = \"text-amber-700\";\n"
                 + "        return tr()\n"
-                + "            .child(td(metric.name()))\n"
-                + "            .child(td(String.valueOf(metric.value())).css(tone));\n"
+                + "            .child(td(metric.name))\n"
+                + "            .child(td(String.valueOf(metric.value)).css(tone));\n"
                 + "    })\n"
-                + "    .toList();\n\n"
+                + "    .collect(Collectors.toList());\n\n"
                 + "details().attr(\"open\", true)\n"
                 + "    .child(summary(\"More\"))\n"
                 + "    .child(p(\"Native content.\"))\n\n"
@@ -723,16 +770,39 @@ public final class DocumentationPage implements Component {
                 + "// Referrer-Policy, Permissions-Policy, and frame-ancestors.\n";
     }
 
+    private String runtimeActionsCode() {
+        return "RuntimeActionRegistry registry = RuntimeActionRegistry.builder()\n"
+                + "    .beforeRender(ctx -> log(\"render \" + ctx.path()))\n"
+                + "    .afterRender(result -> metrics(result.renderDuration()))\n"
+                + "    .beforeEvent(ctx -> authorize(ctx.clientState()))\n"
+                + "    .afterEvent(result -> audit(result.eventId()))\n"
+                + "    .onError(error -> log(error.phase(), error.exception()))\n"
+                + "    .contributeHead(head -> head.add(\n"
+                + "        meta().attr(\"name\", \"robots\")\n"
+                + "              .attr(\"content\", \"index,follow\")))\n"
+                + "    .build();\n\n"
+                + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
+                + "    .runtimeActions(registry)\n"
+                + "    .build();\n";
+    }
+
     private String restCode() {
         return "var client = RestClient.create();\n"
                 + "var response = client\n"
                 + "    .get(\"https://brasilapi.com.br/api/banks/v1\")\n"
                 + "    .requireSuccessful();\n\n"
-                + "record Bank(String label, String selectValue) {}\n"
+                + "final class Bank {\n"
+                + "    final String label;\n"
+                + "    final String selectValue;\n\n"
+                + "    Bank(String label, String selectValue) {\n"
+                + "        this.label = label;\n"
+                + "        this.selectValue = selectValue;\n"
+                + "    }\n"
+                + "}\n\n"
                 + "var banks = parseBanks(response.body());\n\n"
                 + "select().children(banks.stream()\n"
-                + "    .map(bank -> option(bank.label()).value(bank.selectValue()))\n"
-                + "    .toList());\n";
+                + "    .map(bank -> option(bank.label).value(bank.selectValue))\n"
+                + "    .collect(Collectors.toList()));\n";
     }
 
     private String cliCommandCode() {

@@ -44,6 +44,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Unsafe HTML escape hatch](docs/security/unsafe-html.md)
 - [Attribute validation](docs/security/attribute-validation.md)
 - [Safe URL policy](docs/security/safe-url.md)
+- [Runtime extension points](docs/runtime-extension-points.md)
 
 ## Modules
 
@@ -418,6 +419,7 @@ The public API is documented in English so the project can be used globally. The
 - `ujfe.spring`: Spring Boot/MVC adapter that serves UJFE routes through the same DispatcherServlet/Tomcat port as the application.
 - `ujfe.signals.Signal` and `Signals`: mutable and computed state primitives for live server-rendered components.
 - `ujfe.core.RestClient` and `RestResponse`: small Java HttpClient wrapper for server-side API calls.
+- `ujfe.runtime.action.RuntimeActionRegistry` and `RuntimeActionRegistryBuilder`: server-side runtime extension point registry. Register `BeforeRenderAction`, `AfterRenderAction`, `BeforeEventAction`, `AfterEventAction`, `ErrorAction`, and `HeadContributionAction` through the builder. Inject via `LiveSessionConfig.builder().runtimeActions(registry)`. Actions are ordered by `ActionOrder` priority.
 - `ujfe.cli.UjfeCli`: command-line entry point, including HTML-to-UJFE conversion.
 
 ## Documentation Pattern
@@ -449,6 +451,9 @@ Use the example documentation route as the preferred structure for framework doc
 - Boolean attributes can be written as `.attr("required", true)` or through optional sugar such as `.required(true)`.
 - In internal CSS mode, classes used during rendering are collected and rendered into a minimal stylesheet.
 - In external CSS mode, UJFE does not inject its internal stylesheet and regular `<link rel="stylesheet">` nodes can be configured in the document head.
+- Server-side runtime extension points (`RuntimeActionRegistry`) allow applications to participate in rendering, event processing, error handling, and head contribution without modifying the core framework.
+- Extension point actions execute deterministically by `ActionOrder` priority; equal priorities preserve registration order.
+- The registry is immutable and thread-safe; wired through `LiveSessionConfig.builder().runtimeActions(registry)`.
 - The example app enables live dev tooling through `LiveSessionConfig`.
 
 ## Spring Initializr Project Setup
@@ -498,7 +503,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.7.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.8.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -506,7 +511,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.7.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.8.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>

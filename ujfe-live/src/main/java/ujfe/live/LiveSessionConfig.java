@@ -2,11 +2,11 @@ package ujfe.live;
 
 import ujfe.core.Node;
 import ujfe.html.CssTheme;
+import ujfe.runtime.action.RuntimeActionRegistry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -20,6 +20,7 @@ public final class LiveSessionConfig {
     private final String lang;
     private final String title;
     private final List<Node> headNodes;
+    private final RuntimeActionRegistry runtimeActions;
 
     private LiveSessionConfig(Builder builder) {
         this.themeSupplier = builder.themeSupplier;
@@ -28,6 +29,7 @@ public final class LiveSessionConfig {
         this.lang = builder.lang;
         this.title = builder.title;
         this.headNodes = List.copyOf(builder.headNodes);
+        this.runtimeActions = builder.runtimeActions;
     }
 
     public static LiveSessionConfig defaults() {
@@ -59,7 +61,11 @@ public final class LiveSessionConfig {
     }
 
     List<Node> headNodes() {
-        return Collections.unmodifiableList(headNodes);
+        return headNodes;
+    }
+
+    public RuntimeActionRegistry runtimeActions() {
+        return runtimeActions;
     }
 
     public static final class Builder {
@@ -69,6 +75,7 @@ public final class LiveSessionConfig {
         private String lang = "en";
         private String title = "UJFE";
         private final List<Node> headNodes = new ArrayList<>();
+        private RuntimeActionRegistry runtimeActions = RuntimeActionRegistry.empty();
 
         private Builder() {
         }
@@ -106,6 +113,11 @@ public final class LiveSessionConfig {
         public Builder head(Collection<? extends Node> nodes) {
             Objects.requireNonNull(nodes, "nodes");
             nodes.forEach(node -> headNodes.add(Objects.requireNonNull(node, "node")));
+            return this;
+        }
+
+        public Builder runtimeActions(RuntimeActionRegistry runtimeActions) {
+            this.runtimeActions = Objects.requireNonNull(runtimeActions, "runtimeActions");
             return this;
         }
 
