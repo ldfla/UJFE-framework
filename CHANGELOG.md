@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## Version 0.5.0 - 16/05/2026
+
+- Updated the Maven project version to `0.5.0-SNAPSHOT`.
+- Added the explicit unsafe raw HTML APIs `unsafeHtml(...)` and `UnsafeHtml.of(...)`.
+- Documented the XSS risk and acceptable use cases for trusted raw HTML rendering.
+- Added tests proving safe text remains escaped and unsafe HTML renders raw content only through unsafe-named APIs.
+- Refined the example documentation page with stronger security guidance and a cleaner visual structure.
+
 ## Version 0.4.0 - 16/05/2026
 
 - Updated the Maven project version to `0.4.0-SNAPSHOT`.

@@ -27,11 +27,11 @@ public final class DocumentationPage implements Component {
                 .child(topBar())
                 .child(
                         div()
-                                .css("max-w-7xl mx-auto p-4 docs-grid gap-4")
+                                .css("max-w-7xl mx-auto p-6 docs-grid gap-6")
                                 .child(sidebar())
                                 .child(
                                         main()
-                                                .css("min-w-0 flex flex-col gap-4")
+                                                .css("min-w-0 flex flex-col gap-6")
                                                 .child(introSection())
                                                 .child(modernJavaSection())
                                                 .child(themeSection())
@@ -52,12 +52,14 @@ public final class DocumentationPage implements Component {
                 .css("border-b border-primary-200 bg-white")
                 .child(
                         div()
-                                .css("max-w-7xl mx-auto p-4 flex items-center justify-between gap-4")
+                                .css("max-w-7xl mx-auto p-6 flex items-center justify-between gap-4")
                                 .child(
                                         div()
                                                 .css("flex flex-col gap-1")
                                                 .child(span("UJFE Docs").css("text-sm font-bold text-primary-700"))
-                                                .child(h1("DSL Documentation").css("text-3xl font-bold"))
+                                                .child(h1("HTML, live UI, and security reference").css("text-3xl font-bold"))
+                                                .child(p("A compact reference for building server-rendered interfaces with safe defaults.")
+                                                        .css("text-sm text-slate-600"))
                                 )
                                 .child(
                                         nav()
@@ -70,11 +72,11 @@ public final class DocumentationPage implements Component {
 
     private Node sidebar() {
         return aside()
-                .css("rounded-lg border border-primary-200 bg-primary-50 p-4 shadow-sm")
+                .css("rounded-lg border border-slate-200 bg-white p-4 shadow-sm")
                 .child(nav()
                         .css("flex flex-col gap-3")
-                        .child(h2("Map").css("text-xl font-bold text-primary-700"))
-                        .child(p("Visual API reference for elements, forms, internal/external CSS, Spring MVC, and REST usage.")
+                        .child(h2("Documentation map").css("text-xl font-bold text-primary-700"))
+                        .child(p("Visual API reference for elements, forms, CSS, integrations, and security behavior.")
                                 .css("text-sm text-slate-700 leading-relaxed"))
                         .child(ul()
                                 .css("flex flex-col gap-2 text-sm text-slate-700")
@@ -84,7 +86,7 @@ public final class DocumentationPage implements Component {
                                 .child(le().child(strong("Forms")).child(" with inputs and events"))
                                 .child(le().child(strong("CSS")).child(" with utilities and color scales"))
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
-                                .child(le().child(strong("Security")).child(" with escaping, safe URLs, and headers"))
+                                .child(le().child(strong("Security")).child(" with escaping, safe URLs, raw HTML boundaries, and headers"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
                                 .child(le().child(strong("CLI")).child(" with HTML-to-UJFE conversion"))
                                 .child(le().child(strong("Dev Preview")).child(" with a visual inspector"))));
@@ -92,10 +94,17 @@ public final class DocumentationPage implements Component {
 
     private Node introSection() {
         return section()
-                .css("rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-3")
-                .child(h2("How to read this page").css("text-2xl font-bold"))
+                .css("rounded-lg border border-primary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .child(h2("How to read this page").css("text-2xl font-bold text-primary-700"))
                 .child(p("Each block shows the rendered result and the equivalent Java code. The DSL uses Element.of(...) as universal support for HTML and Web Components, Element.svg(...) and Element.mathMl(...) for namespaced generic tags, helpers as convenience methods, and generic attributes through attr(...).")
                         .css("text-base text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(cssPill("Safe default", "text and attributes are escaped"))
+                                .child(cssPill("Standards first", "real HTML, SVG, MathML, and custom elements"))
+                                .child(cssPill("Unsafe boundary", "raw HTML requires unsafeHtml(...)"))
+                )
                 .child(codeBlock(factoryIndex()));
     }
 
@@ -261,16 +270,36 @@ public final class DocumentationPage implements Component {
 
     private Node securitySection() {
         return section()
-                .css("rounded-lg border border-rose-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .css("rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm flex flex-col gap-4")
                 .child(h2("Security by default").css("text-2xl font-bold text-rose-700"))
-                .child(p("Text and attributes are escaped during SSR. URL attributes such as href, src, action, and poster reject dangerous protocols before rendering.")
+                .child(p("Text and attributes are escaped during SSR. URL attributes such as href, src, action, and poster reject dangerous protocols before rendering. Trusted raw HTML has a deliberately unsafe name so security review can find it.")
                         .css("text-base text-slate-700 leading-relaxed"))
                 .child(
                         div()
                                 .css("grid grid-cols-3 gap-3")
                                 .child(cssPill("A03 Injection", "HTML/attribute escaping and safe URLs"))
                                 .child(cssPill("A05 Misconfiguration", "CSP, nosniff, frame-ancestors"))
-                                .child(cssPill("A01 Access Control", "opaque eventId and server-side handlers"))
+                                .child(cssPill("Unsafe raw HTML", "only unsafeHtml(...) bypasses escaping"))
+                )
+                .child(
+                        div()
+                                .css("grid grid-cols-2 gap-3")
+                                .child(
+                                        div()
+                                                .css("rounded-lg border border-emerald-200 bg-white p-4 flex flex-col gap-2")
+                                                .child(h3("Escaped path").css("text-lg font-bold text-emerald-700"))
+                                                .child(p("Use normal text and element helpers for application UI, user content, and request data.")
+                                                        .css("text-sm text-slate-700 leading-relaxed"))
+                                                .child(codeBlock("p(\"<script>\")\n// <p>&lt;script&gt;</p>\n"))
+                                )
+                                .child(
+                                        div()
+                                                .css("rounded-lg border border-rose-200 bg-white p-4 flex flex-col gap-2")
+                                                .child(h3("Unsafe path").css("text-lg font-bold text-rose-700"))
+                                                .child(p("Use only for trusted, pre-sanitized fragments where escaping would be incorrect.")
+                                                        .css("text-sm text-slate-700 leading-relaxed"))
+                                                .child(codeBlock("unsafeHtml(\"<strong>trusted</strong>\")\n// <strong>trusted</strong>\n"))
+                                )
                 )
                 .child(codeBlock(securityCode()));
     }
@@ -322,8 +351,8 @@ public final class DocumentationPage implements Component {
 
     private Node docCard(String title, String description, String code, Node preview) {
         return div()
-                .css("rounded-lg border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-3")
-                .child(h3(title).css("text-xl font-bold"))
+                .css("rounded-lg border border-slate-200 bg-white p-5 shadow-sm flex flex-col gap-3")
+                .child(h3(title).css("text-xl font-bold text-primary-700"))
                 .child(p(description).css("text-sm text-slate-700 leading-relaxed"))
                 .child(div().css("rounded-md border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2").child(preview))
                 .child(codeBlock(code));
@@ -419,6 +448,10 @@ public final class DocumentationPage implements Component {
     private String factoryIndex() {
         return "import ujfe.html.Element;\n\n"
                 + "import static ujfe.html.UI.*;\n\n"
+                + "// Safe by default: text content is escaped.\n"
+                + "p(\"<script>\")\n\n"
+                + "// Explicit unsafe escape hatch for trusted, pre-sanitized HTML only.\n"
+                + "unsafeHtml(\"<p>Trusted HTML</p>\")\n\n"
                 + "// Generic core: supports current tags, future tags, custom elements, and Web Components.\n"
                 + "Element.of(\"dialog\").attr(\"open\", true)\n"
                 + "Element.of(\"future-html-element\").attr(\"data-ready\", true)\n"
@@ -648,6 +681,11 @@ public final class DocumentationPage implements Component {
         return "a(\"Safe\").href(\"https://example.com\")\n"
                 + "img().src(\"data:image/png;base64,...\").alt(\"Preview\")\n"
                 + "div().title(\"Title\").ariaLabel(\"Region\").data(\"test-id\", \"hero\")\n\n"
+                + "// Safe text remains escaped:\n"
+                + "p(\"<script>\") // renders &lt;script&gt;\n\n"
+                + "// Trusted raw HTML must be explicit and reviewed:\n"
+                + "unsafeHtml(\"<strong>Trusted fragment</strong>\")\n"
+                + "UnsafeHtml.of(\"<p>Trusted CMS block</p>\")\n\n"
                 + "// Rejected before rendering:\n"
                 + "a(\"XSS\").href(\"javascript:alert(1)\")\n\n"
                 + "// The server also emits headers such as CSP, nosniff,\n"

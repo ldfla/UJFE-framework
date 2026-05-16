@@ -18,6 +18,22 @@ final class ElementRenderingTest {
     }
 
     @Test
+    void rendersTextConvenienceHelpersDirectly() {
+        assertEquals("<main></main>", main().render());
+        assertEquals("<address>Contact</address>", address("Contact").render());
+        assertEquals("<h4>Level 4</h4>", h4("Level 4").render());
+        assertEquals("<h5>Level 5</h5>", h5("Level 5").render());
+        assertEquals("<h6>Level 6</h6>", h6("Level 6").render());
+        assertEquals("<small>Fine print</small>", small("Fine print").render());
+        assertEquals("<mark>Highlighted</mark>", mark("Highlighted").render());
+        assertEquals("<abbr>HTML</abbr>", abbr("HTML").render());
+        assertEquals("<cite>Reference</cite>", cite("Reference").render());
+        assertEquals("<blockquote>Quoted block</blockquote>", blockquote("Quoted block").render());
+        assertEquals("<q>Inline quote</q>", q("Inline quote").render());
+        assertEquals("<dt>Term</dt>", dt("Term").render());
+    }
+
+    @Test
     void rendersAttributesClassesAndChildren() {
         String html = div()
                 .css("p-4 flex gap-2")

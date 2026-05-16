@@ -23,6 +23,17 @@ public final class UI {
         return new TextNode(valueSupplier);
     }
 
+    /**
+     * Renders trusted raw HTML without escaping.
+     *
+     * <p>This is an intentionally unsafe escape hatch. Rendering untrusted or
+     * user-controlled input through this helper can create XSS vulnerabilities.
+     * Use normal text nodes and element helpers for ordinary page construction.</p>
+     */
+    public static UnsafeHtml unsafeHtml(String html) {
+        return UnsafeHtml.of(html);
+    }
+
     public static Element html(Node... children) {
         Element html = element("html");
         Arrays.stream(children).forEach(html::child);
@@ -105,6 +116,7 @@ public final class UI {
         return element("header");
     }
 
+    @SuppressWarnings("ConfusingMainMethod")
     public static Element main() {
         return element("main");
     }
