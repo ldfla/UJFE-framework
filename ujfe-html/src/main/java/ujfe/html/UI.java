@@ -3,6 +3,14 @@ package ujfe.html;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+/**
+ * Public factory API for standard HTML helper methods.
+ *
+ * <p>These helpers are optional syntax sugar over {@link Element#of(String)} or
+ * an equivalent namespace-aware factory. They must not be treated as a whitelist:
+ * applications can always use {@link #element(String)} or {@link Element#of(String)}
+ * for current, custom, or future elements that do not have a dedicated helper.</p>
+ */
 public final class UI {
     private UI() {
     }

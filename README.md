@@ -37,6 +37,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Vision](docs/vision.md)
 - [Principles](docs/principles.md)
 - [Generic HTML elements](docs/html/generic-elements.md)
+- [Standard HTML helpers](docs/html/helpers.md)
 
 ## Modules
 
@@ -149,6 +150,17 @@ Element.of("math")
 ```
 
 Current helpers include document tags (`html`, `head`, `body`, `title`, `meta`, `link`, `style`, `script`, `base`), semantic/layout tags, text tags, grouping tags, lists, media and embedded tags (`img`, `picture`, `source`, `track`, `audio`, `video`, `canvas`, `svg`, `map`, `area`, `iframe`, `object`, `embed`, `param`), table tags (`table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th`, `caption`, `colgroup`, `col`), form tags, `details`, `summary`, `dialog`, `template`, `slot`, and `math`.
+
+| Group | Helpers |
+| --- | --- |
+| Document structure | `html()`, `head()`, `body()`, `title()`, `meta()`, `link()`, `style()`, `script()`, `base()` |
+| Semantic layout | `main()`, `section()`, `article()`, `aside()`, `header()`, `footer()`, `nav()`, `address()` |
+| Text | `h1()`-`h6()`, `p()`, `span()`, `strong()`, `em()`, `small()`, `mark()`, `abbr()`, `cite()`, `code()`, `pre()`, `blockquote()`, `q()`, `br()`, `hr()` |
+| Grouping and lists | `div()`, `figure()`, `figcaption()`, `details()`, `summary()`, `dialog()`, `ul()`, `ol()`, `li()`, `dl()`, `dt()`, `dd()` |
+| Navigation, media, and embedded content | `a()`, `img()`, `picture()`, `source()`, `audio()`, `video()`, `track()`, `canvas()`, `svg()`, `map()`, `area()`, `iframe()`, `embed()`, `object()`, `param()` |
+| Tables | `table()`, `thead()`, `tbody()`, `tfoot()`, `tr()`, `td()`, `th()`, `caption()`, `colgroup()`, `col()` |
+| Forms | `form()`, `input()`, `textarea()`, `button()`, `select()`, `option()`, `optgroup()`, `label()`, `fieldset()`, `legend()`, `datalist()`, `output()`, `progress()`, `meter()` |
+| Templates and Web Components | `template()`, `slot()` |
 
 ## Modern Java Examples
 
@@ -459,7 +471,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.2.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.3.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -467,7 +479,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.2.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.3.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>
