@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## Version 0.2.0 - 16/05/2024
+
+- Updated the Maven project version to `0.2.0-SNAPSHOT`.
+- Added centralized HTML tag-name validation for `Element.of(...)`.
+- Added generic SVG and MathML namespace factories through `Element.svg(...)` and `Element.mathMl(...)`.
+- Documented generic element compatibility for current HTML, future HTML, custom elements, Web Components, SVG, and MathML.
+
+## Version 0.1.0 - 16/05/2024
 - Consolidated the UJFE project identity around the tagline "Modern Reactive UI Framework for the JVM".
 - Documented UJFE's core principles: HTML-first, standards-first, Java-first, server-first, safe by default, CSS agnostic, and no required Node.js toolchain.
 - Documented UJFE's non-goals in the README, vision, and principles documentation.

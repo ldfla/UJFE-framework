@@ -36,6 +36,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 
 - [Vision](docs/vision.md)
 - [Principles](docs/principles.md)
+- [Generic HTML elements](docs/html/generic-elements.md)
 
 ## Modules
 
@@ -113,7 +114,7 @@ public final class HomePage {
 
 ## HTML DSL Principles
 
-`Element.of("tag-name")` is the architectural source of HTML support. Helpers such as `div()`, `section()`, `dialog()`, `table()`, `template()`, and `slot()` are convenience methods only.
+`Element.of("tag-name")` is the architectural source of HTML support. Helpers such as `div()`, `section()`, `dialog()`, `table()`, `template()`, `svg()`, and `math()` are convenience methods only.
 
 ```java
 section()
@@ -121,15 +122,33 @@ section()
         .child(Element.of("dialog")
                 .attr("open", true)
                 .child(p("Example")))
+        .child(Element.of("future-html-element")
+                .attr("data-ready", true))
+        .child(Element.of("my-card")
+                .attr("data-state", "ready")
+                .child("Custom element"))
         .child(input()
                 .attr("type", "text")
                 .attr("placeholder", "Name")
                 .attr("required", true));
 ```
 
-The DSL validates element and attribute names for safe rendering, but it does not maintain a whitelist of supported HTML tags. New HTML tags and custom elements can be rendered through `Element.of(...)` or `element(...)`.
+The DSL validates element and attribute names for safe rendering, but it does not maintain a whitelist of supported HTML tags. New HTML tags, custom elements, and Web Components can be rendered through `Element.of(...)` or `element(...)`. Invalid tag names such as `""`, `" "`, `"<script>"`, and `"div onclick=alert(1)"` are rejected before rendering.
 
-Current helpers include document tags (`html`, `head`, `body`, `title`, `meta`, `link`, `style`, `script`, `base`), semantic/layout tags, text tags, grouping tags, lists, media and embedded tags (`img`, `picture`, `source`, `track`, `audio`, `video`, `canvas`, `svg`, `map`, `area`, `iframe`, `object`, `embed`, `param`), table tags (`table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th`, `caption`, `colgroup`, `col`), form tags, `details`, `summary`, `dialog`, `template`, and `slot`.
+SVG and MathML have controlled namespace factories for generic tags:
+
+```java
+Element.of("svg")
+        .attr("viewBox", "0 0 10 10")
+        .child(Element.svg("path").attr("d", "M0 0h10v10H0z"));
+
+Element.of("math")
+        .child(Element.mathMl("mi").child("x"))
+        .child(Element.mathMl("mo").child("="))
+        .child(Element.mathMl("mn").child("1"));
+```
+
+Current helpers include document tags (`html`, `head`, `body`, `title`, `meta`, `link`, `style`, `script`, `base`), semantic/layout tags, text tags, grouping tags, lists, media and embedded tags (`img`, `picture`, `source`, `track`, `audio`, `video`, `canvas`, `svg`, `map`, `area`, `iframe`, `object`, `embed`, `param`), table tags (`table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th`, `caption`, `colgroup`, `col`), form tags, `details`, `summary`, `dialog`, `template`, `slot`, and `math`.
 
 ## Modern Java Examples
 
@@ -358,7 +377,7 @@ LiveSession liveSession = new LiveSession(router, config);
 
 The public API is documented in English so the project can be used globally. The high-level surface is intentionally small:
 
-- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`.
+- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag, `Element.svg(tagName)` for SVG descendants, and `Element.mathMl(tagName)` for MathML descendants. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`.
 - `ujfe.html.UI`: optional helper factories for official HTML tags. Helpers delegate to `Element.of(...)`; they are convenience methods, not the source of HTML support.
 - `ujfe.live.LiveSessionConfig`: document-level runtime configuration for language, title, head nodes, CSS mode, theme supplier, and dev tools.
 - `ujfe.live.CssMode`: `INTERNAL` generates UJFE's server-side utility stylesheet; `EXTERNAL` disables it so teams can use Tailwind, Bootstrap, CSS files, CSS Modules, or enterprise design systems.
@@ -384,7 +403,9 @@ Use the example documentation route as the preferred structure for framework doc
 - Text nodes and attributes are escaped during server-side rendering.
 - URL attributes such as `href`, `src`, `action`, and `poster` are sanitized.
 - Live event handlers are registered server-side and rendered as opaque event ids.
-- `Element.of(...)` and `element(...)` support any valid HTML/custom tag name without a framework release.
+- `Element.of(...)` and `element(...)` support any valid current or future HTML tag name without a framework release.
+- Custom elements and Web Components can be rendered through `Element.of("my-card")`; `Element.custom(...)` is available when the hyphen rule should be explicit.
+- SVG and MathML generic descendants can be created with `Element.svg(...)` and `Element.mathMl(...)`.
 - Helpers cover common modern HTML tags and delegate to the generic element core.
 - Boolean attributes can be written as `.attr("required", true)` or through optional sugar such as `.required(true)`.
 - In internal CSS mode, classes used during rendering are collected and rendered into a minimal stylesheet.
@@ -438,7 +459,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.1.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.2.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -446,7 +467,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.1.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.2.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>

@@ -326,7 +326,11 @@ public final class UI {
     }
 
     public static Element svg() {
-        return element("svg");
+        return Element.svg("svg");
+    }
+
+    public static Element math() {
+        return Element.mathMl("math");
     }
 
     public static Element map() {

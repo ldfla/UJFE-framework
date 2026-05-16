@@ -92,7 +92,7 @@ public final class DocumentationPage {
         return section()
                 .css("rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-3")
                 .child(h2("How to read this page").css("text-2xl font-bold"))
-                .child(p("Each block shows the rendered result and the equivalent Java code. The DSL uses Element.of(...) as universal support for any HTML tag, helpers as convenience methods, and generic attributes through attr(...).")
+                .child(p("Each block shows the rendered result and the equivalent Java code. The DSL uses Element.of(...) as universal support for HTML and Web Components, Element.svg(...) and Element.mathMl(...) for namespaced generic tags, helpers as convenience methods, and generic attributes through attr(...).")
                         .css("text-base text-slate-700 leading-relaxed"))
                 .child(codeBlock(factoryIndex()));
     }
@@ -368,7 +368,12 @@ public final class DocumentationPage {
                         .child(p("Expanded content without JavaScript.")))
                 .child(tagTablePreview())
                 .child(template().child(slot().attr("name", "actions")))
-                .child(Element.of("custom-panel").attr("data-kind", "future").child("Future tag through Element.of"));
+                .child(Element.of("future-html-element").attr("data-ready", true).child("Future tag through Element.of"))
+                .child(Element.of("my-card").attr("data-kind", "component").child("Custom element with a hyphen"))
+                .child(Element.of("math")
+                        .child(Element.mathMl("mi").child("x"))
+                        .child(Element.mathMl("mo").child("="))
+                        .child(Element.mathMl("mn").child("1")));
     }
 
     private Node tagTablePreview() {
@@ -409,9 +414,12 @@ public final class DocumentationPage {
         return ""
                 + "import ujfe.html.Element;\n\n"
                 + "import static ujfe.html.UI.*;\n\n"
-                + "// Generic core: supports current tags, custom elements, and future tags.\n"
+                + "// Generic core: supports current tags, future tags, custom elements, and Web Components.\n"
                 + "Element.of(\"dialog\").attr(\"open\", true)\n"
-                + "element(\"custom-panel\").attr(\"data-kind\", \"future\")\n\n"
+                + "Element.of(\"future-html-element\").attr(\"data-ready\", true)\n"
+                + "Element.of(\"my-card\").attr(\"data-kind\", \"component\")\n"
+                + "Element.svg(\"path\").attr(\"d\", \"M0 0h10v10H0z\")\n"
+                + "Element.mathMl(\"mi\").child(\"x\")\n\n"
                 + "// Document and layout.\n"
                 + "html(), head(), body(), title(), meta(), link(), style(), script(), base()\n"
                 + "div(), header(), main(), aside(), section(), article(), nav(), footer(), address()\n"
@@ -421,7 +429,7 @@ public final class DocumentationPage {
                 + "strong(), em(), b(), i(), u(), small(), mark(), abbr(), cite(), pre(), code(), blockquote(), q()\n\n"
                 + "// Links, lists, media, tables, and templates.\n"
                 + "a(), ul(), ol(), li(), le(), dl(), dt(), dd()\n"
-                + "img(), picture(), source(), track(), audio(), video(), canvas(), svg()\n"
+                + "img(), picture(), source(), track(), audio(), video(), canvas(), svg(), math()\n"
                 + "map(), area(), iframe(), object(), embed(), param(), table(), thead(), tbody(), tfoot(), tr(), td(), th(), caption(), colgroup(), col()\n"
                 + "template(), slot()\n\n"
                 + "// Forms and attributes.\n"
@@ -550,6 +558,11 @@ public final class DocumentationPage {
                 + "Element.of(\"dialog\")\n"
                 + "    .attr(\"open\", true)\n"
                 + "    .child(p(\"Real HTML dialog\"))\n\n"
+                + "Element.of(\"future-html-element\")\n"
+                + "    .attr(\"data-ready\", true)\n\n"
+                + "Element.of(\"my-card\")\n"
+                + "    .attr(\"data-kind\", \"component\")\n"
+                + "    .child(\"Custom element\")\n\n"
                 + "table()\n"
                 + "    .child(caption(\"Metrics\"))\n"
                 + "    .child(colgroup().child(col()).child(col()))\n"
@@ -557,6 +570,7 @@ public final class DocumentationPage {
                 + "    .child(tbody().children(rows))\n"
                 + "    .child(tfoot().child(tr().child(td().attr(\"colspan\", \"2\").child(\"Generated with Java\"))))\n\n"
                 + "template().child(slot().attr(\"name\", \"actions\"))\n"
+                + "Element.of(\"math\").child(Element.mathMl(\"mi\").child(\"x\"))\n"
                 + "div().attr(\"popover\", true).child(\"Popover content\");\n";
     }
 
