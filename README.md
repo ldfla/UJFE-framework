@@ -1,6 +1,41 @@
 # UJFE
 
-UJFE means **Using Java For Everything**. It is a Java-first reactive SSR framework that renders HTML, server-side utility CSS, live events, routing, signals, a standalone Netty runtime, and Spring MVC integration without a JavaScript build pipeline.
+**Modern Reactive UI Framework for the JVM**
+
+UJFE is a standards-first, Java-first, HTML-first, server-first UI framework for JVM applications. It renders real HTML on the server, connects browser events to Java handlers, and lets teams use normal CSS strategies without requiring a Node.js toolchain.
+
+UJFE is built for Java teams that want reactive web interfaces while preserving the Web Platform, server-side architecture, and existing framework investments.
+
+## What UJFE Is
+
+- A Java-first framework for authoring web UI with Java types and APIs.
+- An HTML-first renderer that emits normal standards-based HTML.
+- A server-first runtime where application state and event handlers stay on the JVM by default.
+- A CSS agnostic UI layer that works with plain CSS, utility CSS, Tailwind, Bootstrap, CSS Modules, or enterprise design systems.
+- A safe-by-default renderer that escapes text and attributes, sanitizes URL attributes, and uses opaque event ids.
+- A framework that can run standalone or integrate with Spring Boot and Spring MVC.
+
+## What UJFE Is Not
+
+- UJFE is not a browser-side JavaScript framework clone.
+- UJFE is not a proprietary HTML dialect.
+- UJFE is not a mandatory CSS framework.
+- UJFE is not a replacement for Spring Boot or Spring MVC.
+
+## Core Principles
+
+- HTML-first: UJFE starts from real HTML elements, attributes, and document semantics.
+- Standards-first: UJFE follows the Web Platform instead of hiding it behind a closed component model.
+- Java-first: UI code, state, handlers, and integration points are authored in Java.
+- Server-first: rendering and interaction handling are owned by the JVM unless an application explicitly chooses otherwise.
+- Safe by default: normal rendering escapes untrusted content and makes unsafe operations explicit.
+- CSS agnostic: generated markup uses standard `class` attributes and does not force a styling system.
+- No required Node.js toolchain: Node.js, npm, TypeScript, Babel, and bundlers are not required for normal UJFE applications.
+
+## Documentation
+
+- [Vision](docs/vision.md)
+- [Principles](docs/principles.md)
 
 ## Modules
 

@@ -1,6 +1,6 @@
 # UJFE Project Objectives
 
-UJFE means **Using Java For Everything**. The project objective is to provide a Java-first reactive web framework for generating standards-compliant web pages using Java as the primary application language, without forcing a JavaScript build pipeline, a proprietary CSS system, or a closed rendering model.
+UJFE is a **Modern Reactive UI Framework for the JVM**. The project objective is to provide a Java-first reactive web framework for generating standards-compliant web pages using Java as the primary application language, without forcing a JavaScript build pipeline, a proprietary CSS system, or a closed rendering model.
 
 UJFE should let Java developers build real web interfaces using real HTML, standard CSS integration points, server-side state, live events, and modern Java language features. It should be useful as a standalone web framework and as an integration layer inside existing Spring Boot applications.
 
