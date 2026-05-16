@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <name>UJFE</name>
-    <description>Using Java For Everything - Java-first Reactive SSR framework</description>
+    <description>Modern Reactive UI Framework for the JVM</description>
 
     <modules>
         <module>ujfe-core</module>
