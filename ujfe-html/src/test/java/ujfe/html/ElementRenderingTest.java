@@ -196,6 +196,78 @@ final class ElementRenderingTest {
     }
 
     @Test
+    void rendersCommonHtmlTagThroughGenericModel() {
+        Element element = Element.of("section")
+                .attr("data-ready", true)
+                .child("Ready");
+
+        assertEquals(ElementNamespace.HTML, element.namespace());
+        assertEquals("<section data-ready>Ready</section>", element.render());
+    }
+
+    @Test
+    void rendersFutureHtmlElementThroughGenericModel() {
+        Element element = Element.of("future-html-element")
+                .attr("data-ready", true);
+
+        assertEquals(ElementNamespace.HTML, element.namespace());
+        assertEquals("<future-html-element data-ready></future-html-element>", element.render());
+    }
+
+    @Test
+    void rendersCustomElementWithHyphen() {
+        Element element = Element.of("my-card")
+                .attr("role", "article")
+                .child("Custom element");
+
+        assertEquals("<my-card role=\"article\">Custom element</my-card>", element.render());
+        assertEquals("my-card", Element.custom("my-card").tagName());
+        assertThrows(IllegalArgumentException.class, () -> Element.custom("widget"));
+    }
+
+    @Test
+    void rejectsInvalidGenericTagNamesBeforeRendering() {
+        assertThrows(IllegalArgumentException.class, () -> Element.of(""));
+        assertThrows(IllegalArgumentException.class, () -> Element.of(" "));
+        assertThrows(IllegalArgumentException.class, () -> Element.of("<script>"));
+        assertThrows(IllegalArgumentException.class, () -> Element.of("my tag"));
+        assertThrows(IllegalArgumentException.class, () -> Element.of("div onclick=alert(1)"));
+        assertThrows(IllegalArgumentException.class, () -> Element.of("\"script\""));
+    }
+
+    @Test
+    void rendersSvgTagsThroughControlledNamespace() {
+        Element svg = Element.of("svg")
+                .attr("viewBox", "0 0 10 10")
+                .child(Element.svg("path").attr("d", "M0 0h10v10H0z"));
+
+        assertEquals(ElementNamespace.SVG, svg.namespace());
+        assertEquals(ElementNamespace.SVG, Element.svg("path").namespace());
+        assertEquals("<svg viewBox=\"0 0 10 10\"><path d=\"M0 0h10v10H0z\"></path></svg>", svg.render());
+    }
+
+    @Test
+    void rendersMathMlTagsThroughControlledNamespace() {
+        Element math = Element.of("math")
+                .child(Element.mathMl("mi").child("x"))
+                .child(Element.mathMl("mo").child("="))
+                .child(Element.mathMl("mn").child("1"));
+
+        assertEquals(ElementNamespace.MATHML, math.namespace());
+        assertEquals(ElementNamespace.MATHML, Element.mathMl("mi").namespace());
+        assertEquals("<math><mi>x</mi><mo>=</mo><mn>1</mn></math>", math.render());
+    }
+
+    @Test
+    void helpersRemainOptionalSugarOverGenericElements() {
+        assertEquals(Element.of("div").tagName(), div().tagName());
+        assertEquals(ElementNamespace.HTML, div().namespace());
+        assertEquals(Element.of("svg").tagName(), svg().tagName());
+        assertEquals(ElementNamespace.SVG, svg().namespace());
+        assertEquals(ElementNamespace.MATHML, math().namespace());
+    }
+
+    @Test
     void rendersGenericAndModernHtmlElements() {
         String html = section()
                 .child(Element.of("dialog")
@@ -246,7 +318,7 @@ final class ElementRenderingTest {
                 table(), thead(), tbody(), tfoot(), tr(), td(), th(), caption(), colgroup(), col(),
                 form(), input(), textarea(), button(), select(), option(), optgroup(), label(), fieldset(), legend(),
                 datalist(), output(), progress(), meter(),
-                template(), slot()
+                template(), slot(), math()
         };
 
         for (Element helper : helpers) {

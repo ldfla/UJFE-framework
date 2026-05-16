@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,6 +23,7 @@ public final class Element implements Node {
             "poster", "src");
 
     private final String tagName;
+    private final ElementNamespace namespace;
     private final Map<String, String> attributes;
     private final Map<String, Supplier<String>> dynamicAttributes;
     private final Map<String, Supplier<Boolean>> booleanAttributes;
@@ -30,11 +32,32 @@ public final class Element implements Node {
     private String cssClasses;
 
     public static Element of(String tagName) {
-        return new Element(tagName);
+        return new Element(resolveNamespace(tagName), tagName);
+    }
+
+    public static Element html(String tagName) {
+        return new Element(ElementNamespace.HTML, tagName);
+    }
+
+    public static Element custom(String tagName) {
+        return new Element(ElementNamespace.HTML, HtmlNames.validateCustomElementName(tagName));
+    }
+
+    public static Element svg(String tagName) {
+        return new Element(ElementNamespace.SVG, tagName);
+    }
+
+    public static Element mathMl(String tagName) {
+        return new Element(ElementNamespace.MATHML, tagName);
     }
 
     public Element(String tagName) {
-        this.tagName = validateName(tagName);
+        this(resolveNamespace(tagName), tagName);
+    }
+
+    private Element(ElementNamespace namespace, String tagName) {
+        this.namespace = Objects.requireNonNull(namespace, "namespace");
+        this.tagName = HtmlNames.validateElementName(tagName);
         this.attributes = new LinkedHashMap<>();
         this.dynamicAttributes = new LinkedHashMap<>();
         this.booleanAttributes = new LinkedHashMap<>();
@@ -56,7 +79,7 @@ public final class Element implements Node {
     }
 
     public Element attr(String name, String value) {
-        String validName = validateName(name);
+        String validName = HtmlNames.validateAttributeName(name);
         if (value == null) {
             attributes.remove(validName);
         } else {
@@ -76,7 +99,7 @@ public final class Element implements Node {
     }
 
     public Element attr(String name, Supplier<String> valueSupplier) {
-        String validName = validateName(name);
+        String validName = HtmlNames.validateAttributeName(name);
         Objects.requireNonNull(valueSupplier, "valueSupplier");
         dynamicAttributes.put(validName, () -> {
             String value = valueSupplier.get();
@@ -91,7 +114,7 @@ public final class Element implements Node {
     }
 
     public Element boolAttr(String name, boolean enabled) {
-        String validName = validateName(name);
+        String validName = HtmlNames.validateAttributeName(name);
         if (enabled) {
             booleanAttributes.put(validName, () -> true);
             attributes.remove(validName);
@@ -103,7 +126,7 @@ public final class Element implements Node {
     }
 
     public Element boolAttr(String name, BooleanSupplier enabledSupplier) {
-        String validName = validateName(name);
+        String validName = HtmlNames.validateAttributeName(name);
         Objects.requireNonNull(enabledSupplier, "enabledSupplier");
         booleanAttributes.put(validName, enabledSupplier::getAsBoolean);
         attributes.remove(validName);
@@ -112,7 +135,7 @@ public final class Element implements Node {
     }
 
     public Element boolAttr(String name, Supplier<Boolean> enabledSupplier) {
-        String validName = validateName(name);
+        String validName = HtmlNames.validateAttributeName(name);
         booleanAttributes.put(validName, Objects.requireNonNull(enabledSupplier, "enabledSupplier"));
         attributes.remove(validName);
         dynamicAttributes.remove(validName);
@@ -159,7 +182,7 @@ public final class Element implements Node {
     }
 
     public Element on(String eventName, Runnable handler) {
-        eventHandlers.put(validateEventName(eventName), Objects.requireNonNull(handler, "handler"));
+        eventHandlers.put(HtmlNames.validateEventName(eventName), Objects.requireNonNull(handler, "handler"));
         return this;
     }
 
@@ -224,7 +247,7 @@ public final class Element implements Node {
     }
 
     public Element aria(String name, String value) {
-        return attr("aria-" + validateDataName(name), value);
+        return attr("aria-" + HtmlNames.validateAttributeSuffix(name), value);
     }
 
     public Element ariaLabel(String label) {
@@ -232,7 +255,7 @@ public final class Element implements Node {
     }
 
     public Element data(String name, String value) {
-        return attr("data-" + validateDataName(name), value);
+        return attr("data-" + HtmlNames.validateAttributeSuffix(name), value);
     }
 
     public Element type(String type) {
@@ -427,6 +450,10 @@ public final class Element implements Node {
         return tagName;
     }
 
+    public ElementNamespace namespace() {
+        return namespace;
+    }
+
     @Override
     public String render(UjfeContext context) {
         Objects.requireNonNull(context, "context");
@@ -480,7 +507,7 @@ public final class Element implements Node {
         });
         html.append('>');
 
-        if (VOID_TAGS.contains(tagName)) {
+        if (namespace == ElementNamespace.HTML && VOID_TAGS.contains(tagName.toLowerCase(Locale.ROOT))) {
             return html.toString();
         }
 
@@ -491,34 +518,22 @@ public final class Element implements Node {
         return html.toString();
     }
 
-    private static String validateName(String name) {
-        Objects.requireNonNull(name, "name");
-        if (!name.matches("[A-Za-z][A-Za-z0-9:_-]*")) {
-            throw new IllegalArgumentException("Invalid HTML name: " + name);
-        }
-        return name;
-    }
-
-    private static String validateDataName(String name) {
-        Objects.requireNonNull(name, "name");
-        if (!name.matches("[A-Za-z0-9][A-Za-z0-9_.:-]*")) {
-            throw new IllegalArgumentException("Invalid attribute suffix: " + name);
-        }
-        return name;
-    }
-
     private static String sanitizeAttributeValue(String name, String value) {
-        if (URL_ATTRIBUTES.contains(name.toLowerCase(java.util.Locale.ROOT))) {
+        if (URL_ATTRIBUTES.contains(name.toLowerCase(Locale.ROOT))) {
             return SafeUrl.sanitize(value);
         }
         return value;
     }
 
-    private static String validateEventName(String eventName) {
-        Objects.requireNonNull(eventName, "eventName");
-        if (!eventName.matches("[a-z][a-z0-9-]*")) {
-            throw new IllegalArgumentException("Invalid event name: " + eventName);
+    private static ElementNamespace resolveNamespace(String tagName) {
+        String validTagName = HtmlNames.validateElementName(tagName);
+        String normalizedTagName = validTagName.toLowerCase(Locale.ROOT);
+        if ("svg".equals(normalizedTagName)) {
+            return ElementNamespace.SVG;
         }
-        return eventName;
+        if ("math".equals(normalizedTagName)) {
+            return ElementNamespace.MATHML;
+        }
+        return ElementNamespace.HTML;
     }
 }
