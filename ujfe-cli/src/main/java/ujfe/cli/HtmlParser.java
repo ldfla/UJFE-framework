@@ -1,5 +1,7 @@
 package ujfe.cli;
 
+import ujfe.html.HtmlElementMetadata;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -7,12 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 final class HtmlParser {
-    private static final Set<String> VOID_TAGS = Set.of("area", "base", "br", "col", "embed", "hr", "img",
-            "input", "link", "meta", "param", "source", "track", "wbr");
-
     HtmlParseResult parse(String html) {
         List<HtmlNode> roots = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
@@ -67,7 +65,7 @@ final class HtmlParser {
             HtmlNode node = HtmlNode.element(parsedTag.name(), parsedTag.attributes());
             appendNode(node, stack, roots);
 
-            if (!selfClosing && !VOID_TAGS.contains(parsedTag.name())) {
+            if (!selfClosing && !HtmlElementMetadata.isVoidElement(parsedTag.name())) {
                 stack.push(node);
             }
 

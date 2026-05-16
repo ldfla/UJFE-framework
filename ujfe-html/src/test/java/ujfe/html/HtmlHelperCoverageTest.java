@@ -35,6 +35,7 @@ final class HtmlHelperCoverageTest {
         for (String helperName : VOID_HELPERS) {
             Element element = invokeHelper(helperName);
 
+            assertTrue(HtmlElementMetadata.isVoidElement(element.namespace(), element.tagName()));
             assertEquals("<" + element.tagName() + ">", element.render());
         }
     }
@@ -48,6 +49,7 @@ final class HtmlHelperCoverageTest {
 
             Element element = invokeHelper(entry.getKey());
 
+            assertFalse(HtmlElementMetadata.isVoidElement(element.namespace(), element.tagName()));
             assertEquals("<" + element.tagName() + "></" + element.tagName() + ">", element.render());
         }
     }

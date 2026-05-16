@@ -40,6 +40,24 @@ final class ElementRenderingTest {
     }
 
     @Test
+    void rendersPublicConstructorAndChildVarargs() {
+        Element article = new Element("article")
+                .children(h1("Title"), p("Body"));
+
+        assertEquals("<article><h1>Title</h1><p>Body</p></article>", article.render());
+    }
+
+    @Test
+    void rendersBooleanSupplierAttributes() {
+        AtomicInteger required = new AtomicInteger(1);
+        Element input = input().attr("required", () -> required.get() > 0);
+
+        assertEquals("<input required>", input.render());
+        required.set(0);
+        assertEquals("<input>", input.render());
+    }
+
+    @Test
     void rendersClickEventAttributesWhenEventRegistrarExists() {
         UjfeContext context = UjfeContext.builder()
                 .eventRegistrar(handler -> "evt-1")
@@ -193,6 +211,63 @@ final class ElementRenderingTest {
         assertTrue(html.contains("<video src=\"/movie.mp4\" poster=\"/poster.png\" controls playsinline></video>"));
         assertTrue(html.contains("<audio controls><source src=\"https://cdn.example.test/audio.mp3\" type=\"audio/mpeg\"></audio>"));
         assertTrue(html.contains("<picture><source src=\"/image.webp\" media=\"(min-width: 800px)\"><img src=\"/image.png\" alt=\"Imagem\"></picture>"));
+    }
+
+    @Test
+    void rendersInteractionAndWebComponentAttributes() {
+        String html = details()
+                .open(true)
+                .child(summary("More"))
+                .child(div()
+                        .slot("content")
+                        .part("panel")
+                        .popover("manual")
+                        .child("Body"))
+                .render();
+
+        assertEquals("<details open><summary>More</summary><div slot=\"content\" part=\"panel\" popover=\"manual\">Body</div></details>", html);
+    }
+
+    @Test
+    void rendersExtendedFormAttributes() {
+        AtomicInteger selected = new AtomicInteger(1);
+        Element option = option("Java").selected(() -> selected.get() > 0);
+        Element form = form()
+                .child(inputText()
+                        .enabled(false)
+                        .readonly(true)
+                        .autofocus(true)
+                        .maxlength(30)
+                        .minlength(2)
+                        .autocomplete("name")
+                        .inputMode("text")
+                        .pattern("[A-Za-z ]+"))
+                .child(select()
+                        .child(optgroup()
+                                .label("Languages")
+                                .child(option)));
+
+        String html = form.render();
+
+        assertTrue(html.contains("<input type=\"text\" maxlength=\"30\" minlength=\"2\" autocomplete=\"name\" inputmode=\"text\" pattern=\"[A-Za-z ]+\" disabled readonly autofocus>"));
+        assertTrue(html.contains("<optgroup label=\"Languages\"><option selected>Java</option></optgroup>"));
+
+        selected.set(0);
+        assertTrue(form.render().contains("<optgroup label=\"Languages\"><option>Java</option></optgroup>"));
+    }
+
+    @Test
+    void rendersExtendedMediaAttributes() {
+        assertEquals("<video src=\"/movie.mp4\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" autoplay loop muted></video>",
+                video()
+                        .src("/movie.mp4")
+                        .crossorigin("anonymous")
+                        .referrerPolicy("no-referrer")
+                        .autoplay(true)
+                        .loop(true)
+                        .muted(true)
+                        .render());
+        assertEquals("<img src=\"/logo.png\" loading=\"lazy\">", img().src("/logo.png").loading("lazy").render());
     }
 
     @Test

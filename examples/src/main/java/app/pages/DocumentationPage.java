@@ -2,6 +2,7 @@ package app.pages;
 
 import app.AppTheme;
 import app.components.BankSelectComponent;
+import ujfe.core.Component;
 import ujfe.html.Element;
 import ujfe.html.Node;
 import ujfe.router.Page;
@@ -11,7 +12,7 @@ import java.util.Objects;
 import static ujfe.html.UI.*;
 
 @Page("/docs")
-public final class DocumentationPage {
+public final class DocumentationPage implements Component {
     private final AppTheme theme;
     private final BankSelectComponent bankSelect = new BankSelectComponent();
 
@@ -19,6 +20,7 @@ public final class DocumentationPage {
         this.theme = Objects.requireNonNull(theme, "theme");
     }
 
+    @Override
     public Node render() {
         return div()
                 .css("min-h-screen bg-slate-50 text-slate-900")
@@ -162,12 +164,22 @@ public final class DocumentationPage {
                 .child(
                         div()
                                 .css("catalog-grid gap-4")
-                                .child(docCard(
-                                        "Layout and text",
-                                        "Containers, headings, text, emphasis, and code blocks.",
-                                        layoutCode(),
-                                        layoutPreview()
-                                ))
+                                .child(
+                                        div()
+                                                .css("flex flex-col gap-4")
+                                                .child(docCard(
+                                                        "Layout and text",
+                                                        "Containers, headings, text, emphasis, and code blocks.",
+                                                        layoutCode(),
+                                                        layoutPreview()
+                                                ))
+                                                .child(docCard(
+                                                        "Live events",
+                                                        "Click, input, change, and submit generate event ids and execute Runnable handlers in Java.",
+                                                        liveEventCode(),
+                                                        liveEventPreview()
+                                                ))
+                                )
                                 .child(docCard(
                                         "Links, lists, and media",
                                         "Anchors, lists, images, picture/source, canvas, audio, video, maps, and embedded content.",
@@ -179,12 +191,6 @@ public final class DocumentationPage {
                                         "Details, summary, dialog, popover, template, slot, and real HTML tables generated with Java loops.",
                                         modernHtmlCode(),
                                         modernHtmlPreview()
-                                ))
-                                .child(docCard(
-                                        "Live events",
-                                        "Click, input, change, and submit generate event ids and execute Runnable handlers in Java.",
-                                        liveEventCode(),
-                                        liveEventPreview()
                                 ))
                 );
     }
@@ -508,6 +514,7 @@ public final class DocumentationPage {
 
     private String listAndMediaCode() {
         return "a(\"Home\").attr(\"href\", \"/\")\n"
+                + "// Void elements render without closing tags and reject children.\n"
                 + "img().src(\"/logo.png\").alt(\"Logo\")\n"
                 + "picture()\n"
                 + "    .child(source().attr(\"media\", \"(min-width: 800px)\").src(\"/hero-wide.webp\"))\n"

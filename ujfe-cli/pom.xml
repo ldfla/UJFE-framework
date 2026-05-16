@@ -6,13 +6,18 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>0.4.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-cli</artifactId>
     <name>UJFE CLI</name>
 
     <dependencies>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-html</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

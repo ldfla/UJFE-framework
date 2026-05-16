@@ -17,8 +17,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public final class Element implements Node {
-    private static final Set<String> VOID_TAGS = Set.of("area", "base", "br", "col", "embed", "hr", "img",
-            "input", "link", "meta", "param", "source", "track", "wbr");
     private static final Set<String> URL_ATTRIBUTES = Set.of("action", "cite", "data", "formaction", "href",
             "poster", "src");
 
@@ -143,7 +141,9 @@ public final class Element implements Node {
     }
 
     public Element child(Node child) {
-        children.add(Objects.requireNonNull(child, "child"));
+        Objects.requireNonNull(child, "child");
+        requireChildrenAllowed();
+        children.add(child);
         return this;
     }
 
@@ -507,7 +507,10 @@ public final class Element implements Node {
         });
         html.append('>');
 
-        if (namespace == ElementNamespace.HTML && VOID_TAGS.contains(tagName.toLowerCase(Locale.ROOT))) {
+        if (isVoidElement()) {
+            if (!children.isEmpty()) {
+                throw voidElementChildrenException();
+            }
             return html.toString();
         }
 
@@ -516,6 +519,20 @@ public final class Element implements Node {
         }
         html.append("</").append(tagName).append('>');
         return html.toString();
+    }
+
+    private boolean isVoidElement() {
+        return HtmlElementMetadata.isVoidElement(namespace, tagName);
+    }
+
+    private void requireChildrenAllowed() {
+        if (isVoidElement()) {
+            throw voidElementChildrenException();
+        }
+    }
+
+    private IllegalStateException voidElementChildrenException() {
+        return new IllegalStateException("HTML void element <" + tagName + "> cannot have children");
     }
 
     private static String sanitizeAttributeValue(String name, String value) {
