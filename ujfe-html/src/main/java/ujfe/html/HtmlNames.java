@@ -39,7 +39,25 @@ final class HtmlNames {
         if (!name.matches("[A-Za-z][A-Za-z0-9:_-]*")) {
             throw new IllegalArgumentException("Invalid HTML attribute name: " + name);
         }
+        if (isInlineEventHandler(name)) {
+            throw new IllegalArgumentException(
+                    "Inline event handler attributes are blocked by default: " + name
+                            + ". Use Element.on(event, handler) for server-side live events.");
+        }
         return name;
+    }
+
+    private static boolean isInlineEventHandler(String name) {
+        if (name.length() < 3) {
+            return false;
+        }
+        char first = name.charAt(0);
+        char second = name.charAt(1);
+        if ((first == 'o' || first == 'O') && (second == 'n' || second == 'N')) {
+            char third = name.charAt(2);
+            return isAsciiLetter(third);
+        }
+        return false;
     }
 
     static String validateAttributeSuffix(String name) {
