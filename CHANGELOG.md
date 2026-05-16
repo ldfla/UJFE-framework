@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Updated the Maven project version to `0.3.0-SNAPSHOT`.
+- Added standard HTML helper coverage tests for required tags, void rendering, normal closing tags, text escaping, and nested children.
+- Documented the standard helper API in `docs/html/helpers.md` and the README helper table.
+- Updated Netty to `4.1.126.Final` to avoid CVE-2025-58057 in vulnerable `4.1.124.Final` and below.
+- Removed empty-string snippet concatenation patterns from example pages.
+
 ## Version 0.2.0 - 16/05/2024
 
 - Updated the Maven project version to `0.2.0-SNAPSHOT`.

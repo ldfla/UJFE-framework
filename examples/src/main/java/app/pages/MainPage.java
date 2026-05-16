@@ -249,8 +249,7 @@ public final class MainPage {
     }
 
     private String usageSnippet() {
-        return ""
-                + "// app/pages/CounterPage.java\n"
+        return "// app/pages/CounterPage.java\n"
                 + "import static ujfe.html.UI.*;\n"
                 + "import app.components.CounterComponent;\n\n"
                 + "@Page(\"/\")\n"

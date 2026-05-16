@@ -411,8 +411,7 @@ public final class DocumentationPage {
     }
 
     private String factoryIndex() {
-        return ""
-                + "import ujfe.html.Element;\n\n"
+        return "import ujfe.html.Element;\n\n"
                 + "import static ujfe.html.UI.*;\n\n"
                 + "// Generic core: supports current tags, future tags, custom elements, and Web Components.\n"
                 + "Element.of(\"dialog\").attr(\"open\", true)\n"
@@ -444,8 +443,7 @@ public final class DocumentationPage {
     }
 
     private String themeCode() {
-        return ""
-                + "AppTheme appTheme = new AppTheme();\n"
+        return "AppTheme appTheme = new AppTheme();\n"
                 + "Router router = new Router().register(new DocumentationPage(appTheme));\n"
                 + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
                 + "    .themeSupplier(appTheme::cssTheme)\n"
@@ -461,8 +459,7 @@ public final class DocumentationPage {
     }
 
     private String modernJavaCode() {
-        return ""
-                + "// Demo.java - run with: java Demo.java\n"
+        return "// Demo.java - run with: java Demo.java\n"
                 + "import java.util.List;\n"
                 + "import ujfe.core.ClientState;\n"
                 + "import ujfe.core.Node;\n"
@@ -499,8 +496,7 @@ public final class DocumentationPage {
     }
 
     private String layoutCode() {
-        return ""
-                + "div()\n"
+        return "div()\n"
                 + "    .child(header().child(h1(\"Title\")))\n"
                 + "    .child(main().child(section().child(h2(\"Section\"))))\n"
                 + "    .child(article().child(h3(\"Article\")).child(p(\"Content\")))\n"
@@ -511,8 +507,7 @@ public final class DocumentationPage {
     }
 
     private String listAndMediaCode() {
-        return ""
-                + "a(\"Home\").attr(\"href\", \"/\")\n"
+        return "a(\"Home\").attr(\"href\", \"/\")\n"
                 + "img().src(\"/logo.png\").alt(\"Logo\")\n"
                 + "picture()\n"
                 + "    .child(source().attr(\"media\", \"(min-width: 800px)\").src(\"/hero-wide.webp\"))\n"
@@ -534,8 +529,7 @@ public final class DocumentationPage {
     }
 
     private String modernHtmlCode() {
-        return ""
-                + "record Metric(String name, int value, String status) {}\n\n"
+        return "record Metric(String name, int value, String status) {}\n\n"
                 + "var metrics = List.of(\n"
                 + "    new Metric(\"Users\", 42, \"ok\"),\n"
                 + "    new Metric(\"Errors\", 2, \"warn\")\n"
@@ -575,16 +569,14 @@ public final class DocumentationPage {
     }
 
     private String liveEventCode() {
-        return ""
-                + "button(\"Save\").onClick(this::save)\n"
+        return "button(\"Save\").onClick(this::save)\n"
                 + "inputText().onInput(this::markDirty)\n"
                 + "select().onChange(this::reload)\n"
                 + "form().onSubmit(this::submit);\n";
     }
 
     private String formCode() {
-        return ""
-                + "form()\n"
+        return "form()\n"
                 + "    .onSubmit(this::submit)\n"
                 + "    .child(fieldset()\n"
                 + "        .child(legend(\"Account\"))\n"
@@ -605,8 +597,7 @@ public final class DocumentationPage {
     }
 
     private String cssCode() {
-        return ""
-                + "div().css(\"flex flex-col gap-4 p-6 rounded-lg border shadow-sm\")\n"
+        return "div().css(\"flex flex-col gap-4 p-6 rounded-lg border shadow-sm\")\n"
                 + "h2(\"Title\").css(\"text-2xl font-bold text-primary-700\")\n"
                 + "p(\"Text\").css(\"text-sm leading-relaxed text-slate-700\")\n"
                 + "button(\"Action\").css(\"px-4 py-2 rounded bg-secondary-700 text-white\")\n\n"
@@ -622,8 +613,7 @@ public final class DocumentationPage {
     }
 
     private String springCode() {
-        return ""
-                + "// pom.xml: use dev.ujfe:ujfe-spring no app Spring Boot.\n"
+        return "// pom.xml: use dev.ujfe:ujfe-spring no app Spring Boot.\n"
                 + "// Do not add ujfe-http unless you want a separate Netty server.\n\n"
                 + "@Page(\"/\")\n"
                 + "@Component\n"
@@ -648,8 +638,7 @@ public final class DocumentationPage {
     }
 
     private String securityCode() {
-        return ""
-                + "a(\"Safe\").href(\"https://example.com\")\n"
+        return "a(\"Safe\").href(\"https://example.com\")\n"
                 + "img().src(\"data:image/png;base64,...\").alt(\"Preview\")\n"
                 + "div().title(\"Title\").ariaLabel(\"Region\").data(\"test-id\", \"hero\")\n\n"
                 + "// Rejected before rendering:\n"
@@ -659,8 +648,7 @@ public final class DocumentationPage {
     }
 
     private String restCode() {
-        return ""
-                + "var client = RestClient.create();\n"
+        return "var client = RestClient.create();\n"
                 + "var response = client\n"
                 + "    .get(\"https://brasilapi.com.br/api/banks/v1\")\n"
                 + "    .requireSuccessful();\n\n"
@@ -672,15 +660,13 @@ public final class DocumentationPage {
     }
 
     private String cliCommandCode() {
-        return ""
-                + "ujfe convert page.html \\\n"
+        return "ujfe convert page.html \\\n"
                 + "  --out src/main/java/app/pages/Page.java \\\n"
                 + "  --type html\n";
     }
 
     private String cliInputCode() {
-        return ""
-                + "<section class=\"p-4 flex flex-col gap-2\">\n"
+        return "<section class=\"p-4 flex flex-col gap-2\">\n"
                 + "  <h1 title=\"Hero\">Hello UJFE</h1>\n"
                 + "  <p>HTML converted to the Java DSL.</p>\n"
                 + "  <button>Save</button>\n"
@@ -688,8 +674,7 @@ public final class DocumentationPage {
     }
 
     private String cliOutputCode() {
-        return ""
-                + "package app.pages;\n\n"
+        return "package app.pages;\n\n"
                 + "import static ujfe.html.UI.*;\n\n"
                 + "import ujfe.html.Node;\n"
                 + "import ujfe.router.Page;\n\n"
@@ -706,8 +691,7 @@ public final class DocumentationPage {
     }
 
     private String devPreviewCode() {
-        return ""
-                + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
+        return "LiveSessionConfig config = LiveSessionConfig.builder()\n"
                 + "    .themeSupplier(appTheme::cssTheme)\n"
                 + "    .devToolsEnabled(true)\n"
                 + "    .build();\n"
