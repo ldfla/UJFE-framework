@@ -24,11 +24,11 @@ public final class MainPage implements Component {
                 .child(topBar())
                 .child(
                         div()
-                                .css("max-w-6xl mx-auto p-4 app-shell gap-4")
+                                .css("max-w-7xl mx-auto p-6 app-shell gap-6")
                                 .child(sidebar())
                                 .child(
                                         main()
-                                                .css("flex flex-col gap-4")
+                                                .css("flex flex-col gap-6")
                                                 .child(heroSection())
                                                 .child(demoPanels())
                                                 .child(codeExample())
@@ -41,12 +41,14 @@ public final class MainPage implements Component {
                 .css("border-b border-slate-200 bg-white")
                 .child(
                         div()
-                                .css("max-w-6xl mx-auto p-4 flex items-center justify-between gap-4")
+                                .css("max-w-7xl mx-auto p-6 flex items-center justify-between gap-4")
                                 .child(
                                         div()
                                                 .css("flex flex-col gap-1")
                                                 .child(span("UJFE").css("text-sm font-bold text-emerald-700"))
-                                                .child(h1("Using Java For Everything").css("text-2xl font-bold"))
+                                                .child(h1("Modern Reactive UI Framework for the JVM").css("text-2xl font-bold"))
+                                                .child(p("A Java-first example for server-rendered interaction, state, and styling.")
+                                                        .css("text-sm text-slate-600"))
                                 )
                                 .child(
                                         nav()
@@ -62,7 +64,7 @@ public final class MainPage implements Component {
 
     private Node sidebar() {
         return aside()
-                .css("rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm")
+                .css("rounded-lg border border-slate-200 bg-white p-4 shadow-sm")
                 .child(nav()
                         .css("flex flex-col gap-3")
                         .child(h2("Page map").css("text-lg font-bold text-emerald-700"))
@@ -80,13 +82,25 @@ public final class MainPage implements Component {
 
     private Node heroSection() {
         return section()
-                .css("rounded-lg border border-indigo-200 bg-white p-6 text-center shadow-sm flex flex-col gap-2")
-                .child(h1("UJFE").css("text-3xl font-bold text-indigo-700"))
-                .child(h2("Modern web interfaces using Java only").css("text-2xl font-semibold"))
-                .child(h3("Reactive SSR, server-side events, and backend-rendered CSS")
-                        .css("text-lg font-semibold text-emerald-700"))
-                .child(p("This page is written with the Java DSL, without TypeScript, npm, Babel, or a bundler.")
-                        .css("text-base text-slate-600 leading-relaxed"));
+                .css("rounded-lg border border-indigo-200 bg-white p-8 shadow-sm flex flex-col gap-4")
+                .child(span("Example application").css("text-sm font-bold text-indigo-700"))
+                .child(h1("Reactive server-rendered UI, written in Java").css("text-4xl font-bold text-slate-900"))
+                .child(p("This page is written with the UJFE Java DSL, live server-side handlers, signals, and generated CSS. It uses no TypeScript, npm, Babel, or browser-side framework runtime.")
+                        .css("text-lg text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(heroMetric("HTML-first", "real elements and attributes"))
+                                .child(heroMetric("Server-first", "events execute on the JVM"))
+                                .child(heroMetric("Safe default", "text escapes automatically"))
+                );
+    }
+
+    private Node heroMetric(String title, String body) {
+        return div()
+                .css("rounded-lg border border-slate-200 bg-slate-50 p-4 flex flex-col gap-1")
+                .child(strong(title).css("text-emerald-700"))
+                .child(span(body).css("text-sm text-slate-600"));
     }
 
     private Node demoPanels() {
@@ -241,7 +255,7 @@ public final class MainPage implements Component {
 
     private Node codeExample() {
         return section()
-                .css("rounded-lg border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-3")
+                .css("rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-3")
                 .child(h2("Usage code").css("text-2xl font-bold"))
                 .child(p("The example below shows the basic way to declare state, HTML, and events in UJFE.")
                         .css("text-sm text-slate-600"))
