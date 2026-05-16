@@ -37,7 +37,8 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Vision](docs/vision.md)
 - [Principles](docs/principles.md)
 - [Generic HTML elements](docs/html/generic-elements.md)
-- [Standard HTML helpers](docs/html/helpers.md)
+- [Standard HTML helpers](docs/html/HELPERS.md)
+- [HTML void elements](docs/html/void-elements.md)
 
 ## Modules
 
@@ -135,6 +136,8 @@ section()
 ```
 
 The DSL validates element and attribute names for safe rendering, but it does not maintain a whitelist of supported HTML tags. New HTML tags, custom elements, and Web Components can be rendered through `Element.of(...)` or `element(...)`. Invalid tag names such as `""`, `" "`, `"<script>"`, and `"div onclick=alert(1)"` are rejected before rendering.
+
+HTML void elements such as `img`, `input`, `br`, and `meta` render without closing tags. UJFE rejects children on void elements explicitly instead of silently dropping content.
 
 SVG and MathML have controlled namespace factories for generic tags:
 
@@ -415,6 +418,7 @@ Use the example documentation route as the preferred structure for framework doc
 - Text nodes and attributes are escaped during server-side rendering.
 - URL attributes such as `href`, `src`, `action`, and `poster` are sanitized.
 - Live event handlers are registered server-side and rendered as opaque event ids.
+- HTML void elements are centralized in `HtmlElementMetadata`, render without closing tags, and reject children explicitly.
 - `Element.of(...)` and `element(...)` support any valid current or future HTML tag name without a framework release.
 - Custom elements and Web Components can be rendered through `Element.of("my-card")`; `Element.custom(...)` is available when the hyphen rule should be explicit.
 - SVG and MathML generic descendants can be created with `Element.svg(...)` and `Element.mathMl(...)`.
@@ -471,7 +475,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.3.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.4.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -479,7 +483,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.3.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.4.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>

@@ -48,6 +48,8 @@ br();
 input().attr("required", true);
 ```
 
+Adding children to an HTML void helper is an error; UJFE rejects that explicitly instead of dropping child content during rendering.
+
 Normal helpers render opening and closing tags:
 
 ```java

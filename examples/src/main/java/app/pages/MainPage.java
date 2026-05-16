@@ -3,6 +3,7 @@ package app.pages;
 import static ujfe.html.UI.*;
 
 import app.components.CounterComponent;
+import ujfe.core.Component;
 import ujfe.core.Ujfe;
 import ujfe.html.Node;
 import ujfe.router.Page;
@@ -10,12 +11,13 @@ import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
 @Page("/")
-public final class MainPage {
+public final class MainPage implements Component {
     private final CounterComponent counter = new CounterComponent();
     private final Signal<Integer> pageEvents = Signals.signal(0);
     private final Signal<Integer> formSubmits = Signals.signal(0);
     private final Signal<String> lastBrowserRead = Signals.signal("No browser state event has been processed yet.");
 
+    @Override
     public Node render() {
         return div()
                 .css("min-h-screen bg-stone-50 text-slate-900")

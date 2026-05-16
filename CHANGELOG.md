@@ -2,11 +2,19 @@
 
 ## Unreleased
 
+## Version 0.4.0 - 16/05/2026
+
+- Updated the Maven project version to `0.4.0-SNAPSHOT`.
+- Added reusable `HtmlElementMetadata` for standard HTML void element behavior.
+- Rendered HTML void elements without closing tags and rejected children with an explicit error.
+- Reused centralized void element metadata in the CLI HTML parser.
+- Documented HTML void element rendering rules in `docs/html/void-elements.md`.
+
 ## Version 0.3.0 - 16/05/2024
 
 - Updated the Maven project version to `0.3.0-SNAPSHOT`.
 - Added standard HTML helper coverage tests for required tags, void rendering, normal closing tags, text escaping, and nested children.
-- Documented the standard helper API in `docs/html/helpers.md` and the README helper table.
+- Documented the standard helper API in `docs/html/HELPERS.md` and the README helper table.
 - Updated Netty to `4.1.132.Final` to keep the HTTP runtime on the current non-vulnerable Netty line.
 - Removed empty-string snippet concatenation patterns from example pages.
 
