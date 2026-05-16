@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## Version 0.6.0 - 16/05/2026
+
+- Updated the Maven project version to `0.6.0-SNAPSHOT`.
+- Hardened the generic attribute model with inline event handler blocking.
+- Blocked `onclick`, `onload`, `onerror`, and all `on*` inline event handler attributes by default.
+- Validated attribute names to reject whitespace, `<`, `=`, and other dangerous characters before rendering.
+- Allowed `aria-*`, `data-*`, and `hx-*` attributes through the generic `attr(...)` API.
+- Documented the attribute validation rules in `docs/html/attributes.md`.
+- Documented the security rationale for inline event handler blocking in `docs/security/attribute-validation.md`.
+
 ## Version 0.5.0 - 16/05/2026
 
 - Updated the Maven project version to `0.5.0-SNAPSHOT`.
