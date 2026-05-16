@@ -40,7 +40,10 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Standard HTML helpers](docs/html/HELPERS.md)
 - [HTML void elements](docs/html/void-elements.md)
 - [Raw HTML](docs/html/raw-html.md)
+- [Attributes](docs/html/attributes.md)
 - [Unsafe HTML escape hatch](docs/security/unsafe-html.md)
+- [Attribute validation](docs/security/attribute-validation.md)
+- [Safe URL policy](docs/security/safe-url.md)
 
 ## Modules
 
@@ -403,9 +406,11 @@ LiveSession liveSession = new LiveSession(router, config);
 
 The public API is documented in English so the project can be used globally. The high-level surface is intentionally small:
 
-- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag, `Element.svg(tagName)` for SVG descendants, and `Element.mathMl(tagName)` for MathML descendants. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`.
+- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag, `Element.svg(tagName)` for SVG descendants, and `Element.mathMl(tagName)` for MathML descendants. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`. Attribute names are validated at construction time; inline event handler attributes (`on*`) are blocked by default.
 - `ujfe.html.UI`: optional helper factories for official HTML tags. Helpers delegate to `Element.of(...)`; they are convenience methods, not the source of HTML support. `unsafeHtml(...)` is the explicit raw HTML escape hatch for trusted content only.
 - `ujfe.html.UnsafeHtml`: intentionally unsafe raw HTML node. It bypasses escaping and should only receive trusted, sanitized HTML.
+- `ujfe.html.UrlPolicy`: configurable URL scheme policy. The default allows `https` and `data:image/*`. Applications opt into `http`, `mailto`, `tel`, or custom schemes through `UrlPolicy.builder()`. `javascript:` and `vbscript:` are permanently blocked.
+- `ujfe.html.SafeUrl`: URL sanitizer for HTML URL-bearing attributes. Delegates scheme decisions to the active `UrlPolicy`. URL attributes (`href`, `src`, `action`, `poster`, `formaction`, `cite`, `data`, `background`) are routed through this sanitizer.
 - `ujfe.live.LiveSessionConfig`: document-level runtime configuration for language, title, head nodes, CSS mode, theme supplier, and dev tools.
 - `ujfe.live.CssMode`: `INTERNAL` generates UJFE's server-side utility stylesheet; `EXTERNAL` disables it so teams can use Tailwind, Bootstrap, CSS files, CSS Modules, or enterprise design systems.
 - `ujfe.router.Router` and `@Page`: register page instances, page classes, or explicit route factories.
@@ -428,7 +433,12 @@ Use the example documentation route as the preferred structure for framework doc
 ## Development Notes
 
 - Text nodes and attributes are escaped during server-side rendering.
-- URL attributes such as `href`, `src`, `action`, and `poster` are sanitized.
+- Attribute names are validated before storage: whitespace, `<`, `=`, and other dangerous characters are rejected.
+- Inline event handler attributes (`onclick`, `onload`, `onerror`, and all `on*`) are blocked by default. Use `Element.on(event, handler)` for server-side live events.
+- `aria-*`, `data-*`, and `hx-*` attributes are fully supported through the generic `attr(...)` API.
+- URL attributes (`href`, `src`, `action`, `poster`, `formaction`, `cite`, `data`, `background`) are sanitized through a configurable `UrlPolicy`.
+- `javascript:` and `vbscript:` URL schemes are unconditionally blocked. `http:`, `mailto:`, and `tel:` are configurable through `UrlPolicy.builder()`.
+- `data:image/*` URLs are allowed by default with a documented MIME prefix validation limitation.
 - Live event handlers are registered server-side and rendered as opaque event ids.
 - Raw HTML rendering is available only through APIs containing `unsafe` in the name, such as `unsafeHtml(...)` and `UnsafeHtml.of(...)`.
 - HTML void elements are centralized in `HtmlElementMetadata`, render without closing tags, and reject children explicitly.
@@ -488,7 +498,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.5.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.7.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -496,7 +506,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.5.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.7.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>

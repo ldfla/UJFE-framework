@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## Version 0.7.0 - 16/05/2026
+
+- Updated the Maven project version to `0.7.0-SNAPSHOT`.
+- Introduced `UrlPolicy` for configurable URL scheme handling with secure defaults.
+- Refactored `SafeUrl` to delegate scheme decisions to the active `UrlPolicy`.
+- Blocked `javascript:` and `vbscript:` schemes unconditionally.
+- Made `http:`, `mailto:`, and `tel:` schemes configurable through `UrlPolicy.builder()`.
+- Added `background` to the set of URL-bearing attributes sanitized by `SafeUrl`.
+- Allowed `data:image/svg+xml` and `data:image/avif` MIME types for data URLs.
+- Documented the `data:image/*` MIME prefix validation limitation.
+- Documented the SafeUrl policy in `docs/security/safe-url.md`.
+
 ## Version 0.6.0 - 16/05/2026
 
 - Updated the Maven project version to `0.6.0-SNAPSHOT`.
