@@ -4,6 +4,7 @@ import app.pages.DocumentationPage;
 import app.pages.LifecyclePage;
 import app.pages.MainPage;
 import app.pages.RuntimeActionsPage;
+import app.pages.SignalsPage;
 import ujfe.http.UjfeServer;
 import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
@@ -21,6 +22,7 @@ public final class Main {
         var router = new Router()
                 .register(new MainPage())
                 .register(new DocumentationPage(appTheme))
+                .register(new SignalsPage())
                 .register(new LifecyclePage())
                 .register(runtimeActionsPage);
 

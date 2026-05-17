@@ -40,6 +40,7 @@ public final class DocumentationPage implements Component {
                                                 .child(cssSection())
                                                 .child(springSection())
                                                 .child(securitySection())
+                                                .child(signalsSection())
                                                 .child(runtimeActionsSection())
                                                 .child(lifecycleSection())
                                                 .child(restSection())
@@ -89,6 +90,7 @@ public final class DocumentationPage implements Component {
                                 .child(le().child(strong("CSS")).child(" with utilities and color scales"))
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
                                 .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
+                                .child(le().child(strong("Signals")).child(" with lazy computed values, cache invalidation, and subscribers"))
                                 .child(le().child(strong("Runtime Actions")).child(" with server-side extension points for rendering, events, errors, and head contributions"))
                                 .child(le().child(strong("Lifecycle")).child(" with deterministic mount, unmount, and cleanup"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
@@ -317,6 +319,28 @@ public final class DocumentationPage implements Component {
                                 )
                 )
                 .child(codeBlock(securityCode()));
+    }
+
+    private Node signalsSection() {
+        return section()
+                .css("rounded-lg border border-emerald-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .child(h2("Signals and computed values").css("text-2xl font-bold text-emerald-700"))
+                .child(p("Mutable signals hold live server state. Computed signals derive read-only values lazily, cache successful evaluations, and invalidate through tracked dependencies.")
+                        .css("text-base text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(cssPill("Mutable", "set, update, subscribe"))
+                                .child(cssPill("Computed", "lazy get with cached result"))
+                                .child(cssPill("Nested", "computed values can depend on computed values"))
+                                .child(cssPill("Invalidation", "dependency changes mark cache stale"))
+                                .child(cssPill("Exceptions", "failed evaluations do not publish values"))
+                                .child(cssPill("Cycles", "ComputedCycleException"))
+                )
+                .child(codeBlock(signalsCode()))
+                .child(a("Open signals example")
+                        .attr("href", "/signals")
+                        .css("text-sm font-semibold text-emerald-700"));
     }
 
     private Node runtimeActionsSection() {
@@ -792,6 +816,21 @@ public final class DocumentationPage implements Component {
                 + "UnsafeHtml.of(\"<p>Trusted CMS block</p>\")\n\n"
                 + "// The server also emits headers such as CSP, nosniff,\n"
                 + "// Referrer-Policy, Permissions-Policy, and frame-ancestors.\n";
+    }
+
+    private String signalsCode() {
+        return "Signal<Integer> count = Signals.signal(1);\n"
+                + "Signal<Integer> multiplier = Signals.signal(2);\n\n"
+                + "Computed<Integer> doubled = Signals.computed(() -> count.get() * 2);\n"
+                + "Computed<Integer> total = Signals.computed(() -> doubled.get() * multiplier.get());\n\n"
+                + "// Lazy: nothing evaluates until get().\n"
+                + "total.get();\n"
+                + "total.get(); // cached\n\n"
+                + "// Invalidation is lazy and collapsed.\n"
+                + "count.set(2);\n"
+                + "count.set(3);\n"
+                + "total.get(); // one recomputation with latest values\n\n"
+                + "total.subscribe(value -> audit(\"total=\" + value));\n";
     }
 
     private String runtimeActionsCode() {

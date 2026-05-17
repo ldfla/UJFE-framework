@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## Version 0.10.0 - 17/05/2026
+
+- Updated the Maven project version to `0.10.0-SNAPSHOT`.
+- Defined computed signal semantics for lazy evaluation, caching, dependency tracking, invalidation, subscribers, exceptions, circular dependencies, and concurrency.
+- Made `Computed<T>` a read-only `Signal<T>` with subscriber support and explicit `UnsupportedOperationException` for mutation attempts.
+- Added automatic dependency tracking between mutable signals and computed signals, including nested computed invalidation propagation.
+- Added successful-result caching with lazy recomputation after dependency changes.
+- Added `ComputedCycleException` for predictable circular computed dependency failures.
+- Added tests for computed laziness, cache reuse, invalidation collapse, subscriber behavior, nested dependencies, dynamic dependency cleanup, exception handling, cycle detection, and concurrent access.
+- Documented the signal model in `docs/signals.md`.
+- Added a runnable signals example route at `/signals` and documented it under `examples/signals`.
+
 ## Version 0.9.0 - 16/05/2026
 
 - Updated the Maven project version to `0.9.0-SNAPSHOT`.

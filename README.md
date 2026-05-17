@@ -44,6 +44,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Unsafe HTML escape hatch](docs/security/unsafe-html.md)
 - [Attribute validation](docs/security/attribute-validation.md)
 - [Safe URL policy](docs/security/safe-url.md)
+- [Signals](docs/signals.md)
 - [Runtime extension points](docs/runtime-extension-points.md)
 - [Lifecycle](docs/lifecycle.md)
 
@@ -505,7 +506,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.9.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.10.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -513,7 +514,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.9.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.10.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>
