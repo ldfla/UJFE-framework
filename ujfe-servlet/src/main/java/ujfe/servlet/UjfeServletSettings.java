@@ -23,6 +23,7 @@ final class UjfeServletSettings {
     static final String DEV_TOOLS_ENABLED = "ujfe.live.dev-tools-enabled";
     static final String CSS_MODE = "ujfe.live.css-mode";
     static final String MAX_JSON_PAYLOAD_BYTES = "ujfe.live.max-json-payload-bytes";
+    static final String DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE = "ujfe.live.disable-csrf-protection-for-development-unsafe";
 
     private final Properties values;
 
@@ -102,6 +103,11 @@ final class UjfeServletSettings {
         value(LANG).ifPresent(builder::lang);
         value(DEV_TOOLS_ENABLED).ifPresent(value -> builder.devToolsEnabled(Boolean.parseBoolean(value)));
         value(CSS_MODE).ifPresent(value -> builder.cssMode(CssMode.valueOf(value.trim().toUpperCase())));
+        value(DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE).ifPresent(value -> {
+            if (Boolean.parseBoolean(value)) {
+                builder.disableCsrfProtectionForDevelopmentUnsafe();
+            }
+        });
         return builder.build();
     }
 

@@ -71,15 +71,111 @@ final class UjfeSpringHandlerTest {
             MockHttpServletResponse page = new MockHttpServletResponse();
             handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
             String eventId = firstEventId(page.getContentAsString());
+            String csrfToken = firstCsrfToken(page.getContentAsString());
 
             MockHttpServletResponse event = new MockHttpServletResponse();
-            handler.handleRequest(postJson(LiveHttpPaths.EVENT,
+            MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
                     "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
-                            + "\"localStorage\":{\"theme\":\"dark\"}}}"), event);
+                            + "\"localStorage\":{\"theme\":\"dark\"}}}");
+            request.addHeader("X-UJFE-CSRF", csrfToken);
+            request.addHeader("Origin", "http://localhost");
+            request.addHeader("Host", "localhost");
+            handler.handleRequest(request, event);
 
             assertEquals(200, event.getStatus());
             assertTrue(event.getContentType().startsWith("application/json"));
             assertTrue(event.getContentAsString().contains("\"html\""));
+        }
+    }
+
+    @Test
+    void rejectsLiveEventWithoutCsrfToken() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse page = new MockHttpServletResponse();
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
+            String eventId = firstEventId(page.getContentAsString());
+
+            MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            request.addHeader("Origin", "http://localhost");
+            request.addHeader("Host", "localhost");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                handler.handleRequest(request, response);
+            }
+
+            assertEquals(403, response.getStatus());
+            assertEquals("Missing CSRF token.", response.getContentAsString());
+        }
+    }
+
+    @Test
+    void rejectsLiveEventWithInvalidCsrfToken() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse page = new MockHttpServletResponse();
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
+            String eventId = firstEventId(page.getContentAsString());
+
+            MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            request.addHeader("X-UJFE-CSRF", "invalid-token");
+            request.addHeader("Origin", "http://localhost");
+            request.addHeader("Host", "localhost");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                handler.handleRequest(request, response);
+            }
+
+            assertEquals(403, response.getStatus());
+            assertEquals("Invalid CSRF token.", response.getContentAsString());
+        }
+    }
+
+    @Test
+    void rejectsCrossOriginLiveEvent() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse page = new MockHttpServletResponse();
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
+            String eventId = firstEventId(page.getContentAsString());
+            String csrfToken = firstCsrfToken(page.getContentAsString());
+
+            MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            request.addHeader("X-UJFE-CSRF", csrfToken);
+            request.addHeader("Origin", "http://evil.test");
+            request.addHeader("Host", "localhost");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                handler.handleRequest(request, response);
+            }
+
+            assertEquals(403, response.getStatus());
+            assertEquals("Cross-origin request rejected.", response.getContentAsString());
+        }
+    }
+
+    @Test
+    void developmentOverrideAllowsMissingCsrfToken() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()),
+                ujfe.live.LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build())) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse page = new MockHttpServletResponse();
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
+            String eventId = firstEventId(page.getContentAsString());
+
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            handler.handleRequest(postJson(LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), response);
+
+            assertEquals(200, response.getStatus());
+            assertTrue(response.getContentAsString().contains("\"html\""));
+            assertFalse(page.getContentAsString().contains("ujfe-csrf-token"));
         }
     }
 
@@ -126,6 +222,12 @@ final class UjfeSpringHandlerTest {
     private static String firstEventId(String html) {
         Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
+        return matcher.group(1);
+    }
+
+    private static String firstCsrfToken(String html) {
+        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
+        assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
         return matcher.group(1);
     }
 

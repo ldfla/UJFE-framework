@@ -13,6 +13,8 @@ import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveHttpSecurity;
 import ujfe.live.LiveRenderResult;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveCsrfException;
+import ujfe.live.LiveHttpRequestMetadata;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -61,14 +63,17 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                         readBody(request),
                         maxJsonPayloadBytes
                 );
-                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState());
+                LiveHttpRequestMetadata metadata = createMetadata(request);
+                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
             }
 
             if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
+                LiveHttpRequestMetadata metadata = createMetadata(request);
                 LiveRenderResult result = liveSession.updateClientState(
-                        LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes)
+                        LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
+                        metadata
                 );
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
@@ -82,11 +87,14 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             }
 
             write(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+        } catch (LiveCsrfException exception) {
+            LiveHttpCodec.logRejectedCsrf(exception, "spring", correlationId(request));
+            write(response, HttpServletResponse.SC_FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "spring", correlationId(request));
             write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
         } catch (IllegalArgumentException exception) {
-            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", exception.getMessage());
+            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", "Bad request");
         } catch (RuntimeException exception) {
             write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", "Internal server error");
         }
@@ -105,6 +113,16 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             return requestId;
         }
         return request.getHeader("X-Correlation-Id");
+    }
+
+    private static LiveHttpRequestMetadata createMetadata(HttpServletRequest request) {
+        return new LiveHttpRequestMetadata(
+                request.getHeader("X-UJFE-CSRF"),
+                request.getHeader("Origin"),
+                request.getHeader("Referer"),
+                request.getHeader("Host"),
+                request.getScheme()
+        );
     }
 
     private static void write(HttpServletResponse response, int status, String contentType, String content) throws IOException {

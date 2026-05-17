@@ -17,6 +17,8 @@ import ujfe.live.LiveHttpSecurity;
 import ujfe.live.LiveRenderResult;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
+import ujfe.live.LiveCsrfException;
+import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
 
@@ -132,11 +134,14 @@ public final class UjfeServlet extends HttpServlet {
             Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
             String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
             write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
+        } catch (LiveCsrfException exception) {
+            LiveHttpCodec.logRejectedCsrf(exception, "servlet", correlationId(request));
+            write(response, HttpServletResponse.SC_FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "servlet", correlationId(request));
             write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
         } catch (IllegalArgumentException exception) {
-            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", exception.getMessage());
+            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", "Bad request");
         } catch (RuntimeException exception) {
             write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "text/plain; charset=utf-8",
@@ -181,7 +186,8 @@ public final class UjfeServlet extends HttpServlet {
                     readBody(request),
                     maxJsonPayloadBytes
             );
-            LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState());
+            LiveHttpRequestMetadata metadata = createMetadata(request);
+            LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
             write(response, HttpServletResponse.SC_OK,
                     "application/json; charset=utf-8",
                     LiveHttpCodec.livePayload(result));
@@ -189,8 +195,10 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
+            LiveHttpRequestMetadata metadata = createMetadata(request);
             LiveRenderResult result = liveSession.updateClientState(
-                    LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes)
+                    LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
+                    metadata
             );
             write(response, HttpServletResponse.SC_OK,
                     "application/json; charset=utf-8",
@@ -233,6 +241,16 @@ public final class UjfeServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         LiveHttpSecurity.securityHeaders().forEach(response::setHeader);
         response.getWriter().write(content);
+    }
+
+    private static LiveHttpRequestMetadata createMetadata(HttpServletRequest request) {
+        return new LiveHttpRequestMetadata(
+                request.getHeader("X-UJFE-CSRF"),
+                request.getHeader("Origin"),
+                request.getHeader("Referer"),
+                request.getHeader("Host"),
+                request.getScheme()
+        );
     }
 
     private static String correlationId(HttpServletRequest request) {

@@ -14,7 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ujfe.html.UI.*;
 
@@ -28,10 +30,37 @@ final class LiveSessionTest {
             assertTrue(document.contains(".bg-blue-600"));
 
             String eventId = extractEventId(document);
-            LiveRenderResult result = session.handleEvent(eventId, ClientState.empty());
+            LiveRenderResult result = session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
 
             assertTrue(result.html().contains("Counter: 1"));
             assertTrue(result.html().contains("data-ujfe-event="));
+        }
+    }
+
+    @Test
+    void rejectsEventDispatchWithoutHttpMetadataWhenCsrfIsEnabled() {
+        try (LiveSession session = new LiveSession(new Router().register(new CounterPage()))) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractEventId(document);
+
+            LiveCsrfException exception = assertThrows(LiveCsrfException.class,
+                    () -> session.handleEvent(eventId, ClientState.empty()));
+
+            assertEquals(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, exception.category());
+            assertEquals("Missing CSRF token.", exception.safeMessage());
+        }
+    }
+
+    @Test
+    void rejectsClientStateUpdateWithoutHttpMetadataWhenCsrfIsEnabled() {
+        try (LiveSession session = new LiveSession(new Router().register(new CounterPage()))) {
+            session.renderDocument("/", ClientState.empty());
+
+            LiveCsrfException exception = assertThrows(LiveCsrfException.class,
+                    () -> session.updateClientState(ClientState.empty()));
+
+            assertEquals(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, exception.category());
+            assertEquals("Missing CSRF token.", exception.safeMessage());
         }
     }
 

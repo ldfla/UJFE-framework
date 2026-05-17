@@ -21,6 +21,7 @@ public final class LiveSession implements AutoCloseable {
     private final LiveSessionConfig config;
     private final RuntimeActionRegistry runtimeActions;
     private final LifecycleRuntime lifecycleRuntime;
+    private final String csrfToken;
     private String currentPath = "/";
     private Object currentPage;
     private ClientState clientState = ClientState.empty();
@@ -92,6 +93,11 @@ public final class LiveSession implements AutoCloseable {
                 config.themeSupplier(),
                 config.cssMode()
         );
+        this.csrfToken = LiveHttpSecurity.generateCsrfToken();
+    }
+
+    public String csrfToken() {
+        return csrfToken;
     }
 
     public synchronized LiveRenderResult renderPath(String path) {
@@ -142,6 +148,12 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public synchronized LiveRenderResult handleEvent(String eventId, ClientState nextClientState) {
+        return handleEvent(eventId, nextClientState, new LiveHttpRequestMetadata(null, null, null, null));
+    }
+
+    public synchronized LiveRenderResult handleEvent(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+        LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
+
         String traceId = nextTraceId();
         Instant start = Instant.now();
 
@@ -172,6 +184,11 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public synchronized LiveRenderResult updateClientState(ClientState nextClientState) {
+        return updateClientState(nextClientState, new LiveHttpRequestMetadata(null, null, null, null));
+    }
+
+    public synchronized LiveRenderResult updateClientState(ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+        LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
         mergeClientState(nextClientState);
         return renderPath(currentPath);
     }
@@ -188,6 +205,7 @@ public final class LiveSession implements AutoCloseable {
                 + renderHeadNodes()
                 + renderActionHeadContributions()
                 + renderInternalCss(result.css())
+                + renderCsrfMetaTag()
                 + "</head>"
                 + "<body>"
                 + "<div id=\"ujfe-root\">" + result.html() + "</div>"
@@ -278,6 +296,13 @@ public final class LiveSession implements AutoCloseable {
             return "";
         }
         return "<style data-ujfe-css>" + css + "</style>";
+    }
+
+    private String renderCsrfMetaTag() {
+        if (config.isCsrfProtectionDisabled()) {
+            return "";
+        }
+        return "<meta name=\"ujfe-csrf-token\" content=\"" + HtmlEscaper.escape(csrfToken) + "\">";
     }
 
     private Map<String, Object> clientStateMetadata() {

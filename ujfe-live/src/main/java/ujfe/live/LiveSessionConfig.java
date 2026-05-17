@@ -17,6 +17,7 @@ public final class LiveSessionConfig {
     private final String title;
     private final List<Node> headNodes;
     private final RuntimeActionRegistry runtimeActions;
+    private final boolean csrfProtectionDisabled;
 
     private LiveSessionConfig(Builder builder) {
         this.themeSupplier = builder.themeSupplier;
@@ -26,6 +27,7 @@ public final class LiveSessionConfig {
         this.title = builder.title;
         this.headNodes = List.copyOf(builder.headNodes);
         this.runtimeActions = builder.runtimeActions;
+        this.csrfProtectionDisabled = builder.csrfProtectionDisabled;
     }
 
     public static LiveSessionConfig defaults() {
@@ -64,6 +66,10 @@ public final class LiveSessionConfig {
         return runtimeActions;
     }
 
+    public boolean isCsrfProtectionDisabled() {
+        return csrfProtectionDisabled;
+    }
+
     public static final class Builder {
         private Supplier<CssTheme> themeSupplier = CssTheme::defaultTheme;
         private CssMode cssMode = CssMode.INTERNAL;
@@ -72,6 +78,7 @@ public final class LiveSessionConfig {
         private String title = "UJFE";
         private final List<Node> headNodes = new ArrayList<>();
         private RuntimeActionRegistry runtimeActions = RuntimeActionRegistry.empty();
+        private boolean csrfProtectionDisabled;
 
         private Builder() {
         }
@@ -114,6 +121,11 @@ public final class LiveSessionConfig {
 
         public Builder runtimeActions(RuntimeActionRegistry runtimeActions) {
             this.runtimeActions = Objects.requireNonNull(runtimeActions, "runtimeActions");
+            return this;
+        }
+
+        public Builder disableCsrfProtectionForDevelopmentUnsafe() {
+            this.csrfProtectionDisabled = true;
             return this;
         }
 

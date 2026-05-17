@@ -135,6 +135,22 @@ public final class LiveHttpCodec {
                 + " message=\"" + exception.safeMessage() + "\"");
     }
 
+    public static void logRejectedCsrf(
+            LiveCsrfException exception,
+            String runtimeAdapter,
+            String traceId
+    ) {
+        Objects.requireNonNull(exception, "exception");
+        String adapter = safeLogValue(runtimeAdapter, "unknown");
+        String trace = safeLogValue(traceId, "unavailable");
+        LOGGER.warning(() -> "event=ujfe.live_csrf_rejected"
+                + " category=" + exception.category().logValue()
+                + " adapter=" + adapter
+                + " hasHeader=" + exception.isCsrfHeaderPresent()
+                + " traceId=" + trace
+                + " message=\"" + exception.safeMessage() + "\"");
+    }
+
     static String validateJsonObjectPayload(String json, int maxPayloadBytes) {
         Objects.requireNonNull(json, "json");
         validateMaxPayloadBytes(maxPayloadBytes);
