@@ -8,6 +8,16 @@
 - Added safe validation errors for empty bodies, empty JSON objects, malformed JSON, missing `eventId`, missing `clientState`, and oversized payloads.
 - Added security-focused tests for malformed, incomplete, oversized, and valid live payloads across the shared codec and supported HTTP adapters.
 - Documented live event payloads, payload limit policy, safe error responses, logging metadata, and runtime reuse expectations in `docs/live-events.md`.
+- Added CSRF protection for `/_ujfe/event` and `/_ujfe/state` mutating live endpoints using a session-specific token injected via meta tag.
+- Added strict `Origin` and `Referer` header validation against request scheme, host, and effective port as a defense-in-depth CSRF measure.
+- Introduced `LiveHttpRequestMetadata` to securely transfer HTTP context from Netty, Servlet, and Spring adapters to `LiveSession`.
+- Introduced `LiveCsrfException` and safe structured logging for CSRF failures without leaking tokens.
+- Added configuration option `disableCsrfProtectionForDevelopmentUnsafe` for local development.
+- Documented CSRF protection architecture in `docs/security/csrf.md`.
+
+## Version 0.13.0 - 17/05/2026
+
+- Fixed Live HTTP JSON Codec issues under [UJFE-013].
 
 ## Version 0.12.0 - 17/05/2026
 

@@ -26,7 +26,7 @@ final class LiveSessionLifecycleTest {
         try (LiveSession session = new LiveSession(new Router().register(page))) {
             String document = session.renderDocument("/", ClientState.empty());
             String eventId = extractEventId(document);
-            session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
         }
 
         assertEquals(1, page.mounts());
@@ -134,7 +134,7 @@ final class LiveSessionLifecycleTest {
             String document = session.renderDocument("/", ClientState.empty());
             eventId = extractEventId(document);
 
-            session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
         }
 
         assertEquals(eventId, routedEventId.get());

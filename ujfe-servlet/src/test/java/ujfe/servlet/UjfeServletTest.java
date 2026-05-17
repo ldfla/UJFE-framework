@@ -68,11 +68,18 @@ final class UjfeServletTest {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
         TestResponse page = service(servlet, TestRequest.get("/"));
         String eventId = firstEventId(page.body());
+        String csrfToken = firstCsrfToken(page.body());
 
         TestResponse event = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                .header("X-UJFE-CSRF", csrfToken)
+                .header("Origin", "http://localhost")
+                .header("Host", "localhost")
                 .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
                         + "\"localStorage\":{\"theme\":\"dark\"}}}"));
         TestResponse state = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
+                .header("X-UJFE-CSRF", csrfToken)
+                .header("Origin", "http://localhost")
+                .header("Host", "localhost")
                 .body("{\"clientState\":{\"cookies\":\"ujfe_demo=novo\",\"localStorage\":{}}}"));
 
         assertEquals(200, event.status());
@@ -80,6 +87,94 @@ final class UjfeServletTest {
         assertTrue(event.body().contains("\"html\""));
         assertEquals(200, state.status());
         assertTrue(state.body().contains("Cookie: novo"));
+    }
+
+    @Test
+    void rejectsEventWithoutCsrfToken() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .header("Origin", "http://localhost")
+                    .header("Host", "localhost")
+                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(403, response.status());
+        assertEquals("Missing CSRF token.", response.body());
+    }
+
+    @Test
+    void rejectsEventWithInvalidCsrfToken() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .header("X-UJFE-CSRF", "invalid-token")
+                    .header("Origin", "http://localhost")
+                    .header("Host", "localhost")
+                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(403, response.status());
+        assertEquals("Invalid CSRF token.", response.body());
+    }
+
+    @Test
+    void rejectsCrossOriginLivePost() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+        String csrfToken = firstCsrfToken(page.body());
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .header("X-UJFE-CSRF", csrfToken)
+                    .header("Origin", "http://evil.test")
+                    .header("Host", "localhost")
+                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(403, response.status());
+        assertEquals("Cross-origin request rejected.", response.body());
+    }
+
+    @Test
+    void rejectsStateEndpointWithoutCsrfToken() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
+                    .header("Origin", "http://localhost")
+                    .header("Host", "localhost")
+                    .body("{\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(403, response.status());
+        assertEquals("Missing CSRF token.", response.body());
+    }
+
+    @Test
+    void developmentOverrideAllowsMissingCsrfToken() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()),
+                LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build());
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+
+        TestResponse response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+
+        assertEquals(200, response.status());
+        assertTrue(response.body().contains("\"html\""));
+        assertFalse(page.body().contains("ujfe-csrf-token"));
     }
 
     @Test
@@ -269,6 +364,12 @@ final class UjfeServletTest {
         return matcher.group(1);
     }
 
+    private static String firstCsrfToken(String html) {
+        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
+        assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
+        return matcher.group(1);
+    }
+
     private static String liveConfigTitle(LiveSessionConfig config) {
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
             return session.renderDocument("/", ujfe.core.ClientState.empty())
@@ -358,6 +459,7 @@ final class UjfeServletTest {
         private String contextPath = "";
         private String servletPath = "";
         private String pathInfo;
+        private String scheme = "http";
         private String body = "";
 
         private TestRequest(String method, String requestUri) {
@@ -380,6 +482,11 @@ final class UjfeServletTest {
 
         TestRequest parameter(String name, String value) {
             parameters.put(name, value);
+            return this;
+        }
+
+        TestRequest header(String name, String value) {
+            headers.put(name, value);
             return this;
         }
 
@@ -425,6 +532,9 @@ final class UjfeServletTest {
                 }
                 if ("getHeader".equals(name)) {
                     return headers.get(args[0]);
+                }
+                if ("getScheme".equals(name)) {
+                    return scheme;
                 }
                 if ("getReader".equals(name)) {
                     return new BufferedReader(new StringReader(body));

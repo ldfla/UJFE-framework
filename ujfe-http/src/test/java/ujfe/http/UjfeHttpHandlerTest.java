@@ -15,6 +15,7 @@ import ujfe.core.Node;
 import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveSessionConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
@@ -39,14 +40,124 @@ final class UjfeHttpHandlerTest {
 
             FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
             String eventId = firstEventId(responseBody(page));
+            String csrfToken = firstCsrfToken(responseBody(page));
 
-            FullHttpResponse event = send(channel, request(HttpMethod.POST, LiveHttpPaths.EVENT,
+            FullHttpRequest eventRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
                     "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
-                            + "\"localStorage\":{\"theme\":\"dark\"}}}"));
+                            + "\"localStorage\":{\"theme\":\"dark\"}}}");
+            eventRequest.headers().set("X-UJFE-CSRF", csrfToken);
+            eventRequest.headers().set("Origin", "http://localhost");
+            eventRequest.headers().set("Host", "localhost");
+
+            FullHttpResponse event = send(channel, eventRequest);
 
             assertEquals(HttpResponseStatus.OK, event.status());
             assertTrue(event.headers().get(HttpHeaderNames.CONTENT_TYPE).startsWith("application/json"));
             assertTrue(responseBody(event).contains("\"html\""));
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rejectsLiveEventWithoutCsrfToken() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String eventId = firstEventId(responseBody(page));
+            FullHttpRequest eventRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            eventRequest.headers().set("Origin", "http://localhost");
+            eventRequest.headers().set("Host", "localhost");
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, eventRequest);
+
+                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
+                assertEquals("Missing CSRF token.", responseBody(response));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rejectsLiveEventWithInvalidCsrfToken() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String eventId = firstEventId(responseBody(page));
+            FullHttpRequest eventRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            eventRequest.headers().set("X-UJFE-CSRF", "invalid-token");
+            eventRequest.headers().set("Origin", "http://localhost");
+            eventRequest.headers().set("Host", "localhost");
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, eventRequest);
+
+                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
+                assertEquals("Invalid CSRF token.", responseBody(response));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rejectsCrossOriginLiveEvent() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String eventId = firstEventId(responseBody(page));
+            String csrfToken = firstCsrfToken(responseBody(page));
+            FullHttpRequest eventRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            eventRequest.headers().set("X-UJFE-CSRF", csrfToken);
+            eventRequest.headers().set("Origin", "http://evil.test");
+            eventRequest.headers().set("Host", "localhost");
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, eventRequest);
+
+                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
+                assertEquals("Cross-origin request rejected.", responseBody(response));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rejectsStateEndpointWithoutCsrfToken() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpRequest stateRequest = request(HttpMethod.POST, LiveHttpPaths.STATE,
+                    "{\"clientState\":{\"localStorage\":{}}}");
+            stateRequest.headers().set("Origin", "http://localhost");
+            stateRequest.headers().set("Host", "localhost");
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, stateRequest);
+
+                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
+                assertEquals("Missing CSRF token.", responseBody(response));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void developmentOverrideAllowsMissingCsrfToken() {
+        LiveSessionConfig config = LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String pageBody = responseBody(page);
+            String eventId = firstEventId(pageBody);
+
+            FullHttpResponse event = send(channel, request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+
+            assertEquals(HttpResponseStatus.OK, event.status());
+            assertTrue(responseBody(event).contains("\"html\""));
+            assertFalse(pageBody.contains("ujfe-csrf-token"));
             channel.finishAndReleaseAll();
         }
     }
@@ -141,6 +252,12 @@ final class UjfeHttpHandlerTest {
     private static String firstEventId(String html) {
         Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
+        return matcher.group(1);
+    }
+
+    private static String firstCsrfToken(String html) {
+        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
+        assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
         return matcher.group(1);
     }
 

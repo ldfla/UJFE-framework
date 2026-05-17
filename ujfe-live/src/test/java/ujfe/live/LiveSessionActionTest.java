@@ -77,7 +77,7 @@ final class LiveSessionActionTest {
             String document = session.renderDocument("/", ClientState.empty());
             String eventId = extractEventId(document);
 
-            session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
         }
 
         assertFalse(log.isEmpty());
@@ -95,7 +95,7 @@ final class LiveSessionActionTest {
             String document = session.renderDocument("/", ClientState.empty());
             String eventId = extractEventId(document);
 
-            session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
         }
 
         assertFalse(log.isEmpty());
@@ -119,7 +119,7 @@ final class LiveSessionActionTest {
             String document = session.renderDocument("/", ClientState.empty());
             eventId = extractEventId(document);
 
-            assertThrows(SecurityException.class, () -> session.handleEvent(eventId, ClientState.empty()));
+            assertThrows(SecurityException.class, () -> session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
         }
         assertEquals(List.of("EVENT:" + eventId + ":blocked"), errors);
         assertTrue(after.isEmpty());
@@ -150,7 +150,7 @@ final class LiveSessionActionTest {
 
         try (LiveSession session = sessionWithActions(actions)) {
             assertThrows(IllegalArgumentException.class,
-                    () -> session.handleEvent("nonexistent-event", ClientState.empty()));
+                    () -> session.handleEvent("nonexistent-event", ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
         }
         assertTrue(errors.stream().anyMatch(e -> e.contains("EVENT") || e.contains("RENDER")));
     }

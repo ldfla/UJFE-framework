@@ -24,6 +24,8 @@ import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveHttpSecurity;
 import ujfe.live.LiveRenderResult;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveCsrfException;
+import ujfe.live.LiveHttpRequestMetadata;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -83,13 +85,16 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                         readJsonPayload(request),
                         maxJsonPayloadBytes
                 );
-                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState());
+                LiveHttpRequestMetadata metadata = createMetadata(request);
+                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
 
             if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.STATE.equals(path)) {
+                LiveHttpRequestMetadata metadata = createMetadata(request);
                 LiveRenderResult result = liveSession.updateClientState(
-                        LiveHttpCodec.parseStatePayload(readJsonPayload(request), maxJsonPayloadBytes)
+                        LiveHttpCodec.parseStatePayload(readJsonPayload(request), maxJsonPayloadBytes),
+                        metadata
                 );
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
@@ -101,13 +106,16 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             }
 
             return response(HttpResponseStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+        } catch (LiveCsrfException exception) {
+            LiveHttpCodec.logRejectedCsrf(exception, "netty", correlationId(request));
+            return response(HttpResponseStatus.FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "netty", correlationId(request));
             return response(HttpResponseStatus.valueOf(exception.httpStatus()),
                     "text/plain; charset=utf-8",
                     exception.safeMessage());
         } catch (IllegalArgumentException exception) {
-            return response(HttpResponseStatus.NOT_FOUND, "text/plain; charset=utf-8", exception.getMessage());
+            return response(HttpResponseStatus.NOT_FOUND, "text/plain; charset=utf-8", "Not found");
         } catch (RuntimeException exception) {
             return response(HttpResponseStatus.INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", "Internal server error");
         }
@@ -133,6 +141,16 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             return requestId;
         }
         return request.headers().get("X-Correlation-Id");
+    }
+
+    private static LiveHttpRequestMetadata createMetadata(FullHttpRequest request) {
+        return new LiveHttpRequestMetadata(
+                request.headers().get("X-UJFE-CSRF"),
+                request.headers().get(HttpHeaderNames.ORIGIN),
+                request.headers().get(HttpHeaderNames.REFERER),
+                request.headers().get(HttpHeaderNames.HOST),
+                "http"
+        );
     }
 
     private static FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {

@@ -184,8 +184,11 @@ Invalid live JSON requests produce deterministic safe messages. The client does 
 | missing event id | `400` | `Live event payload is missing eventId.` |
 | missing state object | `400` | `Live state payload is missing clientState.` |
 | payload too large | `413` | `Live JSON payload exceeds maximum size.` |
+| missing csrf token | `403` | `Missing CSRF token.` |
+| invalid csrf token | `403` | `Invalid CSRF token.` |
+| cross origin request | `403` | `Missing Origin and Referer headers.`, `Cross-origin request rejected.`, `Cross-origin scheme mismatch.`, or `Cross-origin port mismatch.` |
 
-Malformed, empty, incomplete, or oversized payloads are rejected before dispatching live event handlers.
+Malformed, empty, incomplete, or oversized payloads are rejected before dispatching live event handlers. CSRF failures are also rejected before dispatching. Same-origin validation compares request scheme, host, and effective port.
 
 ## Logging And Observability
 
@@ -235,6 +238,7 @@ New HTTP runtimes should follow this sequence for live JSON endpoints:
 4. Call `LiveHttpCodec.parseEventPayload(...)` or `LiveHttpCodec.parseStatePayload(...)`.
 5. Dispatch to `LiveSession`.
 6. Serialize the response through `LiveHttpCodec.livePayload(...)`.
-7. Catch `LiveHttpCodecException`, log it with safe metadata, and return `safeMessage()`.
+7. Catch `LiveCsrfException`, log it with safe metadata, and return `safeMessage()` with HTTP status `403`.
+8. Catch `LiveHttpCodecException`, log it with safe metadata, and return `safeMessage()` with its HTTP status.
 
 Adapters should not duplicate JSON parsing rules or expose raw exception messages to clients.
