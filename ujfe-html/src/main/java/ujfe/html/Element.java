@@ -26,7 +26,7 @@ public final class Element implements Node {
     private final Map<String, Supplier<String>> dynamicAttributes;
     private final Map<String, Supplier<Boolean>> booleanAttributes;
     private final Map<String, Runnable> eventHandlers;
-    private final List<Node> children;
+    private final List<ujfe.core.Node> children;
     private String cssClasses;
 
     public static Element of(String tagName) {
@@ -141,6 +141,10 @@ public final class Element implements Node {
     }
 
     public Element child(Node child) {
+        return child((ujfe.core.Node) child);
+    }
+
+    public Element child(ujfe.core.Node child) {
         Objects.requireNonNull(child, "child");
         requireChildrenAllowed();
         children.add(child);
@@ -160,7 +164,12 @@ public final class Element implements Node {
         return this;
     }
 
-    public Element children(Collection<? extends Node> nodes) {
+    public Element children(ujfe.core.Node... nodes) {
+        Arrays.stream(nodes).forEach(this::child);
+        return this;
+    }
+
+    public Element children(Collection<? extends ujfe.core.Node> nodes) {
         nodes.forEach(this::child);
         return this;
     }
@@ -514,7 +523,7 @@ public final class Element implements Node {
             return html.toString();
         }
 
-        for (Node child : children) {
+        for (ujfe.core.Node child : children) {
             html.append(child.render(context));
         }
         html.append("</").append(tagName).append('>');

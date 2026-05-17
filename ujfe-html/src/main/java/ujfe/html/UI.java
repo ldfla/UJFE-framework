@@ -1,5 +1,8 @@
 package ujfe.html;
 
+import ujfe.core.Component;
+import ujfe.core.ComponentNode;
+
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -32,6 +35,10 @@ public final class UI {
      */
     public static UnsafeHtml unsafeHtml(String html) {
         return UnsafeHtml.of(html);
+    }
+
+    public static ujfe.core.Node component(Component component) {
+        return new ComponentNode(component);
     }
 
     public static Element html(Node... children) {

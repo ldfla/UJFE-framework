@@ -41,6 +41,7 @@ public final class DocumentationPage implements Component {
                                                 .child(springSection())
                                                 .child(securitySection())
                                                 .child(runtimeActionsSection())
+                                                .child(lifecycleSection())
                                                 .child(restSection())
                                                 .child(cliSection())
                                                 .child(devPreviewSection())
@@ -89,6 +90,7 @@ public final class DocumentationPage implements Component {
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
                                 .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
                                 .child(le().child(strong("Runtime Actions")).child(" with server-side extension points for rendering, events, errors, and head contributions"))
+                                .child(le().child(strong("Lifecycle")).child(" with deterministic mount, unmount, and cleanup"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
                                 .child(le().child(strong("CLI")).child(" with HTML-to-UJFE conversion"))
                                 .child(le().child(strong("Dev Preview")).child(" with a visual inspector"))));
@@ -336,6 +338,28 @@ public final class DocumentationPage implements Component {
                 .child(codeBlock(runtimeActionsCode()))
                 .child(a("Open runtime actions example")
                         .attr("href", "/runtime-actions")
+                        .css("text-sm font-semibold text-indigo-700"));
+    }
+
+    private Node lifecycleSection() {
+        return section()
+                .css("rounded-lg border border-indigo-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .child(h2("Server-side lifecycle").css("text-2xl font-bold text-indigo-700"))
+                .child(p("Lifecycle callbacks are integrated into LiveSession rendering. Stable component instances mount once, route transitions unmount removed instances, and session shutdown cleans up mounted components.")
+                        .css("text-base text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(cssPill("Mount", "onMount once per instance"))
+                                .child(cssPill("Unmount", "onUnmount on route change or close"))
+                                .child(cssPill("Identity", "Java object identity"))
+                                .child(cssPill("Nested", "component(...) tracks child components"))
+                                .child(cssPill("Errors", "RuntimePhase.LIFECYCLE"))
+                                .child(cssPill("Cleanup", "reverse mount order"))
+                )
+                .child(codeBlock(lifecycleCode()))
+                .child(a("Open lifecycle example")
+                        .attr("href", "/lifecycle")
                         .css("text-sm font-semibold text-indigo-700"));
     }
 
@@ -784,6 +808,25 @@ public final class DocumentationPage implements Component {
                 + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
                 + "    .runtimeActions(registry)\n"
                 + "    .build();\n";
+    }
+
+    private String lifecycleCode() {
+        return "public final class ResourcePanel implements Component, Lifecycle {\n"
+                + "    private final Signal<Boolean> open = Signals.signal(false);\n\n"
+                + "    public void onMount() {\n"
+                + "        open.set(true);\n"
+                + "    }\n\n"
+                + "    public void onUnmount() {\n"
+                + "        open.set(false);\n"
+                + "    }\n\n"
+                + "    public Node render() {\n"
+                + "        return p(() -> \"Resource: \" + (open.get() ? \"open\" : \"closed\"));\n"
+                + "    }\n"
+                + "}\n\n"
+                + "private final ResourcePanel panel = new ResourcePanel();\n\n"
+                + "public Node render() {\n"
+                + "    return div().child(component(panel));\n"
+                + "}\n";
     }
 
     private String restCode() {

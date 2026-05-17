@@ -6,6 +6,7 @@ package ujfe.runtime.action;
 public enum RuntimePhase {
     RENDER,
     EVENT,
+    LIFECYCLE,
     HEAD_CONTRIBUTION,
     INTERNAL
 }

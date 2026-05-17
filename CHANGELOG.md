@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## Version 0.9.0 - 16/05/2026
+
+- Updated the Maven project version to `0.9.0-SNAPSHOT`.
+- Added the `ujfe.runtime.lifecycle` package with `LifecycleRuntime`, `LifecycleRegistry`, `LifecycleTracker`, `MountedComponent`, lifecycle state, context, and event classes.
+- Integrated `Lifecycle` mount/unmount callbacks into `LiveSession` rendering, route transitions, and session cleanup.
+- Added `ComponentNode` and `component(...)` helper support so nested components can participate in lifecycle tracking explicitly.
+- Preserved current route page instances across stable live re-renders to avoid duplicate mounts and state loss.
+- Added session cleanup through `LiveSession.close()` and wired HTTP server shutdown to close the live session.
+- Routed lifecycle failures through runtime `onError(...)` actions using `RuntimePhase.LIFECYCLE`.
+- Added lifecycle tests for stable re-rendering, route transitions, nested components, deterministic cleanup, concurrency, callback failures, and empty registries.
+- Added a runnable lifecycle example route at `/lifecycle` and documented it under `examples/lifecycle`.
+- Documented the server-side lifecycle model in `docs/lifecycle.md`.
+
 ## Version 0.8.0 - 16/05/2026
 
 - Updated the Maven project version to `0.8.0-SNAPSHOT`.

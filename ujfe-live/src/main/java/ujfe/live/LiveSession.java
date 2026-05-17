@@ -17,6 +17,11 @@ import ujfe.runtime.action.RenderResult;
 import ujfe.runtime.action.RuntimeActionRegistry;
 import ujfe.runtime.action.RuntimeErrorContext;
 import ujfe.runtime.action.RuntimePhase;
+import ujfe.runtime.lifecycle.LifecycleContext;
+import ujfe.runtime.lifecycle.LifecycleException;
+import ujfe.runtime.lifecycle.LifecycleRuntime;
+import ujfe.runtime.lifecycle.LifecycleTracker;
+import ujfe.runtime.lifecycle.UnmountContext;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -27,14 +32,16 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public final class LiveSession {
+public final class LiveSession implements AutoCloseable {
     private final Router router;
     private final PageRenderer pageRenderer;
     private final LiveEventRegistry eventRegistry;
     private final LiveComponentRenderer componentRenderer;
     private final LiveSessionConfig config;
     private final RuntimeActionRegistry runtimeActions;
+    private final LifecycleRuntime lifecycleRuntime;
     private String currentPath = "/";
+    private Object currentPage;
     private ClientState clientState = ClientState.empty();
 
     public LiveSession(Router router) {
@@ -97,6 +104,7 @@ public final class LiveSession {
         this.eventRegistry = Objects.requireNonNull(eventRegistry, "eventRegistry");
         this.config = Objects.requireNonNull(config, "config");
         this.runtimeActions = config.runtimeActions();
+        this.lifecycleRuntime = LifecycleRuntime.create();
         this.componentRenderer = new LiveComponentRenderer(
                 eventRegistry,
                 ElementIdGenerator.sequential(),
@@ -106,6 +114,10 @@ public final class LiveSession {
     }
 
     public synchronized LiveRenderResult renderPath(String path) {
+        return renderPath(path, null);
+    }
+
+    private LiveRenderResult renderPath(String path, String eventId) {
         String traceId = nextTraceId();
         Instant start = Instant.now();
         RouteDefinition route;
@@ -114,7 +126,7 @@ public final class LiveSession {
         try {
             route = router.resolve(path)
                     .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
-            page = route.createPage();
+            page = pageFor(route);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
                     exception, RuntimePhase.RENDER, path, null, traceId, null));
@@ -126,12 +138,16 @@ public final class LiveSession {
         runtimeActions.executeBeforeRender(renderContext);
 
         LiveRenderResult result;
+        LifecycleTracker lifecycleTracker = lifecycleRuntime.beginRender(new LifecycleContext(
+                route.path(), this, traceId, Map.of()));
         try {
-            result = componentRenderer.render(() -> pageRenderer.render(page), clientState);
+            result = componentRenderer.render(() -> pageRenderer.render(page), clientState, lifecycleTracker);
+            routeLifecycleFailures(lifecycleTracker.complete(), route.path(), eventId, traceId);
             currentPath = route.path();
+            currentPage = page;
         } catch (Exception exception) {
-            runtimeActions.executeOnError(new RuntimeErrorContext(
-                    exception, RuntimePhase.RENDER, route.path(), null, traceId, null));
+            lifecycleTracker.abort();
+            routeRenderFailure(exception, route.path(), eventId, traceId);
             throw exception;
         }
 
@@ -158,7 +174,7 @@ public final class LiveSession {
         try {
             clientState = eventClientState;
             componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId));
-            result = renderPath(currentPath);
+            result = renderPath(currentPath, eventId);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
                     exception, RuntimePhase.EVENT, currentPath, eventId, traceId, null));
@@ -204,8 +220,50 @@ public final class LiveSession {
         return componentRenderer.renderCss(classes);
     }
 
+    @Override
+    public synchronized void close() {
+        String traceId = nextTraceId();
+        List<LifecycleException> failures = lifecycleRuntime.cleanup(
+                new UnmountContext(currentPath, this, traceId, Map.of(), "session-close"));
+        routeLifecycleFailures(failures, currentPath, null, traceId);
+        eventRegistry.clear();
+        currentPage = null;
+    }
+
     private void mergeClientState(ClientState nextClientState) {
         clientState = clientState.mergeCookiesAndReplaceLocalStorage(nextClientState);
+    }
+
+    private Object pageFor(RouteDefinition route) {
+        if (currentPage != null && route.path().equals(currentPath)) {
+            return currentPage;
+        }
+        return route.createPage();
+    }
+
+    private void routeLifecycleFailures(
+            List<LifecycleException> failures,
+            String path,
+            String eventId,
+            String traceId
+    ) {
+        for (LifecycleException failure : failures) {
+            runtimeActions.executeOnError(new RuntimeErrorContext(
+                    failure, RuntimePhase.LIFECYCLE, path, eventId, traceId,
+                    Map.of("callback", failure.callback())));
+        }
+    }
+
+    private void routeRenderFailure(Exception exception, String path, String eventId, String traceId) {
+        if (exception instanceof LifecycleException) {
+            LifecycleException lifecycleException = (LifecycleException) exception;
+            runtimeActions.executeOnError(new RuntimeErrorContext(
+                    lifecycleException, RuntimePhase.LIFECYCLE, path, eventId, traceId,
+                    Map.of("callback", lifecycleException.callback())));
+            return;
+        }
+        runtimeActions.executeOnError(new RuntimeErrorContext(
+                exception, RuntimePhase.RENDER, path, null, traceId, null));
     }
 
     private String renderHeadNodes() {

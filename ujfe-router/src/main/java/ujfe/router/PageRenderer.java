@@ -1,7 +1,9 @@
 package ujfe.router;
 
 import ujfe.core.Component;
+import ujfe.core.ComponentNode;
 import ujfe.core.Node;
+import ujfe.core.UjfeContext;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,13 +18,14 @@ public final class PageRenderer {
     public Node render(Object page) {
         Objects.requireNonNull(page, "page");
         if (page instanceof Component) {
-            return ((Component) page).render();
+            return new ComponentNode((Component) page);
         }
         return renderViaMethod(page);
     }
 
     private Node renderViaMethod(Object page) {
         try {
+            UjfeContext.current().ifPresent(context -> context.trackLifecycle(page));
             Method render = page.getClass().getMethod("render");
             Object result = render.invoke(page);
             if (!(result instanceof Node)) {

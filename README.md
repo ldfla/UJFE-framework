@@ -45,6 +45,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Attribute validation](docs/security/attribute-validation.md)
 - [Safe URL policy](docs/security/safe-url.md)
 - [Runtime extension points](docs/runtime-extension-points.md)
+- [Lifecycle](docs/lifecycle.md)
 
 ## Modules
 
@@ -420,6 +421,7 @@ The public API is documented in English so the project can be used globally. The
 - `ujfe.signals.Signal` and `Signals`: mutable and computed state primitives for live server-rendered components.
 - `ujfe.core.RestClient` and `RestResponse`: small Java HttpClient wrapper for server-side API calls.
 - `ujfe.runtime.action.RuntimeActionRegistry` and `RuntimeActionRegistryBuilder`: server-side runtime extension point registry. Register `BeforeRenderAction`, `AfterRenderAction`, `BeforeEventAction`, `AfterEventAction`, `ErrorAction`, and `HeadContributionAction` through the builder. Inject via `LiveSessionConfig.builder().runtimeActions(registry)`. Actions are ordered by `ActionOrder` priority.
+- `ujfe.runtime.lifecycle.LifecycleRuntime`: deterministic server-side lifecycle tracking for mounted pages and components, wired through `LiveSession`.
 - `ujfe.cli.UjfeCli`: command-line entry point, including HTML-to-UJFE conversion.
 
 ## Documentation Pattern
@@ -503,7 +505,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.8.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.9.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -511,7 +513,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.8.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.9.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>

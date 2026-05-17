@@ -1,5 +1,7 @@
 package ujfe.core;
 
+import ujfe.runtime.lifecycle.LifecycleTracker;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -16,6 +18,7 @@ public final class UjfeContext {
     private final Executor executor;
     private final ClientState clientState;
     private final Set<String> cssClasses;
+    private final LifecycleTracker lifecycleTracker;
 
     private UjfeContext(Builder builder) {
         this.elementIdGenerator = builder.elementIdGenerator;
@@ -23,6 +26,7 @@ public final class UjfeContext {
         this.executor = builder.executor;
         this.clientState = builder.clientState;
         this.cssClasses = new LinkedHashSet<>();
+        this.lifecycleTracker = builder.lifecycleTracker;
     }
 
     public static UjfeContext create() {
@@ -98,6 +102,12 @@ public final class UjfeContext {
         return Collections.unmodifiableSet(cssClasses);
     }
 
+    public void trackLifecycle(Object candidate) {
+        if (lifecycleTracker != null) {
+            lifecycleTracker.track(candidate);
+        }
+    }
+
     @FunctionalInterface
     public interface EventRegistrar {
         String register(Runnable handler);
@@ -108,6 +118,7 @@ public final class UjfeContext {
         private EventRegistrar eventRegistrar;
         private Executor executor = Runnable::run;
         private ClientState clientState = ClientState.empty();
+        private LifecycleTracker lifecycleTracker;
 
         private Builder() {
         }
@@ -129,6 +140,11 @@ public final class UjfeContext {
 
         public Builder clientState(ClientState clientState) {
             this.clientState = Objects.requireNonNull(clientState, "clientState");
+            return this;
+        }
+
+        public Builder lifecycleTracker(LifecycleTracker lifecycleTracker) {
+            this.lifecycleTracker = lifecycleTracker;
             return this;
         }
 

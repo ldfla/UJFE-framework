@@ -305,7 +305,7 @@ public final class UtilityCssRenderer {
             return spacingDeclarations;
         }
 
-        return themeDeclarations(className, theme);
+        return themeDeclarations(className);
     }
 
     private static String spacingDeclarations(String className) {
@@ -399,27 +399,27 @@ public final class UtilityCssRenderer {
         return value.toPlainString() + "rem";
     }
 
-    private static String themeDeclarations(String className, CssTheme theme) {
+    private static String themeDeclarations(String className) {
         String color = null;
         String property = null;
         if (className.startsWith("bg-")) {
-            color = themeColor(className.substring(3), theme);
+            color = themeColor(className.substring(3));
             property = "background-color";
         } else if (className.startsWith("text-")) {
-            color = themeColor(className.substring(5), theme);
+            color = themeColor(className.substring(5));
             property = "color";
         } else if (className.startsWith("border-")) {
-            color = themeColor(className.substring(7), theme);
+            color = themeColor(className.substring(7));
             property = "border-color";
         }
 
-        if (color == null || property == null) {
+        if (color == null) {
             return null;
         }
         return property + ":" + color + ";";
     }
 
-    private static String themeColor(String token, CssTheme theme) {
+    private static String themeColor(String token) {
         if ("primary".equals(token)) {
             return themeVariable("primary", 500);
         }

@@ -34,8 +34,9 @@ final class LiveSessionActionTest {
                 .beforeRender(ctx -> log.add("before:" + ctx.path()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        session.renderPath("/");
+        try (LiveSession session = sessionWithActions(actions)) {
+            session.renderPath("/");
+        }
 
         assertEquals(1, log.size());
         assertTrue(log.get(0).startsWith("before:/"));
@@ -48,8 +49,9 @@ final class LiveSessionActionTest {
                 .afterRender(result -> log.add("html:" + (result.html().contains("Hello") ? "yes" : "no")))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        session.renderPath("/");
+        try (LiveSession session = sessionWithActions(actions)) {
+            session.renderPath("/");
+        }
 
         assertEquals(List.of("html:yes"), log);
     }
@@ -61,8 +63,9 @@ final class LiveSessionActionTest {
                 .afterRender(result -> durations.add(result.renderDuration() != null))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        session.renderPath("/");
+        try (LiveSession session = sessionWithActions(actions)) {
+            session.renderPath("/");
+        }
 
         assertEquals(List.of(true), durations);
     }
@@ -76,11 +79,12 @@ final class LiveSessionActionTest {
                 .beforeEvent(ctx -> log.add("beforeEvent:" + ctx.eventId()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        String document = session.renderDocument("/", ClientState.empty());
-        String eventId = extractEventId(document);
+        try (LiveSession session = sessionWithActions(actions)) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractEventId(document);
 
-        session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty());
+        }
 
         assertFalse(log.isEmpty());
         assertTrue(log.get(0).startsWith("beforeEvent:"));
@@ -93,11 +97,12 @@ final class LiveSessionActionTest {
                 .afterEvent(result -> log.add("afterEvent:" + result.eventId()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        String document = session.renderDocument("/", ClientState.empty());
-        String eventId = extractEventId(document);
+        try (LiveSession session = sessionWithActions(actions)) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractEventId(document);
 
-        session.handleEvent(eventId, ClientState.empty());
+            session.handleEvent(eventId, ClientState.empty());
+        }
 
         assertFalse(log.isEmpty());
         assertTrue(log.get(0).startsWith("afterEvent:"));
@@ -113,11 +118,13 @@ final class LiveSessionActionTest {
                 .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.eventId() + ":" + ctx.exception().getMessage()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        String document = session.renderDocument("/", ClientState.empty());
-        String eventId = extractEventId(document);
+        String eventId;
+        try (LiveSession session = sessionWithActions(actions)) {
+            String document = session.renderDocument("/", ClientState.empty());
+            eventId = extractEventId(document);
 
-        assertThrows(SecurityException.class, () -> session.handleEvent(eventId, ClientState.empty()));
+            assertThrows(SecurityException.class, () -> session.handleEvent(eventId, ClientState.empty()));
+        }
         assertEquals(List.of("EVENT:" + eventId + ":blocked"), errors);
         assertTrue(after.isEmpty());
     }
@@ -131,9 +138,9 @@ final class LiveSessionActionTest {
                 .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.exception().getMessage()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-
-        assertThrows(IllegalArgumentException.class, () -> session.renderPath("/nonexistent"));
+        try (LiveSession session = sessionWithActions(actions)) {
+            assertThrows(IllegalArgumentException.class, () -> session.renderPath("/nonexistent"));
+        }
         assertEquals(1, errors.size());
         assertTrue(errors.get(0).startsWith("RENDER:"));
     }
@@ -145,10 +152,10 @@ final class LiveSessionActionTest {
                 .onError(ctx -> errors.add(ctx.phase().name()))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> session.handleEvent("nonexistent-event", ClientState.empty()));
+        try (LiveSession session = sessionWithActions(actions)) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> session.handleEvent("nonexistent-event", ClientState.empty()));
+        }
         assertTrue(errors.stream().anyMatch(e -> e.contains("EVENT") || e.contains("RENDER")));
     }
 
@@ -161,8 +168,10 @@ final class LiveSessionActionTest {
                         meta().attr("name", "robots").attr("content", "index,follow")))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        String document = session.renderDocument("/", ClientState.empty());
+        String document;
+        try (LiveSession session = sessionWithActions(actions)) {
+            document = session.renderDocument("/", ClientState.empty());
+        }
 
         assertTrue(document.contains("name=\"robots\""));
         assertTrue(document.contains("content=\"index,follow\""));
@@ -175,8 +184,10 @@ final class LiveSessionActionTest {
                 .contributeHead(ctx -> ctx.add(meta().attr("name", "second")))
                 .build();
 
-        LiveSession session = sessionWithActions(actions);
-        String document = session.renderDocument("/", ClientState.empty());
+        String document;
+        try (LiveSession session = sessionWithActions(actions)) {
+            document = session.renderDocument("/", ClientState.empty());
+        }
 
         int firstIndex = document.indexOf("name=\"first\"");
         int secondIndex = document.indexOf("name=\"second\"");
@@ -188,9 +199,10 @@ final class LiveSessionActionTest {
         LiveSessionConfig config = LiveSessionConfig.builder()
                 .head(List.of(meta().attr("name", "collection-head")))
                 .build();
-        LiveSession session = new LiveSession(new Router().register(new SimplePage()), config);
-
-        String document = session.renderDocument("/", ClientState.empty());
+        String document;
+        try (LiveSession session = new LiveSession(new Router().register(new SimplePage()), config)) {
+            document = session.renderDocument("/", ClientState.empty());
+        }
 
         assertTrue(document.contains("name=\"collection-head\""));
     }
@@ -199,9 +211,10 @@ final class LiveSessionActionTest {
 
     @Test
     void emptyRegistryDoesNotAffectExistingBehavior() {
-        LiveSession session = new LiveSession(new Router().register(new SimplePage()));
-
-        String document = session.renderDocument("/", ClientState.empty());
+        String document;
+        try (LiveSession session = new LiveSession(new Router().register(new SimplePage()))) {
+            document = session.renderDocument("/", ClientState.empty());
+        }
         assertTrue(document.contains("Hello"));
         assertTrue(document.contains("<!doctype html>"));
     }
@@ -210,22 +223,28 @@ final class LiveSessionActionTest {
     void legacyConstructorsRemainUsable() {
         Router router = new Router().register(new SimplePage());
 
-        assertTrue(new LiveSession(router, ujfe.html.CssTheme::defaultTheme)
-                .renderPath("/")
-                .html()
-                .contains("Hello"));
-        assertTrue(new LiveSession(router, new PageRenderer(), new LiveEventRegistry())
-                .renderPath("/")
-                .html()
-                .contains("Hello"));
-        assertTrue(new LiveSession(router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme)
-                .renderPath("/")
-                .html()
-                .contains("Hello"));
-        assertTrue(new LiveSession(router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme, true)
-                .renderPath("/")
-                .html()
-                .contains("Hello"));
+        try (LiveSession session = new LiveSession(router, ujfe.html.CssTheme::defaultTheme)) {
+            assertTrue(session.renderPath("/")
+                    .html()
+                    .contains("Hello"));
+        }
+        try (LiveSession session = new LiveSession(router, new PageRenderer(), new LiveEventRegistry())) {
+            assertTrue(session.renderPath("/")
+                    .html()
+                    .contains("Hello"));
+        }
+        try (LiveSession session = new LiveSession(
+                router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme)) {
+            assertTrue(session.renderPath("/")
+                    .html()
+                    .contains("Hello"));
+        }
+        try (LiveSession session = new LiveSession(
+                router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme, true)) {
+            assertTrue(session.renderPath("/")
+                    .html()
+                    .contains("Hello"));
+        }
     }
 
     // --- Helpers ---

@@ -1,6 +1,7 @@
 package app;
 
 import app.pages.DocumentationPage;
+import app.pages.LifecyclePage;
 import app.pages.MainPage;
 import app.pages.RuntimeActionsPage;
 import ujfe.http.UjfeServer;
@@ -20,6 +21,7 @@ public final class Main {
         var router = new Router()
                 .register(new MainPage())
                 .register(new DocumentationPage(appTheme))
+                .register(new LifecyclePage())
                 .register(runtimeActionsPage);
 
         RuntimeActionRegistry actions = RuntimeActionsPage.sampleRegistry();

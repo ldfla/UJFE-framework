@@ -6,6 +6,7 @@ import ujfe.core.Node;
 import ujfe.core.UjfeContext;
 import ujfe.html.CssTheme;
 import ujfe.html.UtilityCssRenderer;
+import ujfe.runtime.lifecycle.LifecycleTracker;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -46,14 +47,25 @@ public final class LiveComponentRenderer {
     }
 
     public LiveRenderResult render(Supplier<? extends Node> nodeSupplier, ClientState clientState) {
+        return render(nodeSupplier, clientState, null);
+    }
+
+    public LiveRenderResult render(
+            Supplier<? extends Node> nodeSupplier,
+            ClientState clientState,
+            LifecycleTracker lifecycleTracker
+    ) {
         Objects.requireNonNull(nodeSupplier, "nodeSupplier");
         Objects.requireNonNull(clientState, "clientState");
         eventRegistry.clear();
-        UjfeContext context = UjfeContext.builder()
+        UjfeContext.Builder contextBuilder = UjfeContext.builder()
                 .elementIdGenerator(elementIdGenerator)
                 .eventRegistrar(eventRegistry::register)
-                .clientState(clientState)
-                .build();
+                .clientState(clientState);
+        if (lifecycleTracker != null) {
+            contextBuilder = contextBuilder.lifecycleTracker(lifecycleTracker);
+        }
+        UjfeContext context = contextBuilder.build();
 
         Node node = UjfeContext.withCurrent(context, nodeSupplier);
         String html = UjfeContext.withCurrent(context, () -> node.render(context));

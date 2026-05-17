@@ -54,6 +54,7 @@ public final class UjfeServer {
     }
 
     public void stop() {
+        liveSession.close();
         if (channel != null) {
             channel.close();
         }

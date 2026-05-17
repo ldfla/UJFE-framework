@@ -1,6 +1,7 @@
 package ujfe.html;
 
 import org.junit.jupiter.api.Test;
+import ujfe.core.Component;
 import ujfe.core.UjfeContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +62,21 @@ final class ElementRenderingTest {
                 .children(h1("Title"), p("Body"));
 
         assertEquals("<article><h1>Title</h1><p>Body</p></article>", article.render());
+    }
+
+    @Test
+    void rendersComponentNodeChildren() {
+        Component sample = () -> p("Component");
+
+        assertEquals("<div><p>Component</p></div>", div().child(component(sample)).render());
+    }
+
+    @Test
+    void rendersCoreNodeChildVarargs() {
+        Component sample = () -> p("Component");
+        ujfe.core.Node[] nodes = {component(sample), p("Tail")};
+
+        assertEquals("<div><p>Component</p><p>Tail</p></div>", div().children(nodes).render());
     }
 
     @Test
