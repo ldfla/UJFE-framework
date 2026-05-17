@@ -1,11 +1,73 @@
 package ujfe.live;
 
 import org.junit.jupiter.api.Test;
+import ujfe.core.Node;
+import ujfe.router.Page;
 import ujfe.router.Router;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.p;
 
 final class LiveHttpSecurityTest {
+    @Test
+    void defaultSecurityHeadersArePresent() {
+        var headers = LiveHttpSecurity.securityHeaders();
+
+        assertEquals("nosniff", headers.get(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS));
+        assertEquals("DENY", headers.get(SecurityHeadersConfig.X_FRAME_OPTIONS));
+        assertEquals("strict-origin-when-cross-origin", headers.get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("geolocation=(), microphone=(), camera=()", headers.get(SecurityHeadersConfig.PERMISSIONS_POLICY));
+        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY).contains("default-src 'self'"));
+        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY).contains("script-src 'self'"));
+    }
+
+    @Test
+    void customSecurityHeadersOverrideDefaults() {
+        SecurityHeadersConfig config = SecurityHeadersConfig.builder()
+                .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+                .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'; img-src https:")
+                .remove(SecurityHeadersConfig.X_FRAME_OPTIONS)
+                .build();
+
+        var headers = LiveHttpSecurity.securityHeaders(config);
+
+        assertEquals("same-origin", headers.get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("default-src 'self'; img-src https:", headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
+        assertEquals("nosniff", headers.get(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS));
+        assertFalse(headers.containsKey(SecurityHeadersConfig.X_FRAME_OPTIONS));
+    }
+
+    @Test
+    void liveSessionConfigCanOverrideSingleSecurityHeader() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .securityHeader(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+                .build();
+
+        assertEquals("same-origin", config.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("nosniff", config.securityHeaders().get(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS));
+    }
+
+    @Test
+    void securityHeadersCanBeDisabledExplicitly() {
+        assertTrue(LiveHttpSecurity.securityHeaders(SecurityHeadersConfig.disabled()).isEmpty());
+        assertTrue(LiveSessionConfig.builder()
+                .disableSecurityHeaders()
+                .build()
+                .securityHeaders()
+                .isEmpty());
+    }
+
+    @Test
+    void cspIsCompatibleWithExternalClientScript() {
+        String csp = SecurityHeadersConfig.defaults().headers().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY);
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            String document = session.renderDocument("/", ujfe.core.ClientState.empty());
+
+            assertTrue(csp.contains("script-src 'self'"));
+            assertTrue(document.contains("<script src=\"/_ujfe/client.js\"></script>"));
+            assertFalse(document.contains("<script>"));
+        }
+    }
 
     @Test
     void testValidateCsrf_MissingToken_ThrowsException() {
@@ -127,6 +189,13 @@ final class LiveHttpSecurityTest {
              LiveSession second = new LiveSession(new Router())) {
             assertNotEquals(first.csrfToken(), second.csrfToken());
             assertNotEquals(first.sessionId(), second.sessionId());
+        }
+    }
+
+    @Page("/")
+    public static final class HomePage {
+        public Node render() {
+            return p("Home");
         }
     }
 }

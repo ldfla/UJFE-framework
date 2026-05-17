@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## Version 0.17.0 - 17/05/2026
+
+- Updated the Maven project version to `0.17.0-SNAPSHOT`.
+- Added `SecurityHeadersConfig` for configurable secure HTTP headers across UJFE runtime adapters.
+- Enabled secure default headers for standalone responses: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, and `Content-Security-Policy`.
+- Added explicit Java, Servlet, and Spring configuration paths for overriding or disabling framework-managed headers.
+- Kept the default CSP compatible with the same-origin `/_ujfe/client.js` runtime script without requiring inline application JavaScript.
+- Updated the Spring adapter to avoid overwriting headers already set by Spring Security.
+- Documented secure HTTP header behavior in `docs/security/headers.md`.
+
 ## Version 0.16.0 - 17/05/2026
 
 - Updated the Maven project version to `0.16.0-SNAPSHOT`.

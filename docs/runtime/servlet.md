@@ -456,9 +456,25 @@ Then put static assets and non-UJFE endpoints outside that prefix:
 
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
-- `Referrer-Policy: no-referrer`
-- `Permissions-Policy`
-- `Content-Security-Policy`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+- `Content-Security-Policy` with `default-src 'self'` and same-origin `script-src`
+
+The default CSP is compatible with the external `/_ujfe/client.js` runtime script and does not require inline application JavaScript. If a servlet deployment already owns headers at a reverse proxy, container filter, or gateway layer, disable UJFE-managed headers explicitly:
+
+```properties
+ujfe.security.headers.enabled=false
+```
+
+Or override individual values:
+
+```properties
+ujfe.security.headers.referrer-policy=same-origin
+ujfe.security.headers.content-security-policy=default-src 'self'; script-src 'self'
+ujfe.security.headers.x-frame-options=SAMEORIGIN
+```
+
+See [Secure HTTP headers](../security/headers.md) for the shared policy, Java configuration, Spring behavior, and CSP notes.
 
 Safe-by-default HTML rendering still comes from the HTML module:
 
@@ -468,7 +484,7 @@ Safe-by-default HTML rendering still comes from the HTML module:
 - URL-bearing attributes are sanitized by `SafeUrl`.
 - raw HTML requires an explicit unsafe API.
 
-CSRF and rate limiting are not implemented as servlet-container-specific features in this issue. In a servlet deployment, put standard enterprise filters in front of `UjfeServlet` when the application needs container-level CSRF checks, rate limits, authentication, authorization, audit logging, or request correlation.
+UJFE also applies its runtime CSRF protection and internal endpoint rate limiting to Servlet requests. In a servlet deployment, still put standard enterprise filters in front of `UjfeServlet` when the application needs authentication, authorization, audit logging, request correlation, or infrastructure-level rate limits.
 
 Example filter mapping:
 

@@ -7,6 +7,7 @@ import ujfe.core.Node;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
+import ujfe.live.SecurityHeadersConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
@@ -39,9 +40,41 @@ final class UjfeSpringHandlerTest {
         UjfeSpringProperties properties = new UjfeSpringProperties();
         properties.setEnabled(true);
 
-        LiveSessionConfig config = new UjfeSpringAutoConfiguration().ujfeLiveSessionConfig(properties);
+        LiveSessionConfig config = new UjfeSpringAutoConfiguration()
+                .ujfeLiveSessionConfig(properties, new UjfeSpringSecurityHeadersProperties());
 
         assertTrue(config.isDevelopmentErrorDetailsEnabled());
+    }
+
+    @Test
+    void springPropertiesCanCustomizeAndDisableSecurityHeaders() {
+        UjfeSpringSecurityHeadersProperties custom = new UjfeSpringSecurityHeadersProperties();
+        custom.setEnabled(true);
+        custom.setXContentTypeOptions("nosniff");
+        custom.setXFrameOptions("SAMEORIGIN");
+        custom.setReferrerPolicy("same-origin");
+        custom.setContentSecurityPolicy("default-src 'self'");
+        custom.setPermissionsPolicy("geolocation=()");
+
+        LiveSessionConfig customConfig = new UjfeSpringAutoConfiguration()
+                .ujfeLiveSessionConfig(new UjfeSpringProperties(), custom);
+
+        assertTrue(custom.getEnabled());
+        assertEquals("nosniff", custom.getXContentTypeOptions());
+        assertEquals("SAMEORIGIN", custom.getXFrameOptions());
+        assertEquals("same-origin", custom.getReferrerPolicy());
+        assertEquals("default-src 'self'", custom.getContentSecurityPolicy());
+        assertEquals("geolocation=()", custom.getPermissionsPolicy());
+        assertEquals("same-origin", customConfig.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("default-src 'self'", customConfig.securityHeaders().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
+
+        UjfeSpringSecurityHeadersProperties disabled = new UjfeSpringSecurityHeadersProperties();
+        disabled.setEnabled(false);
+        LiveSessionConfig disabledConfig = new UjfeSpringAutoConfiguration()
+                .ujfeLiveSessionConfig(new UjfeSpringProperties(), disabled);
+
+        assertFalse(disabledConfig.securityHeadersConfig().isEnabled());
+        assertTrue(disabledConfig.securityHeaders().isEmpty());
     }
 
     @Test
@@ -58,7 +91,26 @@ final class UjfeSpringHandlerTest {
             assertTrue(response.getContentType().startsWith("text/html"));
             assertTrue(response.getContentAsString().contains("Home"));
             assertTrue(response.getContentAsString().contains("Cookie: ativo"));
+            assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
+            assertEquals("strict-origin-when-cross-origin", response.getHeader("Referrer-Policy"));
             assertTrue(response.getHeader("Content-Security-Policy").contains("default-src 'self'"));
+        }
+    }
+
+    @Test
+    void doesNotOverrideSecurityHeadersAlreadySetBySpringSecurity() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            response.setHeader("Content-Security-Policy", "default-src 'none'");
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), response);
+
+            assertEquals(200, response.getStatus());
+            assertEquals("default-src 'none'", response.getHeader("Content-Security-Policy"));
+            assertEquals("SAMEORIGIN", response.getHeader("X-Frame-Options"));
+            assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
         }
     }
 

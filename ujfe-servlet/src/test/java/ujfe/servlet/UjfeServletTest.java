@@ -11,6 +11,7 @@ import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
+import ujfe.live.SecurityHeadersConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
@@ -40,6 +41,7 @@ final class UjfeServletTest {
         assertTrue(response.body().contains("Home"));
         assertTrue(response.body().contains("Cookie: ativo"));
         assertEquals("nosniff", response.header("X-Content-Type-Options"));
+        assertEquals("strict-origin-when-cross-origin", response.header("Referrer-Policy"));
         assertTrue(response.header("Content-Security-Policy").contains("default-src 'self'"));
     }
 
@@ -290,6 +292,32 @@ final class UjfeServletTest {
     }
 
     @Test
+    void customAndDisabledSecurityHeadersAreApplied() throws Exception {
+        LiveSessionConfig customConfig = LiveSessionConfig.builder()
+                .securityHeaders(SecurityHeadersConfig.builder()
+                        .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+                        .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'")
+                        .build())
+                .build();
+        UjfeServlet customServlet = new UjfeServlet(new Router().register(new HomePage()), customConfig);
+
+        TestResponse custom = service(customServlet, TestRequest.get("/"));
+
+        assertEquals("same-origin", custom.header("Referrer-Policy"));
+        assertEquals("default-src 'self'", custom.header("Content-Security-Policy"));
+        assertEquals("nosniff", custom.header("X-Content-Type-Options"));
+
+        UjfeServlet disabledServlet = new UjfeServlet(new Router().register(new HomePage()),
+                LiveSessionConfig.builder().disableSecurityHeaders().build());
+
+        TestResponse disabled = service(disabledServlet, TestRequest.get("/"));
+
+        assertNull(disabled.header("Referrer-Policy"));
+        assertNull(disabled.header("Content-Security-Policy"));
+        assertNull(disabled.header("X-Content-Type-Options"));
+    }
+
+    @Test
     void renderFailureReturnsSafeJsonErrorResponse() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new FailingRenderPage()));
 
@@ -398,6 +426,8 @@ final class UjfeServletTest {
         properties.setProperty(UjfeServletSettings.CSS_MODE, "external");
         properties.setProperty(UjfeServletSettings.MAX_JSON_PAYLOAD_BYTES, "2048");
         properties.setProperty(UjfeServletSettings.DEVELOPMENT_ERROR_DETAILS_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.SECURITY_HEADER_REFERRER_POLICY, "same-origin");
+        properties.setProperty(UjfeServletSettings.SECURITY_HEADER_CONTENT_SECURITY_POLICY, "default-src 'self'");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_CAPACITY, "50");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_TOKENS, "25");
@@ -411,6 +441,8 @@ final class UjfeServletTest {
         assertEquals("Servlet App", liveConfigTitle(liveConfig));
         assertEquals(2048, settings.maxJsonPayloadBytes());
         assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
+        assertEquals("same-origin", liveConfig.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("default-src 'self'", liveConfig.securityHeaders().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
         assertTrue(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(50, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(25, liveConfig.internalEndpointRateLimitRefillTokens());
@@ -438,13 +470,17 @@ final class UjfeServletTest {
                 + "      capacity: 20\n"
                 + "      refill-tokens: 10\n"
                 + "      refill-period-ms: 15000\n"
-                + "    trusted-proxies: 10.0.0.1\n");
+                + "    trusted-proxies: 10.0.0.1\n"
+                + "  security:\n"
+                + "    headers:\n"
+                + "      enabled: false\n");
 
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
         LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
         assertEquals("YAML App", liveConfigTitle(liveConfig));
         assertEquals(4096, settings.maxJsonPayloadBytes());
         assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
+        assertTrue(liveConfig.securityHeaders().isEmpty());
         assertFalse(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(20, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(10, liveConfig.internalEndpointRateLimitRefillTokens());

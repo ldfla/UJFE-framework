@@ -16,6 +16,7 @@ import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
+import ujfe.live.SecurityHeadersConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
 import ujfe.runtime.action.RuntimeActionRegistry;
@@ -398,12 +399,43 @@ final class UjfeHttpHandlerTest {
 
         assertEquals("nosniff", response.headers().get("X-Content-Type-Options"));
         assertEquals("DENY", response.headers().get("X-Frame-Options"));
-        assertEquals("no-referrer", response.headers().get("Referrer-Policy"));
+        assertEquals("strict-origin-when-cross-origin", response.headers().get("Referrer-Policy"));
         assertEquals("geolocation=(), microphone=(), camera=()", response.headers().get("Permissions-Policy"));
         String csp = response.headers().get("Content-Security-Policy");
         assertTrue(csp.contains("default-src 'self'"));
+        assertTrue(csp.contains("script-src 'self'"));
         assertTrue(csp.contains("object-src 'none'"));
         assertTrue(csp.contains("frame-ancestors 'none'"));
+    }
+
+    @Test
+    void appliesCustomAndDisabledSecurityHeaders() {
+        FullHttpResponse custom = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1,
+                HttpResponseStatus.OK,
+                Unpooled.EMPTY_BUFFER
+        );
+        SecurityHeadersConfig customConfig = SecurityHeadersConfig.builder()
+                .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+                .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'")
+                .build();
+
+        UjfeHttpHandler.applySecurityHeaders(custom, customConfig);
+
+        assertEquals("same-origin", custom.headers().get("Referrer-Policy"));
+        assertEquals("default-src 'self'", custom.headers().get("Content-Security-Policy"));
+        assertEquals("nosniff", custom.headers().get("X-Content-Type-Options"));
+
+        FullHttpResponse disabled = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1,
+                HttpResponseStatus.OK,
+                Unpooled.EMPTY_BUFFER
+        );
+
+        UjfeHttpHandler.applySecurityHeaders(disabled, SecurityHeadersConfig.disabled());
+
+        assertNull(disabled.headers().get("X-Content-Type-Options"));
+        assertNull(disabled.headers().get("Content-Security-Policy"));
     }
 
     private static FullHttpResponse send(EmbeddedChannel channel, FullHttpRequest request) {

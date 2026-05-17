@@ -116,6 +116,14 @@ public final class LiveSession implements AutoCloseable {
         return config.isDevelopmentErrorDetailsEnabled();
     }
 
+    public SecurityHeadersConfig securityHeadersConfig() {
+        return config.securityHeadersConfig();
+    }
+
+    public Map<String, String> securityHeaders() {
+        return config.securityHeaders();
+    }
+
     public void checkInternalEndpointRateLimit(String endpointPath, LiveHttpRequestMetadata metadata) {
         RateLimitDecision decision = rateLimiter.allow(new RateLimitRequest(endpointPath, sessionId, metadata));
         if (!decision.allowed()) {
