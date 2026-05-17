@@ -66,20 +66,22 @@ final class ComputedTest {
         Computed<Integer> parity = Signals.computed(() -> count.get() % 2);
         List<Integer> updates = new ArrayList<>();
 
-        parity.subscribe(updates::add);
+        try (AutoCloseable subscription = parity.subscribe(updates::add)) {
+            assertEquals(1, parity.get());
+            assertTrue(updates.isEmpty());
 
-        assertEquals(1, parity.get());
-        assertTrue(updates.isEmpty());
+            count.set(3);
+            assertTrue(updates.isEmpty());
+            assertEquals(1, parity.get());
+            assertTrue(updates.isEmpty());
 
-        count.set(3);
-        assertTrue(updates.isEmpty());
-        assertEquals(1, parity.get());
-        assertTrue(updates.isEmpty());
-
-        count.set(4);
-        assertTrue(updates.isEmpty());
-        assertEquals(0, parity.get());
-        assertEquals(List.of(0), updates);
+            count.set(4);
+            assertTrue(updates.isEmpty());
+            assertEquals(0, parity.get());
+            assertEquals(List.of(0), updates);
+        } catch (Exception exception) {
+            throw new AssertionError("Subscription cleanup failed", exception);
+        }
     }
 
     @Test
@@ -91,18 +93,20 @@ final class ComputedTest {
             return count.get() * 2;
         });
         List<Integer> updates = new ArrayList<>();
-        doubled.subscribe(updates::add);
+        try (AutoCloseable subscription = doubled.subscribe(updates::add)) {
+            assertEquals(2, doubled.get());
+            count.set(2);
+            count.set(3);
+            count.set(4);
 
-        assertEquals(2, doubled.get());
-        count.set(2);
-        count.set(3);
-        count.set(4);
-
-        assertEquals(1, evaluations.get());
-        assertTrue(updates.isEmpty());
-        assertEquals(8, doubled.get());
-        assertEquals(2, evaluations.get());
-        assertEquals(List.of(8), updates);
+            assertEquals(1, evaluations.get());
+            assertTrue(updates.isEmpty());
+            assertEquals(8, doubled.get());
+            assertEquals(2, evaluations.get());
+            assertEquals(List.of(8), updates);
+        } catch (Exception exception) {
+            throw new AssertionError("Subscription cleanup failed", exception);
+        }
     }
 
     @Test
@@ -164,22 +168,24 @@ final class ComputedTest {
             return 10 / value;
         });
         List<Integer> updates = new ArrayList<>();
-        quotient.subscribe(updates::add);
+        try (AutoCloseable subscription = quotient.subscribe(updates::add)) {
+            assertEquals(10, quotient.get());
+            denominator.set(0);
 
-        assertEquals(10, quotient.get());
-        denominator.set(0);
+            IllegalStateException failure = assertThrows(IllegalStateException.class, quotient::get);
+            assertEquals("division by zero", failure.getMessage());
+            assertTrue(updates.isEmpty());
 
-        IllegalStateException failure = assertThrows(IllegalStateException.class, quotient::get);
-        assertEquals("division by zero", failure.getMessage());
-        assertTrue(updates.isEmpty());
+            denominator.set(1);
+            assertEquals(10, quotient.get());
+            assertTrue(updates.isEmpty());
 
-        denominator.set(1);
-        assertEquals(10, quotient.get());
-        assertTrue(updates.isEmpty());
-
-        denominator.set(2);
-        assertEquals(5, quotient.get());
-        assertEquals(List.of(5), updates);
+            denominator.set(2);
+            assertEquals(5, quotient.get());
+            assertEquals(List.of(5), updates);
+        } catch (Exception exception) {
+            throw new AssertionError("Subscription cleanup failed", exception);
+        }
     }
 
     @Test
@@ -227,7 +233,7 @@ final class ComputedTest {
         AtomicInteger evaluations = new AtomicInteger();
         Computed<Integer> computed = Signals.computed(() -> {
             evaluations.incrementAndGet();
-            sleep(20);
+            sleepBriefly();
             return 42;
         });
         var executor = Executors.newFixedThreadPool(8);
@@ -298,9 +304,9 @@ final class ComputedTest {
         }
     }
 
-    private static void sleep(long millis) {
+    private static void sleepBriefly() {
         try {
-            TimeUnit.MILLISECONDS.sleep(millis);
+            TimeUnit.MILLISECONDS.sleep(20);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(exception);

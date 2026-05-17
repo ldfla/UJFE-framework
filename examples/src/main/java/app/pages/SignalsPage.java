@@ -141,7 +141,7 @@ public final class SignalsPage implements Component {
                 .child(h2("Subscriber semantics").css("text-lg font-bold text-slate-900"))
                 .child(p("The sample invalidates a computed value multiple times and reads it once. The subscriber receives only the latest successful value.")
                         .css("text-sm text-slate-600 leading-relaxed"))
-                .child(p(() -> subscriberLog.get())
+                .child(p(subscriberLog::get)
                         .css("rounded-lg border border-slate-100 bg-slate-50 p-4 font-mono text-xs text-slate-500"))
                 .child(button("Run subscriber sample")
                         .css("w-full px-4 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm")

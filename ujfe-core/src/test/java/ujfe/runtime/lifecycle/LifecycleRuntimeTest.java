@@ -141,6 +141,19 @@ final class LifecycleRuntimeTest {
     }
 
     @Test
+    void lifecycleExceptionWithoutContextExposesEmptyContext() {
+        CountingLifecycle lifecycle = new CountingLifecycle("manual");
+        RuntimeException cause = new RuntimeException("boom");
+
+        LifecycleException failure = new LifecycleException("manual failure", lifecycle, "onMount", cause);
+
+        assertSame(lifecycle, failure.lifecycle());
+        assertEquals("onMount", failure.callback());
+        assertSame(cause, failure.getCause());
+        assertTrue(failure.context().isEmpty());
+    }
+
+    @Test
     void emptyRegistryCleanupIsSafe() {
         LifecycleRuntime runtime = LifecycleRuntime.create();
 

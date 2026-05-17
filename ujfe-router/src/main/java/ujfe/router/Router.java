@@ -1,8 +1,10 @@
 package ujfe.router;
 
-import java.lang.reflect.Constructor;
+import ujfe.router.source.RouteSource;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,25 +15,47 @@ public final class Router {
 
     public Router register(Object pageInstance) {
         Objects.requireNonNull(pageInstance, "pageInstance");
+        PageClassValidator.validateAnnotatedPageInstanceClass(pageInstance.getClass());
         Page page = pageInstance.getClass().getAnnotation(Page.class);
-        if (page == null) {
-            throw new IllegalArgumentException("Missing @Page annotation on " + pageInstance.getClass().getName());
-        }
-        return register(page.value(), () -> pageInstance);
+        return register(new RouteDefinition(page.value(), () -> pageInstance, pageInstance.getClass().getName()));
     }
 
     public Router register(Class<?> pageType) {
         Objects.requireNonNull(pageType, "pageType");
+        PageClassValidator.validateAnnotatedPageClass(pageType);
         Page page = pageType.getAnnotation(Page.class);
-        if (page == null) {
-            throw new IllegalArgumentException("Missing @Page annotation on " + pageType.getName());
-        }
-        return register(page.value(), () -> instantiate(pageType));
+        return register(RouteDefinition.pageClass(page.value(), pageType));
     }
 
     public Router register(String path, Supplier<Object> pageFactory) {
-        RouteDefinition route = new RouteDefinition(path, pageFactory);
+        return register(new RouteDefinition(path, pageFactory));
+    }
+
+    public Router register(RouteDefinition route) {
+        Objects.requireNonNull(route, "route");
+        RouteDefinition previous = routes.get(route.path());
+        if (previous != null) {
+            throw new IllegalArgumentException("Duplicate route path '" + route.path()
+                    + "' for " + previous.sourceDescription()
+                    + " and " + route.sourceDescription());
+        }
         routes.put(route.path(), route);
+        return this;
+    }
+
+    public Router register(RouteSource source) {
+        Objects.requireNonNull(source, "source");
+        for (RouteDefinition route : source.routes()) {
+            register(route);
+        }
+        return this;
+    }
+
+    public Router register(RouteSource... sources) {
+        Objects.requireNonNull(sources, "sources");
+        for (RouteSource source : sources) {
+            register(source);
+        }
         return this;
     }
 
@@ -40,16 +64,6 @@ public final class Router {
     }
 
     public Collection<RouteDefinition> routes() {
-        return routes.values();
-    }
-
-    private static Object instantiate(Class<?> pageType) {
-        try {
-            Constructor<?> constructor = pageType.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            return constructor.newInstance();
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Could not instantiate page " + pageType.getName(), exception);
-        }
+        return List.copyOf(routes.values());
     }
 }

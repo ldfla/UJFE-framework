@@ -33,7 +33,7 @@ public final class UtilityCssRenderer {
                 .append("@media(max-width:860px){.app-shell,.demo-grid,.docs-grid,.catalog-grid{grid-template-columns:1fr;}}");
 
         for (String className : classes) {
-            String rule = renderRule(className, theme);
+            String rule = renderRule(className);
             if (rule != null) {
                 css.append(rule);
             }
@@ -127,6 +127,7 @@ public final class UtilityCssRenderer {
         utilities.put("border-slate-200", "border-color:#e2e8f0;");
         utilities.put("border-slate-200/60", "border-color:rgba(226,232,240,0.6);");
         utilities.put("border-slate-200/80", "border-color:rgba(226,232,240,0.8);");
+        utilities.put("border-slate-700", "border-color:#334155;");
         utilities.put("border-slate-800", "border-color:#1e293b;");
         utilities.put("border-emerald-200", "border-color:#a7f3d0;");
         utilities.put("border-emerald-200/60", "border-color:rgba(167,243,208,0.6);");
@@ -177,6 +178,7 @@ public final class UtilityCssRenderer {
         utilities.put("bg-slate-100", "background-color:#f1f5f9;");
         utilities.put("bg-slate-800", "background-color:#1e293b;");
         utilities.put("bg-slate-900", "background-color:#0f172a;");
+        utilities.put("bg-slate-950", "background-color:#020617;");
         utilities.put("bg-white", "background-color:#fff;");
         utilities.put("bg-white/80", "background-color:rgba(255,255,255,0.8);");
         utilities.put("bg-emerald-50", "background-color:#ecfdf5;");
@@ -203,6 +205,8 @@ public final class UtilityCssRenderer {
         utilities.put("text-slate-600", "color:#475569;");
         utilities.put("text-slate-500", "color:#64748b;");
         utilities.put("text-slate-400", "color:#94a3b8;");
+        utilities.put("text-slate-300", "color:#cbd5e1;");
+        utilities.put("text-slate-200", "color:#e2e8f0;");
         utilities.put("text-slate-100", "color:#f1f5f9;");
         utilities.put("text-emerald-400", "color:#34d399;");
         utilities.put("text-emerald-600", "color:#059669;");
@@ -222,9 +226,9 @@ public final class UtilityCssRenderer {
         return utilities;
     }
 
-    private static String renderRule(String className, CssTheme theme) {
+    private static String renderRule(String className) {
         Variant variant = Variant.parse(className);
-        String declarations = utilityDeclarations(variant.utilityClass(), theme);
+        String declarations = utilityDeclarations(variant.utilityClass());
         if (declarations == null) {
             return null;
         }
@@ -294,7 +298,7 @@ public final class UtilityCssRenderer {
         }
     }
 
-    private static String utilityDeclarations(String className, CssTheme theme) {
+    private static String utilityDeclarations(String className) {
         String staticDeclarations = UTILITIES.get(className);
         if (staticDeclarations != null) {
             return staticDeclarations;

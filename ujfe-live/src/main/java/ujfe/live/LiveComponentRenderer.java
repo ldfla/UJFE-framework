@@ -63,7 +63,7 @@ public final class LiveComponentRenderer {
                 .eventRegistrar(eventRegistry::register)
                 .clientState(clientState);
         if (lifecycleTracker != null) {
-            contextBuilder = contextBuilder.lifecycleTracker(lifecycleTracker);
+            contextBuilder.lifecycleTracker(lifecycleTracker);
         }
         UjfeContext context = contextBuilder.build();
 

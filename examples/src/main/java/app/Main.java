@@ -10,6 +10,7 @@ import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
 import ujfe.router.Router;
+import ujfe.router.source.ManualRouteSource;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
 public final class Main {
@@ -19,12 +20,14 @@ public final class Main {
     public static void main(String[] args) throws InterruptedException {
         var appTheme = new AppTheme();
         var runtimeActionsPage = new RuntimeActionsPage();
+        var routes = new ManualRouteSource()
+                .register("/", () -> new MainPage(appTheme))
+                .register("/docs", () -> new DocumentationPage(appTheme))
+                .register("/signals", SignalsPage::new)
+                .register("/lifecycle", LifecyclePage::new)
+                .register("/runtime-actions", () -> runtimeActionsPage);
         var router = new Router()
-                .register(new MainPage())
-                .register(new DocumentationPage(appTheme))
-                .register(new SignalsPage())
-                .register(new LifecyclePage())
-                .register(runtimeActionsPage);
+                .register(routes);
 
         RuntimeActionRegistry actions = RuntimeActionsPage.sampleRegistry();
 

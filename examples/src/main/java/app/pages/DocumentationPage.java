@@ -41,6 +41,7 @@ public final class DocumentationPage implements Component {
                                                 .child(springSection())
                                                 .child(securitySection())
                                                 .child(signalsSection())
+                                                .child(routerSection())
                                                 .child(runtimeActionsSection())
                                                 .child(lifecycleSection())
                                                 .child(restSection())
@@ -91,6 +92,7 @@ public final class DocumentationPage implements Component {
                                 .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
                                 .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
                                 .child(le().child(strong("Signals")).child(" with lazy computed values, cache invalidation, and subscribers"))
+                                .child(le().child(strong("Router")).child(" with route sources, deterministic discovery, and AOT metadata direction"))
                                 .child(le().child(strong("Runtime Actions")).child(" with server-side extension points for rendering, events, errors, and head contributions"))
                                 .child(le().child(strong("Lifecycle")).child(" with deterministic mount, unmount, and cleanup"))
                                 .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
@@ -343,6 +345,25 @@ public final class DocumentationPage implements Component {
                         .css("text-sm font-semibold text-emerald-700"));
     }
 
+    private Node routerSection() {
+        return section()
+                .css("rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-4")
+                .child(h2("Route sources and AOT metadata").css("text-2xl font-bold text-slate-900"))
+                .child(p("Routes can come from reflection-based scanning or explicit RouteSource implementations. ManualRouteSource is the runtime shape future generated AOT metadata will target.")
+                        .css("text-base text-slate-700 leading-relaxed"))
+                .child(
+                        div()
+                                .css("grid grid-cols-3 gap-3")
+                                .child(cssPill("Manual", "explicit routes without scanning"))
+                                .child(cssPill("Reflection", "ReflectionPageScanner for development"))
+                                .child(cssPill("AOT", "generated RouteSource direction"))
+                                .child(cssPill("Ordering", "registration order is preserved"))
+                                .child(cssPill("Duplicates", "startup fails explicitly"))
+                                .child(cssPill("Validation", "render methods and paths are checked"))
+                )
+                .child(codeBlock(routerCode()));
+    }
+
     private Node runtimeActionsSection() {
         return section()
                 .css("rounded-lg border border-indigo-200 bg-white p-6 shadow-sm flex flex-col gap-4")
@@ -427,7 +448,7 @@ public final class DocumentationPage implements Component {
         return section()
                 .css("rounded-lg border border-primary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
                 .child(h2("Visual Dev Preview").css("text-2xl font-bold text-primary-700"))
-                .child(p("In the example app, the server starts with Dev Preview enabled. The floating panel lets developers select elements, inspect tag/id, and test CSS classes directly in the browser without changing Java.")
+                .child(p("In the example app, the Dev Preview script is loaded but the panel starts disabled behind an explicit feature toggle. When the toggle is enabled, the floating panel lets developers select elements, inspect tag/id, and test CSS classes directly in the browser without changing Java.")
                         .css("text-base text-slate-700 leading-relaxed"))
                 .child(codeBlock(devPreviewCode()));
     }
@@ -833,6 +854,18 @@ public final class DocumentationPage implements Component {
                 + "total.subscribe(value -> audit(\"total=\" + value));\n";
     }
 
+    private String routerCode() {
+        return "ManualRouteSource routes = new ManualRouteSource()\n"
+                + "    .register(\"/\", HomePage::new)\n"
+                + "    .register(\"/dashboard\", DashboardPage::new);\n\n"
+                + "Router router = new Router().register(routes);\n\n"
+                + "// Development-time discovery remains available:\n"
+                + "Router devRouter = new Router()\n"
+                + "    .register(ReflectionPageScanner.forPackages(\"app.pages\"));\n\n"
+                + "// Future AOT flow:\n"
+                + "// @Page -> annotation processor -> generated RouteSource -> Router\n";
+    }
+
     private String runtimeActionsCode() {
         return "RuntimeActionRegistry registry = RuntimeActionRegistry.builder()\n"
                 + "    .beforeRender(ctx -> log(\"render \" + ctx.path()))\n"
@@ -923,6 +956,9 @@ public final class DocumentationPage implements Component {
                 + "    .themeSupplier(appTheme::cssTheme)\n"
                 + "    .devToolsEnabled(true)\n"
                 + "    .build();\n"
+                + "\n"
+                + "// The page controls whether the panel is active:\n"
+                + "div().attr(\"data-ujfe-dev-preview\", String.valueOf(devPreviewEnabled))\n\n"
                 + "LiveSession liveSession = new LiveSession(router, config);\n\n"
                 + "// When enabled, the HTML includes:\n"
                 + "<script src=\"/_ujfe/dev.js\"></script>\n\n"

@@ -2,6 +2,7 @@ package ujfe.live;
 
 import org.junit.jupiter.api.Test;
 import ujfe.core.ClientState;
+import ujfe.core.Component;
 import ujfe.core.Node;
 import ujfe.core.Ujfe;
 import ujfe.router.Page;
@@ -108,9 +109,10 @@ final class LiveSessionTest {
     }
 
     @Page("/")
-    public static final class CounterPage {
+    public static final class CounterPage implements Component {
         private final AtomicInteger count = new AtomicInteger();
 
+        @Override
         public Node render() {
             return div()
                     .css("min-h-screen p-8 flex flex-col gap-4")
@@ -125,7 +127,8 @@ final class LiveSessionTest {
     }
 
     @Page("/")
-    public static final class ClientStatePage {
+    public static final class ClientStatePage implements Component {
+        @Override
         public Node render() {
             return div()
                     .child(p(() -> "Cookie: " + Ujfe.cookie("ujfe_demo").orElse("missing")))

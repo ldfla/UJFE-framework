@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## Version 0.11.0 - 17/05/2026
+
+- Updated the Maven project version to `0.11.0-SNAPSHOT`.
+- Added the `RouteSource` abstraction for deterministic route metadata sources.
+- Added `ManualRouteSource` for explicit, reflection-minimized route registration and future AOT-generated metadata.
+- Added `ReflectionPageScanner` for deterministic reflection-based route discovery from candidate classes or packages.
+- Added route validation for duplicate paths, invalid route paths, abstract pages, invalid render methods, missing constructors, and invalid page classes.
+- Updated `Router` to merge route sources, preserve registration order, and fail explicitly on duplicate routes instead of overwriting silently.
+- Removed the legacy scanner adapter in favor of explicit `RouteSource` implementations.
+- Added route discovery tests for scanners, manual sources, ordering, duplicates, invalid pages, invalid paths, empty sources, package scanning, and metadata.
+- Documented router behavior in `docs/router.md` and the AOT route metadata direction in `docs/aot-roadmap.md`.
+- Added router source examples under `examples/router` and updated the example app to wire routes through `ManualRouteSource`.
+
 ## Version 0.10.0 - 17/05/2026
 
 - Updated the Maven project version to `0.10.0-SNAPSHOT`.

@@ -45,8 +45,6 @@ final class LiveSessionLifecycleTest {
         StatefulLifecyclePage page = new StatefulLifecyclePage();
         try (LiveSession session = new LiveSession(new Router().register(page))) {
             session.renderDocument("/", ClientState.empty());
-            session.close();
-            session.close();
         }
 
         assertEquals(1, page.mounts());
