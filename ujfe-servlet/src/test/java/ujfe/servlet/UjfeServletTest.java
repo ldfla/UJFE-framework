@@ -105,7 +105,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(403, response.status());
-        assertEquals("Missing CSRF token.", response.body());
+        assertError(response, 403, "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
     }
 
     @Test
@@ -124,7 +124,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(403, response.status());
-        assertEquals("Invalid CSRF token.", response.body());
+        assertError(response, 403, "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
     }
 
     @Test
@@ -144,7 +144,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(403, response.status());
-        assertEquals("Cross-origin request rejected.", response.body());
+        assertError(response, 403, "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
     }
 
     @Test
@@ -160,7 +160,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(403, response.status());
-        assertEquals("Missing CSRF token.", response.body());
+        assertError(response, 403, "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
     }
 
     @Test
@@ -188,10 +188,7 @@ final class UjfeServletTest {
                     .body("{\"eventId\":}"));
         }
 
-        assertEquals(400, response.status());
-        assertEquals("Invalid live JSON payload.", response.body());
-        assertFalse(response.body().contains("Exception"));
-        assertFalse(response.body().contains("LiveHttpCodec"));
+        assertError(response, 400, "UJFE_BAD_REQUEST", "The request is invalid.");
     }
 
     @Test
@@ -206,8 +203,7 @@ final class UjfeServletTest {
                     .body("{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
-        assertEquals(413, response.status());
-        assertEquals("Live JSON payload exceeds maximum size.", response.body());
+        assertError(response, 413, "UJFE_BAD_REQUEST", "The request is invalid.");
     }
 
     @Test
@@ -229,8 +225,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(200, first.status());
-        assertEquals(429, second.status());
-        assertEquals("Rate limit exceeded.", second.body());
+        assertError(second, 429, "UJFE_RATE_LIMITED", "Too many requests.");
         assertNotNull(second.header("Retry-After"));
     }
 
@@ -252,8 +247,7 @@ final class UjfeServletTest {
         }
 
         assertEquals(200, first.status());
-        assertEquals(429, second.status());
-        assertEquals("Rate limit exceeded.", second.body());
+        assertError(second, 429, "UJFE_RATE_LIMITED", "Too many requests.");
     }
 
     @Test
@@ -278,8 +272,8 @@ final class UjfeServletTest {
 
         TestResponse response = service(servlet, TestRequest.get("/assets/app.css"));
 
-        assertEquals(404, response.status());
-        assertEquals("No UJFE route registered for /assets/app.css", response.body());
+        assertError(response, 404, "UJFE_ROUTE_NOT_FOUND", "The requested route was not found.");
+        assertFalse(response.body().contains("/assets/app.css"));
     }
 
     @Test
@@ -291,6 +285,44 @@ final class UjfeServletTest {
 
         assertEquals(405, pagePost.status());
         assertEquals(405, clientPost.status());
+        assertError(pagePost, 405, "UJFE_INVALID_REQUEST", "The request is invalid.");
+        assertError(clientPost, 405, "UJFE_INVALID_REQUEST", "The request is invalid.");
+    }
+
+    @Test
+    void renderFailureReturnsSafeJsonErrorResponse() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new FailingRenderPage()));
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.get("/")
+                    .header("X-Request-Id", "req-render-1"));
+        }
+
+        assertError(response, 500, "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
+        assertTrue(response.body().contains("\"requestId\":\"req-render-1\""));
+        assertFalse(response.body().contains("render-secret"));
+        assertFalse(response.body().contains("FailingRenderPage"));
+    }
+
+    @Test
+    void eventFailureReturnsSafeJsonErrorResponse() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .build();
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new FailingEventPage()), config);
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertError(response, 500, "UJFE_EVENT_HANDLER_ERROR", "An error occurred while handling the live event.");
+        assertFalse(response.body().contains("event-secret"));
+        assertFalse(response.body().contains("FailingEventPage"));
     }
 
     @Test
@@ -365,6 +397,7 @@ final class UjfeServletTest {
         properties.setProperty(UjfeServletSettings.DEV_TOOLS_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.CSS_MODE, "external");
         properties.setProperty(UjfeServletSettings.MAX_JSON_PAYLOAD_BYTES, "2048");
+        properties.setProperty(UjfeServletSettings.DEVELOPMENT_ERROR_DETAILS_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_CAPACITY, "50");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_TOKENS, "25");
@@ -377,6 +410,7 @@ final class UjfeServletTest {
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
         assertEquals("Servlet App", liveConfigTitle(liveConfig));
         assertEquals(2048, settings.maxJsonPayloadBytes());
+        assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
         assertTrue(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(50, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(25, liveConfig.internalEndpointRateLimitRefillTokens());
@@ -386,10 +420,13 @@ final class UjfeServletTest {
 
     @Test
     void servletSettingsReadApplicationYamlModel() {
-        UjfeServletSettings settings = UjfeServletSettings.fromYaml(""
-                + "ujfe:\n"
+        UjfeServletSettings settings = UjfeServletSettings
+                .fromYaml("ujfe:\n"
                 + "  routes:\n"
                 + "    packages: app.pages,app.admin\n"
+                + "  errors:\n"
+                + "    development-details:\n"
+                + "      enabled: true\n"
                 + "  live:\n"
                 + "    title: 'YAML App'\n"
                 + "    lang: en\n"
@@ -407,6 +444,7 @@ final class UjfeServletTest {
         LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
         assertEquals("YAML App", liveConfigTitle(liveConfig));
         assertEquals(4096, settings.maxJsonPayloadBytes());
+        assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
         assertFalse(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(20, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(10, liveConfig.internalEndpointRateLimitRefillTokens());
@@ -448,6 +486,16 @@ final class UjfeServletTest {
         Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
         return matcher.group(1);
+    }
+
+    private static void assertError(TestResponse response, int status, String code, String message) {
+        assertEquals(status, response.status());
+        assertTrue(response.contentType().startsWith("application/json"));
+        assertTrue(response.body().contains("\"code\":\"" + code + "\""), response.body());
+        assertTrue(response.body().contains("\"message\":\"" + message + "\""), response.body());
+        assertFalse(response.body().contains("Exception"), response.body());
+        assertFalse(response.body().contains("LiveHttpCodec"), response.body());
+        assertFalse(response.body().contains("/Users/"), response.body());
     }
 
     private static String liveConfigTitle(LiveSessionConfig config) {
@@ -528,6 +576,22 @@ final class UjfeServletTest {
                     .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("ativo")))
                     .child(p(() -> "Clicks: " + clicks))
                     .child(button("Click").onClick(() -> clicks++));
+        }
+    }
+
+    @Page("/")
+    public static final class FailingRenderPage {
+        public Node render() {
+            throw new IllegalStateException("render-secret from /Users/leandrof/Dev/ujfe/FailingRenderPage.java");
+        }
+    }
+
+    @Page("/")
+    public static final class FailingEventPage {
+        public Node render() {
+            return button("Fail").onClick(() -> {
+                throw new IllegalStateException("event-secret from FailingEventPage");
+            });
         }
     }
 
@@ -693,22 +757,31 @@ final class UjfeServletTest {
     }
 
     private static final class CodecLogSilencer implements AutoCloseable {
-        private final Logger logger;
-        private final boolean useParentHandlers;
+        private final Logger codecLogger;
+        private final Logger errorLogger;
+        private final boolean codecUseParentHandlers;
+        private final boolean errorUseParentHandlers;
 
-        private CodecLogSilencer(Logger logger) {
-            this.logger = logger;
-            this.useParentHandlers = logger.getUseParentHandlers();
-            this.logger.setUseParentHandlers(false);
+        private CodecLogSilencer(Logger codecLogger, Logger errorLogger) {
+            this.codecLogger = codecLogger;
+            this.errorLogger = errorLogger;
+            this.codecUseParentHandlers = codecLogger.getUseParentHandlers();
+            this.errorUseParentHandlers = errorLogger.getUseParentHandlers();
+            this.codecLogger.setUseParentHandlers(false);
+            this.errorLogger.setUseParentHandlers(false);
         }
 
         static CodecLogSilencer attach() {
-            return new CodecLogSilencer(Logger.getLogger(LiveHttpCodec.class.getName()));
+            return new CodecLogSilencer(
+                    Logger.getLogger(LiveHttpCodec.class.getName()),
+                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName())
+            );
         }
 
         @Override
         public void close() {
-            logger.setUseParentHandlers(useParentHandlers);
+            codecLogger.setUseParentHandlers(codecUseParentHandlers);
+            errorLogger.setUseParentHandlers(errorUseParentHandlers);
         }
     }
 }

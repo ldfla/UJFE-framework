@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## Version 0.16.0 - 17/05/2026
+
+- Updated the Maven project version to `0.16.0-SNAPSHOT`.
+- Added shared safe error response rendering through `ErrorResponseRenderer`, `UjfeErrorCode`, and JSON error response bodies.
+- Updated Netty, Jakarta Servlet, and Spring MVC adapters to stop returning raw exception messages and to use stable UJFE error codes.
+- Added production-safe mappings for route misses, render failures, live event failures, payload validation, CSRF failures, and rate limit rejections.
+- Added explicit development diagnostics with `LiveSessionConfig.builder().enableDevelopmentErrorDetailsUnsafe()` and Servlet property/YAML support.
+- Routed safe error metadata through runtime `onError(...)` hooks without leaking details to clients.
+- Documented the shared safe error response policy in `docs/security/error-handling.md`.
+
 ## Version 0.15.0 - 17/05/2026
 
 - Added application-level token bucket rate limiting for `/_ujfe/event` and `/_ujfe/state`.

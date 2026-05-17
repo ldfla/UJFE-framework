@@ -17,6 +17,8 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import ujfe.core.ClientState;
 import ujfe.live.LiveClientScript;
 import ujfe.live.LiveDevToolsScript;
+import ujfe.live.ErrorResponseContext;
+import ujfe.live.ErrorResponseRenderer;
 import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveHttpCodecException;
 import ujfe.live.LiveHttpEventPayload;
@@ -27,6 +29,8 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.UjfeErrorResponse;
+import ujfe.runtime.action.RuntimePhase;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -110,26 +114,19 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                 return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
             }
 
-            return response(HttpResponseStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+            return errorResponse(errorRenderer().methodNotAllowed(errorContext(request, path)));
         } catch (LiveRateLimitException exception) {
             LiveHttpCodec.logRejectedRateLimit(exception, "netty", correlationId(request));
-            FullHttpResponse response = response(HttpResponseStatus.TOO_MANY_REQUESTS,
-                    "text/plain; charset=utf-8",
-                    exception.safeMessage());
-            exception.retryAfterSeconds().ifPresent(seconds -> response.headers().set("Retry-After", Long.toString(seconds)));
-            return response;
+            return errorResponse(errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveCsrfException exception) {
             LiveHttpCodec.logRejectedCsrf(exception, "netty", correlationId(request));
-            return response(HttpResponseStatus.FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
+            return errorResponse(errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "netty", correlationId(request));
-            return response(HttpResponseStatus.valueOf(exception.httpStatus()),
-                    "text/plain; charset=utf-8",
-                    exception.safeMessage());
-        } catch (IllegalArgumentException exception) {
-            return response(HttpResponseStatus.NOT_FOUND, "text/plain; charset=utf-8", "Not found");
+            reportHttpError(exception, request, path);
+            return errorResponse(errorRenderer().render(exception, errorContext(request, path)));
         } catch (RuntimeException exception) {
-            return response(HttpResponseStatus.INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", "Internal server error");
+            return errorResponse(errorRenderer().render(exception, errorContext(request, path)));
         }
     }
 
@@ -153,6 +150,50 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             return requestId;
         }
         return request.headers().get("X-Correlation-Id");
+    }
+
+    private ErrorResponseRenderer errorRenderer() {
+        return ErrorResponseRenderer.create(liveSession.isDevelopmentErrorDetailsEnabled());
+    }
+
+    private ErrorResponseContext errorContext(FullHttpRequest request, String path) {
+        return ErrorResponseContext.builder()
+                .adapter("netty")
+                .method(request.method().name())
+                .path(path)
+                .requestId(correlationId(request))
+                .phase(phaseFor(request.method(), path))
+                .build();
+    }
+
+    private void reportHttpError(Throwable exception, FullHttpRequest request, String path) {
+        liveSession.reportHttpError(
+                exception,
+                phaseFor(request.method(), path),
+                path,
+                null,
+                correlationId(request),
+                Map.of("adapter", "netty", "method", request.method().name(), "path", path),
+                Map.of(
+                        "errorCode", "UJFE_BAD_REQUEST",
+                        "httpStatus", exception instanceof LiveHttpCodecException
+                                ? ((LiveHttpCodecException) exception).httpStatus()
+                                : 500
+                )
+        );
+    }
+
+    private static RuntimePhase phaseFor(HttpMethod method, String path) {
+        if (LiveHttpPaths.EVENT.equals(path)) {
+            return RuntimePhase.EVENT;
+        }
+        if (LiveHttpPaths.STATE.equals(path)) {
+            return RuntimePhase.STATE;
+        }
+        if (method.equals(HttpMethod.GET)) {
+            return RuntimePhase.RENDER;
+        }
+        return RuntimePhase.ADAPTER;
     }
 
     private static LiveHttpRequestMetadata createMetadata(ChannelHandlerContext context, FullHttpRequest request) {
@@ -191,6 +232,16 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
         applySecurityHeaders(response);
+        return response;
+    }
+
+    private static FullHttpResponse errorResponse(UjfeErrorResponse error) {
+        FullHttpResponse response = response(
+                HttpResponseStatus.valueOf(error.httpStatus()),
+                UjfeErrorResponse.CONTENT_TYPE,
+                error.body()
+        );
+        error.retryAfterSeconds().ifPresent(seconds -> response.headers().set("Retry-After", Long.toString(seconds)));
         return response;
     }
 

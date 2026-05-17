@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import ujfe.core.ClientState;
+import ujfe.live.ErrorResponseContext;
+import ujfe.live.ErrorResponseRenderer;
 import ujfe.live.LiveClientScript;
 import ujfe.live.LiveDevToolsScript;
 import ujfe.live.LiveHttpCodec;
@@ -20,8 +22,10 @@ import ujfe.live.LiveSessionConfig;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.UjfeErrorResponse;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
+import ujfe.runtime.action.RuntimePhase;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -119,16 +123,12 @@ public final class UjfeServlet extends HttpServlet {
             }
 
             if (router.resolve(path).isEmpty()) {
-                write(response, HttpServletResponse.SC_NOT_FOUND,
-                        "text/plain; charset=utf-8",
-                        "No UJFE route registered for " + path);
+                writeError(response, errorRenderer().routeNotFound(errorContext(request, path)));
                 return;
             }
 
             if (!"GET".equals(method)) {
-                write(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                        "text/plain; charset=utf-8",
-                        "Method not allowed");
+                writeError(response, errorRenderer().methodNotAllowed(errorContext(request, path)));
                 return;
             }
 
@@ -137,20 +137,18 @@ public final class UjfeServlet extends HttpServlet {
             write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
         } catch (LiveRateLimitException exception) {
             LiveHttpCodec.logRejectedRateLimit(exception, "servlet", correlationId(request));
-            exception.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
-            write(response, 429, "text/plain; charset=utf-8", exception.safeMessage());
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveCsrfException exception) {
             LiveHttpCodec.logRejectedCsrf(exception, "servlet", correlationId(request));
-            write(response, HttpServletResponse.SC_FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "servlet", correlationId(request));
-            write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
+            reportHttpError(exception, request, path);
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (IllegalArgumentException exception) {
-            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", "Bad request");
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (RuntimeException exception) {
-            write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "text/plain; charset=utf-8",
-                    "Internal server error");
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         }
     }
 
@@ -213,9 +211,7 @@ public final class UjfeServlet extends HttpServlet {
             return;
         }
 
-        write(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                "text/plain; charset=utf-8",
-                "Method not allowed");
+        writeError(response, errorRenderer().methodNotAllowed(errorContext(request, path)));
     }
 
     private Router routerFromSettings(UjfeServletSettings settings) throws ServletException {
@@ -250,6 +246,50 @@ public final class UjfeServlet extends HttpServlet {
         response.getWriter().write(content);
     }
 
+    private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
+        error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
+        write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
+    }
+
+    private ErrorResponseRenderer errorRenderer() {
+        return ErrorResponseRenderer.create(liveSession.isDevelopmentErrorDetailsEnabled());
+    }
+
+    private ErrorResponseContext errorContext(HttpServletRequest request, String path) {
+        return ErrorResponseContext.builder()
+                .adapter("servlet")
+                .method(request.getMethod())
+                .path(path)
+                .requestId(correlationId(request))
+                .phase(phaseFor(request.getMethod(), path))
+                .build();
+    }
+
+    private void reportHttpError(LiveHttpCodecException exception, HttpServletRequest request, String path) {
+        liveSession.reportHttpError(
+                exception,
+                phaseFor(request.getMethod(), path),
+                path,
+                null,
+                correlationId(request),
+                Map.of("adapter", "servlet", "method", request.getMethod(), "path", path),
+                Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
+        );
+    }
+
+    private static RuntimePhase phaseFor(String method, String path) {
+        if (LiveHttpPaths.EVENT.equals(path)) {
+            return RuntimePhase.EVENT;
+        }
+        if (LiveHttpPaths.STATE.equals(path)) {
+            return RuntimePhase.STATE;
+        }
+        if ("GET".equals(method)) {
+            return RuntimePhase.RENDER;
+        }
+        return RuntimePhase.ADAPTER;
+    }
+
     private static LiveHttpRequestMetadata createMetadata(HttpServletRequest request) {
         return new LiveHttpRequestMetadata(
                 request.getHeader("X-UJFE-CSRF"),
@@ -279,7 +319,7 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         String contextPath = request.getContextPath();
-        String path = requestUri == null ? "/" : requestUri;
+        String path = requestUri;
         if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
             path = path.substring(contextPath.length());
         }

@@ -2,8 +2,11 @@ package ujfe.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.web.HttpRequestHandler;
 import ujfe.core.ClientState;
+import ujfe.live.ErrorResponseContext;
+import ujfe.live.ErrorResponseRenderer;
 import ujfe.live.LiveClientScript;
 import ujfe.live.LiveDevToolsScript;
 import ujfe.live.LiveHttpCodec;
@@ -16,6 +19,8 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.UjfeErrorResponse;
+import ujfe.runtime.action.RuntimePhase;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,7 +42,7 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
     }
 
     @Override
-    public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void handleRequest(HttpServletRequest request, @NonNull HttpServletResponse response) throws IOException {
         String method = request.getMethod();
         String path = UjfeSpringPaths.pathWithinApplication(request);
 
@@ -89,21 +94,19 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                 return;
             }
 
-            write(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+            writeError(response, errorRenderer().methodNotAllowed(errorContext(request, path)));
         } catch (LiveRateLimitException exception) {
             LiveHttpCodec.logRejectedRateLimit(exception, "spring", correlationId(request));
-            exception.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
-            write(response, 429, "text/plain; charset=utf-8", exception.safeMessage());
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveCsrfException exception) {
             LiveHttpCodec.logRejectedCsrf(exception, "spring", correlationId(request));
-            write(response, HttpServletResponse.SC_FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "spring", correlationId(request));
-            write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
-        } catch (IllegalArgumentException exception) {
-            write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", "Bad request");
+            reportHttpError(exception, request, path);
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (RuntimeException exception) {
-            write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", "Internal server error");
+            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         }
     }
 
@@ -136,12 +139,56 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         );
     }
 
+    private ErrorResponseRenderer errorRenderer() {
+        return ErrorResponseRenderer.create(liveSession.isDevelopmentErrorDetailsEnabled());
+    }
+
+    private ErrorResponseContext errorContext(HttpServletRequest request, String path) {
+        return ErrorResponseContext.builder()
+                .adapter("spring")
+                .method(request.getMethod())
+                .path(path)
+                .requestId(correlationId(request))
+                .phase(phaseFor(request.getMethod(), path))
+                .build();
+    }
+
+    private void reportHttpError(LiveHttpCodecException exception, HttpServletRequest request, String path) {
+        liveSession.reportHttpError(
+                exception,
+                phaseFor(request.getMethod(), path),
+                path,
+                null,
+                correlationId(request),
+                Map.of("adapter", "spring", "method", request.getMethod(), "path", path),
+                Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
+        );
+    }
+
+    private static RuntimePhase phaseFor(String method, String path) {
+        if (LiveHttpPaths.EVENT.equals(path)) {
+            return RuntimePhase.EVENT;
+        }
+        if (LiveHttpPaths.STATE.equals(path)) {
+            return RuntimePhase.STATE;
+        }
+        if ("GET".equals(method)) {
+            return RuntimePhase.RENDER;
+        }
+        return RuntimePhase.ADAPTER;
+    }
+
     private static void write(HttpServletResponse response, int status, String contentType, String content) throws IOException {
         response.setStatus(status);
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
         applySecurityHeaders(response);
         response.getWriter().write(content);
+    }
+
+    private static void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
+        error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
+        write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
     }
 
     private static void applySecurityHeaders(HttpServletResponse response) {

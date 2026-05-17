@@ -481,16 +481,18 @@ Example filter mapping:
 
 ## Error Handling
 
-The servlet keeps response behavior deterministic:
+The servlet delegates error rendering to the same `ErrorResponseRenderer` used by the Netty and Spring adapters. Error bodies are JSON with stable UJFE error codes and generic production-safe messages. Raw exception messages, stack traces, implementation class names, request bodies, cookies, authorization headers, and CSRF tokens are not returned to the client.
 
-| Condition | Response |
-| --- | --- |
-| invalid live payload | `400 Bad Request` |
-| unknown route | `404 Not Found` |
-| wrong method | `405 Method Not Allowed` |
-| unexpected runtime failure | `500 Internal Server Error` |
+| Condition | HTTP status | Error code |
+| --- | --- | --- |
+| invalid live payload | `400 Bad Request` | `UJFE_BAD_REQUEST` |
+| unknown route | `404 Not Found` | `UJFE_ROUTE_NOT_FOUND` |
+| wrong method | `405 Method Not Allowed` | `UJFE_INVALID_REQUEST` |
+| CSRF validation failure | `403 Forbidden` | `UJFE_CSRF_VALIDATION_FAILED` |
+| rate limit exceeded | `429 Too Many Requests` | `UJFE_RATE_LIMITED` |
+| unexpected runtime failure | `500 Internal Server Error` | `UJFE_INTERNAL_ERROR`, `UJFE_RENDER_ERROR`, `UJFE_EVENT_HANDLER_ERROR`, or `UJFE_STATE_ERROR` |
 
-Runtime lifecycle errors and runtime action errors continue to flow through `LiveSession` and the runtime action registry. The servlet is only responsible for converting request/response boundaries into HTTP responses.
+Runtime lifecycle errors and runtime action errors continue to flow through `LiveSession` and the runtime action registry. The servlet is only responsible for converting request/response boundaries into HTTP responses. See [Safe error responses](../security/error-handling.md) for the shared policy and development diagnostics switch.
 
 ## Testing A Servlet Deployment
 

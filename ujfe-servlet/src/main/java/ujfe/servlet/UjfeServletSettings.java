@@ -25,6 +25,7 @@ final class UjfeServletSettings {
     static final String CSS_MODE = "ujfe.live.css-mode";
     static final String MAX_JSON_PAYLOAD_BYTES = "ujfe.live.max-json-payload-bytes";
     static final String DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE = "ujfe.live.disable-csrf-protection-for-development-unsafe";
+    static final String DEVELOPMENT_ERROR_DETAILS_ENABLED = "ujfe.errors.development-details.enabled";
     static final String RATE_LIMIT_ENABLED = "ujfe.live.rate-limit.enabled";
     static final String RATE_LIMIT_CAPACITY = "ujfe.live.rate-limit.capacity";
     static final String RATE_LIMIT_REFILL_TOKENS = "ujfe.live.rate-limit.refill-tokens";
@@ -112,6 +113,11 @@ final class UjfeServletSettings {
         value(DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE).ifPresent(value -> {
             if (Boolean.parseBoolean(value)) {
                 builder.disableCsrfProtectionForDevelopmentUnsafe();
+            }
+        });
+        value(DEVELOPMENT_ERROR_DETAILS_ENABLED).ifPresent(value -> {
+            if (Boolean.parseBoolean(value)) {
+                builder.enableDevelopmentErrorDetailsUnsafe();
             }
         });
         value(RATE_LIMIT_ENABLED).ifPresent(value -> builder.internalEndpointRateLimitingEnabled(Boolean.parseBoolean(value)));

@@ -18,9 +18,14 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
+import ujfe.runtime.action.RuntimeActionRegistry;
+import ujfe.runtime.action.RuntimeErrorContext;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,8 +78,8 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse response = send(channel, eventRequest);
 
-                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
-                assertEquals("Missing CSRF token.", responseBody(response));
+                assertError(response, HttpResponseStatus.FORBIDDEN,
+                        "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
             }
             channel.finishAndReleaseAll();
         }
@@ -95,8 +100,8 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse response = send(channel, eventRequest);
 
-                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
-                assertEquals("Invalid CSRF token.", responseBody(response));
+                assertError(response, HttpResponseStatus.FORBIDDEN,
+                        "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
             }
             channel.finishAndReleaseAll();
         }
@@ -118,8 +123,8 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse response = send(channel, eventRequest);
 
-                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
-                assertEquals("Cross-origin request rejected.", responseBody(response));
+                assertError(response, HttpResponseStatus.FORBIDDEN,
+                        "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
             }
             channel.finishAndReleaseAll();
         }
@@ -137,8 +142,8 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse response = send(channel, stateRequest);
 
-                assertEquals(HttpResponseStatus.FORBIDDEN, response.status());
-                assertEquals("Missing CSRF token.", responseBody(response));
+                assertError(response, HttpResponseStatus.FORBIDDEN,
+                        "UJFE_CSRF_VALIDATION_FAILED", "The request could not be verified.");
             }
             channel.finishAndReleaseAll();
         }
@@ -171,10 +176,8 @@ final class UjfeHttpHandlerTest {
 
                 FullHttpResponse response = send(channel, request(HttpMethod.POST, LiveHttpPaths.EVENT, "{\"eventId\":}"));
 
-                assertEquals(HttpResponseStatus.BAD_REQUEST, response.status());
-                assertEquals("Invalid live JSON payload.", responseBody(response));
-                assertFalse(responseBody(response).contains("Exception"));
-                assertFalse(responseBody(response).contains("LiveHttpCodec"));
+                assertError(response, HttpResponseStatus.BAD_REQUEST,
+                        "UJFE_BAD_REQUEST", "The request is invalid.");
             }
             channel.finishAndReleaseAll();
         }
@@ -189,8 +192,8 @@ final class UjfeHttpHandlerTest {
                 FullHttpResponse response = send(channel, request(HttpMethod.POST, LiveHttpPaths.EVENT,
                         "{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"));
 
-                assertEquals(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, response.status());
-                assertEquals("Live JSON payload exceeds maximum size.", responseBody(response));
+                assertError(response, HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE,
+                        "UJFE_BAD_REQUEST", "The request is invalid.");
             }
             channel.finishAndReleaseAll();
         }
@@ -215,8 +218,8 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse rejected = send(channel, secondRequest);
 
-                assertEquals(HttpResponseStatus.TOO_MANY_REQUESTS, rejected.status());
-                assertEquals("Rate limit exceeded.", responseBody(rejected));
+                assertError(rejected, HttpResponseStatus.TOO_MANY_REQUESTS,
+                        "UJFE_RATE_LIMITED", "Too many requests.");
                 assertNotNull(rejected.headers().get("Retry-After"));
             }
             channel.finishAndReleaseAll();
@@ -241,8 +244,117 @@ final class UjfeHttpHandlerTest {
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 FullHttpResponse rejected = send(channel, secondRequest);
 
-                assertEquals(HttpResponseStatus.TOO_MANY_REQUESTS, rejected.status());
-                assertEquals("Rate limit exceeded.", responseBody(rejected));
+                assertError(rejected, HttpResponseStatus.TOO_MANY_REQUESTS,
+                        "UJFE_RATE_LIMITED", "Too many requests.");
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void renderFailureReturnsSafeJsonErrorResponse() {
+        try (LiveSession session = new LiveSession(new Router().register(new FailingRenderPage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpRequest request = request(HttpMethod.GET, "/", "");
+            request.headers().set("X-Request-Id", "req-render-1");
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, request);
+
+                assertError(response, HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                        "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
+                assertTrue(responseBody(response).contains("\"requestId\":\"req-render-1\""));
+                assertFalse(responseBody(response).contains("render-secret"));
+                assertFalse(responseBody(response).contains("FailingRenderPage"));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void liveEventFailureReturnsSafeJsonErrorResponse() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new FailingEventPage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String eventId = firstEventId(responseBody(page));
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                        "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+
+                assertError(response, HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                        "UJFE_EVENT_HANDLER_ERROR", "An error occurred while handling the live event.");
+                assertFalse(responseBody(response).contains("event-secret"));
+                assertFalse(responseBody(response).contains("FailingEventPage"));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void missingRouteReturnsSafeJsonNotFoundResponse() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, request(HttpMethod.GET, "/missing", ""));
+
+                assertError(response, HttpResponseStatus.NOT_FOUND,
+                        "UJFE_ROUTE_NOT_FOUND", "The requested route was not found.");
+                assertFalse(responseBody(response).contains("No UJFE route registered"));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void runtimeOnErrorObservesSafeStructuredErrorMetadata() {
+        AtomicReference<RuntimeErrorContext> observed = new AtomicReference<>();
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .runtimeActions(RuntimeActionRegistry.builder()
+                        .onError(observed::set)
+                        .build())
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new FailingRenderPage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse response = send(channel, request(HttpMethod.GET, "/", ""));
+
+                assertError(response, HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                        "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
+                assertNotNull(observed.get());
+                assertEquals("UJFE_RENDER_ERROR", observed.get().runtimeMetadata().get("errorCode"));
+                assertEquals(500, observed.get().runtimeMetadata().get("httpStatus"));
+                assertEquals("/", observed.get().path());
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void onErrorHookFailureDoesNotLeakDetailsToClient() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .runtimeActions(RuntimeActionRegistry.builder()
+                        .onError(context -> {
+                            throw new IllegalStateException("on-error-secret");
+                        })
+                        .build())
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new FailingRenderPage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach();
+                 StderrCapture stderr = StderrCapture.attach()) {
+                FullHttpResponse response = send(channel, request(HttpMethod.GET, "/", ""));
+
+                assertError(response, HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                        "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
+                assertFalse(responseBody(response).contains("on-error-secret"));
+                assertTrue(stderr.content().contains("on-error-secret"));
             }
             channel.finishAndReleaseAll();
         }
@@ -317,6 +429,22 @@ final class UjfeHttpHandlerTest {
         return response.content().toString(StandardCharsets.UTF_8);
     }
 
+    private static void assertError(
+            FullHttpResponse response,
+            HttpResponseStatus status,
+            String code,
+            String message
+    ) {
+        assertEquals(status, response.status());
+        assertTrue(response.headers().get(HttpHeaderNames.CONTENT_TYPE).startsWith("application/json"));
+        String body = responseBody(response);
+        assertTrue(body.contains("\"code\":\"" + code + "\""), body);
+        assertTrue(body.contains("\"message\":\"" + message + "\""), body);
+        assertFalse(body.contains("Exception"), body);
+        assertFalse(body.contains("LiveHttpCodec"), body);
+        assertFalse(body.contains("/Users/"), body);
+    }
+
     private static String firstEventId(String html) {
         Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
@@ -341,23 +469,70 @@ final class UjfeHttpHandlerTest {
         }
     }
 
-    private static final class CodecLogSilencer implements AutoCloseable {
-        private final Logger logger;
-        private final boolean useParentHandlers;
+    @Page("/")
+    public static final class FailingRenderPage {
+        public Node render() {
+            throw new IllegalStateException("render-secret from /Users/leandrof/Dev/ujfe/FailingRenderPage.java");
+        }
+    }
 
-        private CodecLogSilencer(Logger logger) {
-            this.logger = logger;
-            this.useParentHandlers = logger.getUseParentHandlers();
-            this.logger.setUseParentHandlers(false);
+    @Page("/")
+    public static final class FailingEventPage {
+        public Node render() {
+            return button("Fail").onClick(() -> {
+                throw new IllegalStateException("event-secret from FailingEventPage");
+            });
+        }
+    }
+
+    private static final class CodecLogSilencer implements AutoCloseable {
+        private final Logger codecLogger;
+        private final Logger errorLogger;
+        private final boolean codecUseParentHandlers;
+        private final boolean errorUseParentHandlers;
+
+        private CodecLogSilencer(Logger codecLogger, Logger errorLogger) {
+            this.codecLogger = codecLogger;
+            this.errorLogger = errorLogger;
+            this.codecUseParentHandlers = codecLogger.getUseParentHandlers();
+            this.errorUseParentHandlers = errorLogger.getUseParentHandlers();
+            this.codecLogger.setUseParentHandlers(false);
+            this.errorLogger.setUseParentHandlers(false);
         }
 
         static CodecLogSilencer attach() {
-            return new CodecLogSilencer(Logger.getLogger(LiveHttpCodec.class.getName()));
+            return new CodecLogSilencer(
+                    Logger.getLogger(LiveHttpCodec.class.getName()),
+                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName())
+            );
         }
 
         @Override
         public void close() {
-            logger.setUseParentHandlers(useParentHandlers);
+            codecLogger.setUseParentHandlers(codecUseParentHandlers);
+            errorLogger.setUseParentHandlers(errorUseParentHandlers);
+        }
+    }
+
+    private static final class StderrCapture implements AutoCloseable {
+        private final PrintStream original = System.err;
+        private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        private StderrCapture() {
+            System.setErr(new PrintStream(output));
+        }
+
+        static StderrCapture attach() {
+            return new StderrCapture();
+        }
+
+        String content() {
+            return output.toString(StandardCharsets.UTF_8);
+        }
+
+        @Override
+        public void close() {
+            System.setErr(original);
         }
     }
 }
