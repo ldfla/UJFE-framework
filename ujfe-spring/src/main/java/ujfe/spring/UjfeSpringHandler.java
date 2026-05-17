@@ -4,7 +4,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.HttpRequestHandler;
 import ujfe.core.ClientState;
-import ujfe.live.*;
+import ujfe.live.LiveClientScript;
+import ujfe.live.LiveDevToolsScript;
+import ujfe.live.LiveHttpCodec;
+import ujfe.live.LiveHttpCodecException;
+import ujfe.live.LiveHttpEventPayload;
+import ujfe.live.LiveHttpPaths;
+import ujfe.live.LiveHttpSecurity;
+import ujfe.live.LiveRenderResult;
+import ujfe.live.LiveSession;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,9 +21,16 @@ import java.util.Objects;
 
 public final class UjfeSpringHandler implements HttpRequestHandler {
     private final LiveSession liveSession;
+    private final int maxJsonPayloadBytes;
 
     public UjfeSpringHandler(LiveSession liveSession) {
+        this(liveSession, LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
+    }
+
+    public UjfeSpringHandler(LiveSession liveSession, int maxJsonPayloadBytes) {
         this.liveSession = Objects.requireNonNull(liveSession, "liveSession");
+        LiveHttpCodec.requirePayloadSize(0, maxJsonPayloadBytes);
+        this.maxJsonPayloadBytes = maxJsonPayloadBytes;
     }
 
     @Override
@@ -42,16 +57,19 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             }
 
             if ("POST".equals(method) && LiveHttpPaths.EVENT.equals(path)) {
-                String body = readBody(request);
-                String eventId = LiveHttpCodec.extractEventId(body);
-                ClientState clientState = LiveHttpCodec.extractClientState(body);
-                LiveRenderResult result = liveSession.handleEvent(eventId, clientState);
+                LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
+                        readBody(request),
+                        maxJsonPayloadBytes
+                );
+                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState());
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
             }
 
             if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
-                LiveRenderResult result = liveSession.updateClientState(LiveHttpCodec.extractClientState(readBody(request)));
+                LiveRenderResult result = liveSession.updateClientState(
+                        LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes)
+                );
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
             }
@@ -64,23 +82,29 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             }
 
             write(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+        } catch (LiveHttpCodecException exception) {
+            LiveHttpCodec.logRejectedPayload(exception, "spring", correlationId(request));
+            write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
         } catch (IllegalArgumentException exception) {
             write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", exception.getMessage());
         } catch (RuntimeException exception) {
-            write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", exception.getMessage());
+            write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "text/plain; charset=utf-8", "Internal server error");
         }
     }
 
-    private static String readBody(HttpServletRequest request) throws IOException {
-        StringBuilder body = new StringBuilder();
+    private String readBody(HttpServletRequest request) throws IOException {
+        LiveHttpCodec.requirePayloadSize(request.getContentLengthLong(), maxJsonPayloadBytes);
         try (BufferedReader reader = request.getReader()) {
-            char[] buffer = new char[1024];
-            int read;
-            while ((read = reader.read(buffer)) >= 0) {
-                body.append(buffer, 0, read);
-            }
+            return LiveHttpCodec.readPayload(reader, maxJsonPayloadBytes);
         }
-        return body.toString();
+    }
+
+    private static String correlationId(HttpServletRequest request) {
+        String requestId = request.getHeader("X-Request-Id");
+        if (requestId != null && !requestId.isBlank()) {
+            return requestId;
+        }
+        return request.getHeader("X-Correlation-Id");
     }
 
     private static void write(HttpServletResponse response, int status, String contentType, String content) throws IOException {

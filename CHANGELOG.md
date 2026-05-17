@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Standardized live HTTP JSON parsing, validation, serialization, payload limits, safe errors, and rejected-payload logging in `LiveHttpCodec`.
+- Updated Netty, Jakarta Servlet, and Spring MVC runtime adapters to reuse the shared live codec for `/_ujfe/event` and `/_ujfe/state`.
+- Added a default live JSON payload limit of `1,048,576` bytes with runtime-specific configuration hooks.
+- Added safe validation errors for empty bodies, empty JSON objects, malformed JSON, missing `eventId`, missing `clientState`, and oversized payloads.
+- Added security-focused tests for malformed, incomplete, oversized, and valid live payloads across the shared codec and supported HTTP adapters.
+- Documented live event payloads, payload limit policy, safe error responses, logging metadata, and runtime reuse expectations in `docs/live-events.md`.
+
 ## Version 0.12.0 - 17/05/2026
 
 - Updated the Maven project version to `0.12.0-SNAPSHOT`.

@@ -3,13 +3,18 @@ package ujfe.servlet;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import ujfe.live.CssMode;
+import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveSessionConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 
 final class UjfeServletSettings {
     static final String ROUTE_PACKAGES = "ujfe.routes.packages";
@@ -17,6 +22,7 @@ final class UjfeServletSettings {
     static final String LANG = "ujfe.live.lang";
     static final String DEV_TOOLS_ENABLED = "ujfe.live.dev-tools-enabled";
     static final String CSS_MODE = "ujfe.live.css-mode";
+    static final String MAX_JSON_PAYLOAD_BYTES = "ujfe.live.max-json-payload-bytes";
 
     private final Properties values;
 
@@ -97,6 +103,16 @@ final class UjfeServletSettings {
         value(DEV_TOOLS_ENABLED).ifPresent(value -> builder.devToolsEnabled(Boolean.parseBoolean(value)));
         value(CSS_MODE).ifPresent(value -> builder.cssMode(CssMode.valueOf(value.trim().toUpperCase())));
         return builder.build();
+    }
+
+    int maxJsonPayloadBytes() {
+        return value(MAX_JSON_PAYLOAD_BYTES)
+                .map(Integer::parseInt)
+                .map(value -> {
+                    LiveHttpCodec.requirePayloadSize(0, value);
+                    return value;
+                })
+                .orElse(LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
     }
 
     private java.util.Optional<String> value(String key) {

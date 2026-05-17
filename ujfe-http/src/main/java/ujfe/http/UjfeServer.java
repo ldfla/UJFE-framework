@@ -39,8 +39,8 @@ public final class UjfeServer {
                     protected void initChannel(SocketChannel socketChannel) {
                         socketChannel.pipeline()
                                 .addLast(new HttpServerCodec())
-                                .addLast(new HttpObjectAggregator(1_048_576))
-                                .addLast(new UjfeHttpHandler(liveSession));
+                                .addLast(new HttpObjectAggregator(config.maxJsonPayloadBytes()))
+                                .addLast(new UjfeHttpHandler(liveSession, config.maxJsonPayloadBytes()));
                     }
                 });
 

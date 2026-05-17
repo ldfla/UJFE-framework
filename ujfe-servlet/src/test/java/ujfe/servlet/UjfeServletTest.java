@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import ujfe.core.Node;
+import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,6 +83,38 @@ final class UjfeServletTest {
     }
 
     @Test
+    void rejectsMalformedLiveJsonWithSafeCodecError() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .body("{\"eventId\":}"));
+        }
+
+        assertEquals(400, response.status());
+        assertEquals("Invalid live JSON payload.", response.body());
+        assertFalse(response.body().contains("Exception"));
+        assertFalse(response.body().contains("LiveHttpCodec"));
+    }
+
+    @Test
+    void rejectsOversizedLiveJsonWithConfiguredLimit() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()),
+                LiveSessionConfig.defaults(),
+                32);
+
+        TestResponse response;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .body("{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(413, response.status());
+        assertEquals("Live JSON payload exceeds maximum size.", response.body());
+    }
+
+    @Test
     void routeClaimingIsExplicitAndDoesNotClaimUnrelatedRoutes() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
 
@@ -111,7 +145,8 @@ final class UjfeServletTest {
         Router configuredRouter = new Router().register(new HomePage());
         UjfeServlet configuredServlet = new UjfeServlet(configuredRouter, LiveSessionConfig.builder()
                 .title("Configured")
-                .build());
+                .build(),
+                4096);
 
         TestResponse configuredResponse = service(configuredServlet, TestRequest.get("/"));
 
@@ -119,7 +154,7 @@ final class UjfeServletTest {
 
         Router externalRouter = new Router().register(new HomePage());
         try (LiveSession externalSession = new LiveSession(externalRouter)) {
-            UjfeServlet externalServlet = new UjfeServlet(externalRouter, externalSession);
+            UjfeServlet externalServlet = new UjfeServlet(externalRouter, externalSession, 4096);
             TestResponse externalResponse = service(externalServlet, TestRequest.get("/"));
 
             assertEquals(200, externalResponse.status());
@@ -157,16 +192,15 @@ final class UjfeServletTest {
 
     @Test
     void liveSessionContextAttributeRequiresRouterForSafeRouteClaiming() {
-        Map<String, Object> attributes = Map.of(
-                UjfeServlet.LIVE_SESSION_ATTRIBUTE,
-                new LiveSession(new Router().register(new HomePage()))
-        );
-        UjfeServlet servlet = new UjfeServlet();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            Map<String, Object> attributes = Map.of(UjfeServlet.LIVE_SESSION_ATTRIBUTE, session);
+            UjfeServlet servlet = new UjfeServlet();
 
-        ServletException failure = assertThrows(ServletException.class,
-                () -> servlet.init(servletConfig(attributes, Map.of(), Map.of())));
+            ServletException failure = assertThrows(ServletException.class,
+                    () -> servlet.init(servletConfig(attributes, Map.of(), Map.of())));
 
-        assertTrue(failure.getMessage().contains(UjfeServlet.ROUTER_ATTRIBUTE));
+            assertTrue(failure.getMessage().contains(UjfeServlet.ROUTER_ATTRIBUTE));
+        }
     }
 
     @Test
@@ -177,12 +211,14 @@ final class UjfeServletTest {
         properties.setProperty(UjfeServletSettings.LANG, "pt-BR");
         properties.setProperty(UjfeServletSettings.DEV_TOOLS_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.CSS_MODE, "external");
+        properties.setProperty(UjfeServletSettings.MAX_JSON_PAYLOAD_BYTES, "2048");
 
         UjfeServletSettings settings = UjfeServletSettings.fromProperties(properties);
         LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
 
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
         assertEquals("Servlet App", liveConfigTitle(liveConfig));
+        assertEquals(2048, settings.maxJsonPayloadBytes());
     }
 
     @Test
@@ -195,10 +231,19 @@ final class UjfeServletTest {
                 + "    title: 'YAML App'\n"
                 + "    lang: en\n"
                 + "    dev-tools-enabled: true\n"
+                + "    max-json-payload-bytes: 4096\n"
                 + "    css-mode: internal\n");
 
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
         assertEquals("YAML App", liveConfigTitle(settings.toLiveSessionConfig()));
+        assertEquals(4096, settings.maxJsonPayloadBytes());
+    }
+
+    @Test
+    void servletSettingsDefaultToSharedCodecPayloadLimit() {
+        UjfeServletSettings settings = UjfeServletSettings.fromProperties(new Properties());
+
+        assertEquals(LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES, settings.maxJsonPayloadBytes());
     }
 
     @Test
@@ -279,6 +324,12 @@ final class UjfeServletTest {
         }
         if (boolean.class.equals(returnType)) {
             return false;
+        }
+        if (long.class.equals(returnType)) {
+            return 0L;
+        }
+        if (int.class.equals(returnType)) {
+            return 0;
         }
         if (void.class.equals(returnType)) {
             return null;
@@ -378,6 +429,12 @@ final class UjfeServletTest {
                 if ("getReader".equals(name)) {
                     return new BufferedReader(new StringReader(body));
                 }
+                if ("getContentLengthLong".equals(name)) {
+                    return (long) body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                }
+                if ("getContentLength".equals(name)) {
+                    return body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                }
                 return defaultValue(returnType);
             });
         }
@@ -439,5 +496,25 @@ final class UjfeServletTest {
 
     private interface MethodHandler {
         Object invoke(String name, Object[] args, Class<?> returnType) throws Throwable;
+    }
+
+    private static final class CodecLogSilencer implements AutoCloseable {
+        private final Logger logger;
+        private final boolean useParentHandlers;
+
+        private CodecLogSilencer(Logger logger) {
+            this.logger = logger;
+            this.useParentHandlers = logger.getUseParentHandlers();
+            this.logger.setUseParentHandlers(false);
+        }
+
+        static CodecLogSilencer attach() {
+            return new CodecLogSilencer(Logger.getLogger(LiveHttpCodec.class.getName()));
+        }
+
+        @Override
+        public void close() {
+            logger.setUseParentHandlers(useParentHandlers);
+        }
     }
 }

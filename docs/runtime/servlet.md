@@ -287,6 +287,7 @@ ujfe.live.title=UJFE Servlet App
 ujfe.live.lang=en
 ujfe.live.dev-tools-enabled=true
 ujfe.live.css-mode=internal
+ujfe.live.max-json-payload-bytes=262144
 ```
 
 Equivalent `application.yml`:
@@ -300,6 +301,7 @@ ujfe:
     lang: en
     dev-tools-enabled: true
     css-mode: internal
+    max-json-payload-bytes: 262144
 ```
 
 Supported keys:
@@ -311,6 +313,7 @@ Supported keys:
 | `ujfe.live.lang` | `en` | Document `<html lang="...">` |
 | `ujfe.live.dev-tools-enabled` | `true` | Whether `/_ujfe/dev.js` is added to rendered documents |
 | `ujfe.live.css-mode` | `internal` | CSS delivery mode used by `LiveSessionConfig` |
+| `ujfe.live.max-json-payload-bytes` | `262144` | Maximum accepted JSON body size for `/_ujfe/event` and `/_ujfe/state`; defaults to `1048576` |
 
 ## ServletContext Attributes
 
@@ -353,6 +356,12 @@ That keeps Servlet concerns separate from UJFE runtime concerns:
 - `Router` decides which UJFE route is rendered.
 - `LiveSessionConfig` decides document metadata, CSS strategy, dev tools, head nodes, and runtime extension points.
 
+The live JSON payload limit is intentionally configured on the Servlet adapter, not on `LiveSessionConfig`, because it is an HTTP request boundary concern:
+
+```java
+var servlet = new UjfeServlet(router, config, 262_144);
+```
+
 ## Internal Endpoints
 
 UJFE internal endpoints must be mapped to the servlet, usually with `/_ujfe/*`.
@@ -389,6 +398,8 @@ Responses from `/_ujfe/event` and `/_ujfe/state` use:
 ```
 
 Application code should not construct these endpoint payloads manually during normal use. They are shown here to make the runtime behavior clear and testable.
+
+Live JSON parsing, response serialization, payload size validation, and safe error messages are delegated to the shared `LiveHttpCodec`. See [Live events](../live-events.md) for the cross-runtime contract used by Servlet, Spring, and Netty.
 
 ## Route Claiming
 
