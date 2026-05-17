@@ -10,6 +10,8 @@ Use a Jakarta Servlet container such as Tomcat 10+ / 11. Tomcat 9.x uses the leg
 - `UjfeServletBootstrap`: a `ServletContextListener` that creates the router and registers `UjfeServlet`.
 - `application.properties`: document/runtime settings used by the servlet runtime.
 
+The properties file also sets `ujfe.live.max-json-payload-bytes`, the shared live JSON body limit used by `/_ujfe/event` and `/_ujfe/state`.
+
 The bootstrap maps only:
 
 - `/home`

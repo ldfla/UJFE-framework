@@ -7,7 +7,16 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import ujfe.core.ClientState;
-import ujfe.live.*;
+import ujfe.live.LiveClientScript;
+import ujfe.live.LiveDevToolsScript;
+import ujfe.live.LiveHttpCodec;
+import ujfe.live.LiveHttpCodecException;
+import ujfe.live.LiveHttpEventPayload;
+import ujfe.live.LiveHttpPaths;
+import ujfe.live.LiveHttpSecurity;
+import ujfe.live.LiveRenderResult;
+import ujfe.live.LiveSession;
+import ujfe.live.LiveSessionConfig;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
 
@@ -23,6 +32,7 @@ public final class UjfeServlet extends HttpServlet {
     private Router router;
     private LiveSession liveSession;
     private boolean ownsLiveSession;
+    private int maxJsonPayloadBytes = LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES;
 
     public UjfeServlet() {
     }
@@ -32,17 +42,27 @@ public final class UjfeServlet extends HttpServlet {
     }
 
     public UjfeServlet(Router router, LiveSessionConfig config) {
-        this(router, new LiveSession(router, config), true);
+        this(router, config, LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
+    }
+
+    public UjfeServlet(Router router, LiveSessionConfig config, int maxJsonPayloadBytes) {
+        this(router, new LiveSession(router, config), true, maxJsonPayloadBytes);
     }
 
     public UjfeServlet(Router router, LiveSession liveSession) {
-        this(router, liveSession, false);
+        this(router, liveSession, LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
     }
 
-    private UjfeServlet(Router router, LiveSession liveSession, boolean ownsLiveSession) {
+    public UjfeServlet(Router router, LiveSession liveSession, int maxJsonPayloadBytes) {
+        this(router, liveSession, false, maxJsonPayloadBytes);
+    }
+
+    private UjfeServlet(Router router, LiveSession liveSession, boolean ownsLiveSession, int maxJsonPayloadBytes) {
         this.router = Objects.requireNonNull(router, "router");
         this.liveSession = Objects.requireNonNull(liveSession, "liveSession");
         this.ownsLiveSession = ownsLiveSession;
+        LiveHttpCodec.requirePayloadSize(0, maxJsonPayloadBytes);
+        this.maxJsonPayloadBytes = maxJsonPayloadBytes;
     }
 
     @Override
@@ -69,6 +89,7 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         UjfeServletSettings settings = UjfeServletSettings.from(config);
+        maxJsonPayloadBytes = settings.maxJsonPayloadBytes();
         router = configuredRouter instanceof Router ? (Router) configuredRouter : routerFromSettings(settings);
         liveSession = new LiveSession(router, settings.toLiveSessionConfig());
         ownsLiveSession = true;
@@ -111,12 +132,15 @@ public final class UjfeServlet extends HttpServlet {
             Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
             String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
             write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
+        } catch (LiveHttpCodecException exception) {
+            LiveHttpCodec.logRejectedPayload(exception, "servlet", correlationId(request));
+            write(response, exception.httpStatus(), "text/plain; charset=utf-8", exception.safeMessage());
         } catch (IllegalArgumentException exception) {
             write(response, HttpServletResponse.SC_BAD_REQUEST, "text/plain; charset=utf-8", exception.getMessage());
         } catch (RuntimeException exception) {
             write(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "text/plain; charset=utf-8",
-                    exception.getMessage());
+                    "Internal server error");
         }
     }
 
@@ -153,10 +177,11 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         if ("POST".equals(method) && LiveHttpPaths.EVENT.equals(path)) {
-            String body = readBody(request);
-            String eventId = LiveHttpCodec.extractEventId(body);
-            ClientState clientState = LiveHttpCodec.extractClientState(body);
-            LiveRenderResult result = liveSession.handleEvent(eventId, clientState);
+            LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
+                    readBody(request),
+                    maxJsonPayloadBytes
+            );
+            LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState());
             write(response, HttpServletResponse.SC_OK,
                     "application/json; charset=utf-8",
                     LiveHttpCodec.livePayload(result));
@@ -164,7 +189,9 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
-            LiveRenderResult result = liveSession.updateClientState(LiveHttpCodec.extractClientState(readBody(request)));
+            LiveRenderResult result = liveSession.updateClientState(
+                    LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes)
+            );
             write(response, HttpServletResponse.SC_OK,
                     "application/json; charset=utf-8",
                     LiveHttpCodec.livePayload(result));
@@ -192,16 +219,11 @@ public final class UjfeServlet extends HttpServlet {
         }
     }
 
-    private static String readBody(HttpServletRequest request) throws IOException {
-        StringBuilder body = new StringBuilder();
+    private String readBody(HttpServletRequest request) throws IOException {
+        LiveHttpCodec.requirePayloadSize(request.getContentLengthLong(), maxJsonPayloadBytes);
         try (BufferedReader reader = request.getReader()) {
-            char[] buffer = new char[1024];
-            int read;
-            while ((read = reader.read(buffer)) >= 0) {
-                body.append(buffer, 0, read);
-            }
+            return LiveHttpCodec.readPayload(reader, maxJsonPayloadBytes);
         }
-        return body.toString();
     }
 
     private static void write(HttpServletResponse response, int status, String contentType, String content)
@@ -211,6 +233,14 @@ public final class UjfeServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         LiveHttpSecurity.securityHeaders().forEach(response::setHeader);
         response.getWriter().write(content);
+    }
+
+    private static String correlationId(HttpServletRequest request) {
+        String requestId = request.getHeader("X-Request-Id");
+        if (requestId != null && !requestId.isBlank()) {
+            return requestId;
+        }
+        return request.getHeader("X-Correlation-Id");
     }
 
     static String pathWithinApplication(HttpServletRequest request) {

@@ -45,6 +45,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Attribute validation](docs/security/attribute-validation.md)
 - [Safe URL policy](docs/security/safe-url.md)
 - [Signals](docs/signals.md)
+- [Live events](docs/live-events.md)
 - [Router](docs/router.md)
 - [AOT route metadata roadmap](docs/aot-roadmap.md)
 - [Standalone Jakarta Servlet runtime](docs/runtime/servlet.md)
