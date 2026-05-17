@@ -5,18 +5,7 @@ import ujfe.html.Node;
 import ujfe.router.Page;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
-import static ujfe.html.UI.a;
-import static ujfe.html.UI.code;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.h1;
-import static ujfe.html.UI.h2;
-import static ujfe.html.UI.h3;
-import static ujfe.html.UI.li;
-import static ujfe.html.UI.p;
-import static ujfe.html.UI.pre;
-import static ujfe.html.UI.section;
-import static ujfe.html.UI.span;
-import static ujfe.html.UI.ul;
+import static ujfe.html.UI.*;
 
 /**
  * Example page demonstrating server-side runtime extension points.
@@ -54,16 +43,16 @@ public final class RuntimeActionsPage implements Component {
                         .css("text-base text-slate-700"))
                 .child(codeBlock(
                         "RuntimeActionRegistry registry = RuntimeActionRegistry.builder()\n"
-                        + "    .beforeRender(ctx -> log(\"Rendering \" + ctx.path()))\n"
-                        + "    .afterRender(result -> metrics.record(result.renderDuration()))\n"
-                        + "    .beforeEvent(ctx -> authorize(ctx.clientState()))\n"
-                        + "    .afterEvent(result -> audit(result.eventId()))\n"
-                        + "    .onError(ctx -> logger.error(ctx.exception()))\n"
-                        + "    .contributeHead(ctx -> ctx.add(meta().attr(\"name\", \"robots\")))\n"
-                        + "    .build();\n\n"
-                        + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
-                        + "    .runtimeActions(registry)\n"
-                        + "    .build();"
+                                + "    .beforeRender(ctx -> log(\"Rendering \" + ctx.path()))\n"
+                                + "    .afterRender(result -> metrics.record(result.renderDuration()))\n"
+                                + "    .beforeEvent(ctx -> authorize(ctx.clientState()))\n"
+                                + "    .afterEvent(result -> audit(result.eventId()))\n"
+                                + "    .onError(ctx -> logger.error(ctx.exception()))\n"
+                                + "    .contributeHead(ctx -> ctx.add(meta().attr(\"name\", \"robots\")))\n"
+                                + "    .build();\n\n"
+                                + "LiveSessionConfig config = LiveSessionConfig.builder()\n"
+                                + "    .runtimeActions(registry)\n"
+                                + "    .build();"
                 ));
     }
 
@@ -82,8 +71,8 @@ public final class RuntimeActionsPage implements Component {
                         .child(orderPill("LAST", "1000")))
                 .child(codeBlock(
                         ".beforeRender(ActionOrder.FIRST, ctx -> security())\n"
-                        + ".beforeRender(ActionOrder.NORMAL, ctx -> business())\n"
-                        + ".beforeRender(ActionOrder.LAST, ctx -> metrics())"
+                                + ".beforeRender(ActionOrder.NORMAL, ctx -> business())\n"
+                                + ".beforeRender(ActionOrder.LAST, ctx -> metrics())"
                 ));
     }
 
@@ -95,11 +84,11 @@ public final class RuntimeActionsPage implements Component {
                         .css("text-base text-slate-700"))
                 .child(codeBlock(
                         ".contributeHead(ctx -> {\n"
-                        + "    ctx.add(meta().attr(\"name\", \"viewport\")\n"
-                        + "                  .attr(\"content\", \"width=device-width\"));\n"
-                        + "    ctx.add(link().attr(\"rel\", \"icon\")\n"
-                        + "                 .attr(\"href\", \"/favicon.ico\"));\n"
-                        + "})"
+                                + "    ctx.add(meta().attr(\"name\", \"viewport\")\n"
+                                + "                  .attr(\"content\", \"width=device-width\"));\n"
+                                + "    ctx.add(link().attr(\"rel\", \"icon\")\n"
+                                + "                 .attr(\"href\", \"/favicon.ico\"));\n"
+                                + "})"
                 ));
     }
 
@@ -125,26 +114,26 @@ public final class RuntimeActionsPage implements Component {
                         .css("grid grid-cols-2 gap-4")
                         .child(patternCard("Observability",
                                 ".afterRender(result -> {\n"
-                                + "    metrics.record(\"render.ms\",\n"
-                                + "        result.renderDuration().toMillis());\n"
-                                + "})"))
+                                        + "    metrics.record(\"render.ms\",\n"
+                                        + "        result.renderDuration().toMillis());\n"
+                                        + "})"))
                         .child(patternCard("Authorization",
                                 ".beforeEvent(ActionOrder.FIRST, ctx -> {\n"
-                                + "    if (!authorized(ctx.clientState()))\n"
-                                + "        throw new SecurityException();\n"
-                                + "})"))
+                                        + "    if (!authorized(ctx.clientState()))\n"
+                                        + "        throw new SecurityException();\n"
+                                        + "})"))
                         .child(patternCard("SEO",
                                 ".contributeHead(ctx -> {\n"
-                                + "    ctx.add(meta()\n"
-                                + "        .attr(\"name\", \"description\")\n"
-                                + "        .attr(\"content\", \"...\"));\n"
-                                + "})"))
+                                        + "    ctx.add(meta()\n"
+                                        + "        .attr(\"name\", \"description\")\n"
+                                        + "        .attr(\"content\", \"...\"));\n"
+                                        + "})"))
                         .child(patternCard("Error Logging",
                                 ".onError(ctx -> {\n"
-                                + "    logger.error(\"{} phase: {}\",\n"
-                                + "        ctx.phase(),\n"
-                                + "        ctx.exception().getMessage());\n"
-                                + "})")));
+                                        + "    logger.error(\"{} phase: {}\",\n"
+                                        + "        ctx.phase(),\n"
+                                        + "        ctx.exception().getMessage());\n"
+                                        + "})")));
     }
 
     private Node backLink() {

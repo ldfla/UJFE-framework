@@ -1,10 +1,6 @@
 package ujfe.html;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public final class CssTheme {
     public static final List<Integer> STEPS = List.of(50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950);

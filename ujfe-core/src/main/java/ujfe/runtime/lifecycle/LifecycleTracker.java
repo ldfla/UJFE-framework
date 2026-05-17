@@ -2,12 +2,7 @@ package ujfe.runtime.lifecycle;
 
 import ujfe.core.Lifecycle;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Collections;
+import java.util.*;
 
 public final class LifecycleTracker {
     private final LifecycleRegistry registry;

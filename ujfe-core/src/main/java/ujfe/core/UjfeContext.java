@@ -2,11 +2,7 @@ package ujfe.core;
 
 import ujfe.runtime.lifecycle.LifecycleTracker;
 
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 

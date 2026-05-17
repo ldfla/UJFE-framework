@@ -28,7 +28,8 @@ final class UjfeContextTest {
                 .lifecycleTracker(tracker)
                 .build();
 
-        context.executor().execute(() -> { });
+        context.executor().execute(() -> {
+        });
         context.trackLifecycle(lifecycle);
         tracker.complete();
 

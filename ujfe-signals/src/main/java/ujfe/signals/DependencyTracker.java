@@ -1,10 +1,6 @@
 package ujfe.signals;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 final class DependencyTracker {

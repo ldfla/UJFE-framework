@@ -1,10 +1,6 @@
 package app;
 
-import app.pages.DocumentationPage;
-import app.pages.LifecyclePage;
-import app.pages.MainPage;
-import app.pages.RuntimeActionsPage;
-import app.pages.SignalsPage;
+import app.pages.*;
 import ujfe.http.UjfeServer;
 import ujfe.http.UjfeServerConfig;
 import ujfe.live.LiveSession;
@@ -21,30 +17,30 @@ public final class Main {
         var appTheme = new AppTheme();
         var runtimeActionsPage = new RuntimeActionsPage();
         var routes = new ManualRouteSource()
-                .register("/", () -> new MainPage(appTheme))
-                .register("/docs", () -> new DocumentationPage(appTheme))
-                .register("/signals", SignalsPage::new)
-                .register("/lifecycle", LifecyclePage::new)
-                .register("/runtime-actions", () -> runtimeActionsPage);
+            .register("/", () -> new MainPage(appTheme))
+            .register("/docs", () -> new DocumentationPage(appTheme))
+            .register("/signals", SignalsPage::new)
+            .register("/lifecycle", LifecyclePage::new)
+            .register("/runtime-actions", () -> runtimeActionsPage);
         var router = new Router()
-                .register(routes);
+            .register(routes);
 
         RuntimeActionRegistry actions = RuntimeActionsPage.sampleRegistry();
 
         var liveConfig = LiveSessionConfig.builder()
-                .themeSupplier(appTheme::cssTheme)
-                .devToolsEnabled(true)
-                .lang("en")
-                .title("UJFE Example")
-                .runtimeActions(actions)
-                .build();
+            .themeSupplier(appTheme::cssTheme)
+            .devToolsEnabled(true)
+            .lang("en")
+            .title("UJFE Example")
+            .runtimeActions(actions)
+            .build();
         var liveSession = new LiveSession(router, liveConfig);
         var server = new UjfeServer(
-                UjfeServerConfig.builder()
-                        .host("0.0.0.0")
-                        .port(8080)
-                        .build(),
-                liveSession
+            UjfeServerConfig.builder()
+                .host("0.0.0.0")
+                .port(8080)
+                .build(),
+            liveSession
         );
 
         Runtime.getRuntime().addShutdownHook(new Thread(server::stop));

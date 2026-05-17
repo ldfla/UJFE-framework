@@ -1,6 +1,8 @@
 package ujfe.runtime.action;
 
 import org.junit.jupiter.api.Test;
+import ujfe.core.ClientState;
+import ujfe.core.Node;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -15,14 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import ujfe.core.ClientState;
-import ujfe.core.Node;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 final class RuntimeActionRegistryTest {
 
@@ -183,7 +178,8 @@ final class RuntimeActionRegistryTest {
     @Test
     void registryWithActionsIsNotEmpty() {
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                .beforeRender(ctx -> {})
+                .beforeRender(ctx -> {
+                })
                 .build();
 
         assertFalse(registry.isEmpty());
@@ -195,7 +191,9 @@ final class RuntimeActionRegistryTest {
     void exceptionInActionRoutesToOnError() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                .beforeRender(ctx -> { throw new RuntimeException("action-failed"); })
+                .beforeRender(ctx -> {
+                    throw new RuntimeException("action-failed");
+                })
                 .onError(ctx -> errors.add(ctx.exception().getMessage()))
                 .build();
 
@@ -210,7 +208,9 @@ final class RuntimeActionRegistryTest {
         System.setErr(new PrintStream(captured));
         try {
             RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                    .onError(ctx -> { throw new RuntimeException("onError-failed"); })
+                    .onError(ctx -> {
+                        throw new RuntimeException("onError-failed");
+                    })
                     .build();
 
             RuntimeErrorContext errorContext = new RuntimeErrorContext(
@@ -228,7 +228,9 @@ final class RuntimeActionRegistryTest {
     void exceptionInAfterRenderRoutesToOnError() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                .afterRender(result -> { throw new RuntimeException("after-boom"); })
+                .afterRender(result -> {
+                    throw new RuntimeException("after-boom");
+                })
                 .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.exception().getMessage()))
                 .build();
 
@@ -240,7 +242,9 @@ final class RuntimeActionRegistryTest {
     void exceptionInBeforeEventRoutesToOnError() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                .beforeEvent(ctx -> { throw new RuntimeException("before-evt-boom"); })
+                .beforeEvent(ctx -> {
+                    throw new RuntimeException("before-evt-boom");
+                })
                 .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.eventId()))
                 .build();
 
@@ -252,7 +256,9 @@ final class RuntimeActionRegistryTest {
     void exceptionInHeadContributionRoutesToOnError() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-                .contributeHead(ctx -> { throw new RuntimeException("head-boom"); })
+                .contributeHead(ctx -> {
+                    throw new RuntimeException("head-boom");
+                })
                 .onError(ctx -> errors.add(ctx.phase().name()))
                 .build();
 

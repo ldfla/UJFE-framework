@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 import ujfe.core.ClientState;
 import ujfe.core.Component;
 import ujfe.core.Node;
-import ujfe.router.PageRenderer;
 import ujfe.router.Page;
+import ujfe.router.PageRenderer;
 import ujfe.router.Router;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
@@ -14,14 +14,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.meta;
-import static ujfe.html.UI.p;
+import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.*;
 
 final class LiveSessionActionTest {
 
@@ -113,7 +107,9 @@ final class LiveSessionActionTest {
         List<String> errors = new ArrayList<>();
         List<String> after = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .beforeEvent(ctx -> { throw new SecurityException("blocked"); })
+                .beforeEvent(ctx -> {
+                    throw new SecurityException("blocked");
+                })
                 .afterEvent(result -> after.add(result.eventId()))
                 .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.eventId() + ":" + ctx.exception().getMessage()))
                 .build();
@@ -276,7 +272,8 @@ final class LiveSessionActionTest {
         public Node render() {
             return div()
                     .child(p("Hello"))
-                    .child(button("Click").onClick(() -> {}));
+                    .child(button("Click").onClick(() -> {
+                    }));
         }
     }
 }

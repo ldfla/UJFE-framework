@@ -1,10 +1,6 @@
 package ujfe.core;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public final class ClientState {
     private static final ClientState EMPTY = new ClientState(Collections.emptyMap(), Collections.emptyMap());

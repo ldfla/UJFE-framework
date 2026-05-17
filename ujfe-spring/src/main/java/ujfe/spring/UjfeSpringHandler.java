@@ -2,13 +2,9 @@ package ujfe.spring;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import ujfe.core.ClientState;
-import ujfe.live.LiveClientScript;
-import ujfe.live.LiveDevToolsScript;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveRenderResult;
-import ujfe.live.LiveSession;
 import org.springframework.web.HttpRequestHandler;
+import ujfe.core.ClientState;
+import ujfe.live.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,24 +24,24 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         String path = UjfeSpringPaths.pathWithinApplication(request);
 
         try {
-            if ("GET".equals(method) && "/_ujfe/client.js".equals(path)) {
+            if ("GET".equals(method) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
                 write(response, HttpServletResponse.SC_OK, "application/javascript; charset=utf-8", LiveClientScript.script());
                 return;
             }
 
-            if ("GET".equals(method) && "/_ujfe/dev.js".equals(path)) {
+            if ("GET".equals(method) && LiveHttpPaths.DEV_SCRIPT.equals(path)) {
                 write(response, HttpServletResponse.SC_OK, "application/javascript; charset=utf-8", LiveDevToolsScript.script());
                 return;
             }
 
-            if ("GET".equals(method) && "/_ujfe/css".equals(path)) {
+            if ("GET".equals(method) && LiveHttpPaths.CSS.equals(path)) {
                 String classes = request.getParameter("classes");
                 write(response, HttpServletResponse.SC_OK, "text/css; charset=utf-8",
                         liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
                 return;
             }
 
-            if ("POST".equals(method) && "/_ujfe/event".equals(path)) {
+            if ("POST".equals(method) && LiveHttpPaths.EVENT.equals(path)) {
                 String body = readBody(request);
                 String eventId = LiveHttpCodec.extractEventId(body);
                 ClientState clientState = LiveHttpCodec.extractClientState(body);
@@ -54,7 +50,7 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                 return;
             }
 
-            if ("POST".equals(method) && "/_ujfe/state".equals(path)) {
+            if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
                 LiveRenderResult result = liveSession.updateClientState(LiveHttpCodec.extractClientState(readBody(request)));
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
@@ -96,19 +92,6 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
     }
 
     private static void applySecurityHeaders(HttpServletResponse response) {
-        response.setHeader("X-Content-Type-Options", "nosniff");
-        response.setHeader("X-Frame-Options", "DENY");
-        response.setHeader("Referrer-Policy", "no-referrer");
-        response.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-        response.setHeader("Content-Security-Policy",
-                "default-src 'self'; "
-                        + "script-src 'self'; "
-                        + "style-src 'self' 'unsafe-inline'; "
-                        + "img-src 'self' data: https:; "
-                        + "media-src 'self' data: https:; "
-                        + "object-src 'none'; "
-                        + "base-uri 'none'; "
-                        + "frame-ancestors 'none'; "
-                        + "form-action 'self'");
+        LiveHttpSecurity.securityHeaders().forEach(response::setHeader);
     }
 }

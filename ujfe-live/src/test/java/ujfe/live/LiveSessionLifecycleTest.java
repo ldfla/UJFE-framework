@@ -16,14 +16,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.component;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.p;
+import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.*;
 
 final class LiveSessionLifecycleTest {
     @Test

@@ -1,7 +1,7 @@
 package ujfe.live;
 
-import ujfe.core.ElementIdGenerator;
 import ujfe.core.ClientState;
+import ujfe.core.ElementIdGenerator;
 import ujfe.core.Node;
 import ujfe.core.UjfeContext;
 import ujfe.html.CssTheme;
@@ -27,18 +27,18 @@ public final class LiveComponentRenderer {
     }
 
     public LiveComponentRenderer(
-            LiveEventRegistry eventRegistry,
-            ElementIdGenerator elementIdGenerator,
-            Supplier<CssTheme> themeSupplier
+        LiveEventRegistry eventRegistry,
+        ElementIdGenerator elementIdGenerator,
+        Supplier<CssTheme> themeSupplier
     ) {
         this(eventRegistry, elementIdGenerator, themeSupplier, CssMode.INTERNAL);
     }
 
     public LiveComponentRenderer(
-            LiveEventRegistry eventRegistry,
-            ElementIdGenerator elementIdGenerator,
-            Supplier<CssTheme> themeSupplier,
-            CssMode cssMode
+        LiveEventRegistry eventRegistry,
+        ElementIdGenerator elementIdGenerator,
+        Supplier<CssTheme> themeSupplier,
+        CssMode cssMode
     ) {
         this.eventRegistry = Objects.requireNonNull(eventRegistry, "eventRegistry");
         this.elementIdGenerator = Objects.requireNonNull(elementIdGenerator, "elementIdGenerator");
@@ -51,17 +51,17 @@ public final class LiveComponentRenderer {
     }
 
     public LiveRenderResult render(
-            Supplier<? extends Node> nodeSupplier,
-            ClientState clientState,
-            LifecycleTracker lifecycleTracker
+        Supplier<? extends Node> nodeSupplier,
+        ClientState clientState,
+        LifecycleTracker lifecycleTracker
     ) {
         Objects.requireNonNull(nodeSupplier, "nodeSupplier");
         Objects.requireNonNull(clientState, "clientState");
         eventRegistry.clear();
         UjfeContext.Builder contextBuilder = UjfeContext.builder()
-                .elementIdGenerator(elementIdGenerator)
-                .eventRegistrar(eventRegistry::register)
-                .clientState(clientState);
+            .elementIdGenerator(elementIdGenerator)
+            .eventRegistrar(eventRegistry::register)
+            .clientState(clientState);
         if (lifecycleTracker != null) {
             contextBuilder.lifecycleTracker(lifecycleTracker);
         }
@@ -85,8 +85,8 @@ public final class LiveComponentRenderer {
         Objects.requireNonNull(clientState, "clientState");
         Objects.requireNonNull(runnable, "runnable");
         UjfeContext context = UjfeContext.builder()
-                .clientState(clientState)
-                .build();
+            .clientState(clientState)
+            .build();
         UjfeContext.withCurrent(context, () -> {
             runnable.run();
             return null;
