@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.ujfe</groupId>
+        <artifactId>ujfe</artifactId>
+        <version>0.12.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ujfe-servlet</artifactId>
+    <name>UJFE Jakarta Servlet Runtime</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-live</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-router</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-html</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

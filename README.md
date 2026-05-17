@@ -47,6 +47,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Signals](docs/signals.md)
 - [Router](docs/router.md)
 - [AOT route metadata roadmap](docs/aot-roadmap.md)
+- [Standalone Jakarta Servlet runtime](docs/runtime/servlet.md)
 - [Runtime extension points](docs/runtime-extension-points.md)
 - [Lifecycle](docs/lifecycle.md)
 
@@ -58,6 +59,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - `ujfe-router`: `@Page` routing and page rendering.
 - `ujfe-live`: live event registry, page re-rendering, client script, and dev tools script.
 - `ujfe-http`: Netty HTTP runtime for UJFE sessions.
+- `ujfe-servlet`: standalone Jakarta Servlet runtime for Tomcat/Jakarta containers without Spring.
 - `ujfe-spring`: Spring Boot/MVC integration that serves UJFE routes through the same DispatcherServlet/Tomcat port as the application.
 - `ujfe-cli`: CLI entry point and HTML-to-UJFE conversion command.
 - `examples`: runnable example application.
@@ -65,6 +67,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 ## Requirements
 
 - JDK compatible with the Maven compiler release in `pom.xml`.
+- `ujfe-servlet` targets `jakarta.servlet.*` containers. Use Tomcat 10+ / 11 for Jakarta Servlet deployments; Tomcat 9.x remains on the legacy Java EE servlet namespace.
 - Full reactor builds that include `ujfe-spring` require Java 17 or newer because Spring Boot 4 / Spring Framework 7 are compiled for Java 17+. Java 25 is the recommended runtime for the Spring Boot 4 setup below.
 - Maven Wrapper from this repository.
 

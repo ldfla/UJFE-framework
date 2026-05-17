@@ -2,13 +2,8 @@ package ujfe.html;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.img;
-import static ujfe.html.UI.p;
+import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.*;
 
 final class VoidElementRenderingTest {
     @Test

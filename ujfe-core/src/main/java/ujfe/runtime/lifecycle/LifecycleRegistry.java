@@ -2,11 +2,7 @@ package ujfe.runtime.lifecycle;
 
 import ujfe.core.Lifecycle;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public final class LifecycleRegistry {
     private final Map<Lifecycle, MountedComponent> mounted = new IdentityHashMap<>();

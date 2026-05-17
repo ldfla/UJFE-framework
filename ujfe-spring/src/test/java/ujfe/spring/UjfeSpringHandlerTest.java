@@ -8,13 +8,8 @@ import ujfe.live.LiveSession;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.p;
+import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.*;
 
 final class UjfeSpringHandlerTest {
     @Test

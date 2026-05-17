@@ -11,13 +11,8 @@ import ujfe.router.source.ReflectionPageScanner;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.h1;
-import static ujfe.html.UI.p;
+import static org.junit.jupiter.api.Assertions.*;
+import static ujfe.html.UI.*;
 
 final class RouterTest {
     @Test

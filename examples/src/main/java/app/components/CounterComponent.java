@@ -1,7 +1,5 @@
 package app.components;
 
-import static ujfe.html.UI.*;
-
 import ujfe.core.Component;
 import ujfe.html.Node;
 import ujfe.signals.Signal;
@@ -9,6 +7,8 @@ import ujfe.signals.Signals;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+
+import static ujfe.html.UI.*;
 
 public final class CounterComponent implements Component {
     private final BooleanSupplier darkMode;

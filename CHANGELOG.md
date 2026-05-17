@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## Version 0.12.0 - 17/05/2026
+
+- Updated the Maven project version to `0.12.0-SNAPSHOT`.
+- Added the `ujfe-servlet` module with `UjfeServlet` for standalone Jakarta Servlet deployments without Spring Boot or Netty.
+- Implemented support for UJFE pages, `/_ujfe/client.js`, `/_ujfe/dev.js`, `/_ujfe/css`, `/_ujfe/event`, and `/_ujfe/state` in the Servlet runtime.
+- Reused `LiveHttpCodec` for live JSON payloads, event ids, client state, cookies, and CSS class parsing.
+- Centralized shared UJFE internal endpoint paths and HTTP security headers in `ujfe-live`.
+- Updated Netty and Spring adapters to use the shared internal path and security header metadata.
+- Added explicit route claiming through `UjfeServlet.handles(method, path)` and route-aware request handling so unrelated routes are not rendered as UJFE pages.
+- Added support for servlet init parameters, servlet context parameters, `application.properties`, and `application.yml` configuration.
+- Added Servlet unit tests with Jakarta Servlet mocks for page rendering, internal endpoints, event/state handling, route claiming, wrong methods, context attributes, and properties/YAML settings.
+- Documented the standalone Servlet runtime in `docs/runtime/servlet.md` with setup, route ownership, configuration, endpoint behavior, security notes, and troubleshooting guidance.
+- Added a plain Servlet/Tomcat example under `examples/servlet-tomcat`.
+
 ## Version 0.11.0 - 17/05/2026
 
 - Updated the Maven project version to `0.11.0-SNAPSHOT`.

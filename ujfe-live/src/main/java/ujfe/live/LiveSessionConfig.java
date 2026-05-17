@@ -4,11 +4,7 @@ import ujfe.core.Node;
 import ujfe.html.CssTheme;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static ujfe.html.UI.link;

@@ -30,7 +30,8 @@ final class LiveComponentRendererTest {
         );
 
         LiveRenderResult result = renderer.render(
-                () -> button("Go").onClick(() -> { }),
+                () -> button("Go").onClick(() -> {
+                }),
                 ClientState.empty()
         );
 

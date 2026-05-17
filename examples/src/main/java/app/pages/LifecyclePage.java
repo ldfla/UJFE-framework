@@ -1,19 +1,5 @@
 package app.pages;
 
-import static ujfe.html.UI.a;
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.component;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.h1;
-import static ujfe.html.UI.h2;
-import static ujfe.html.UI.header;
-import static ujfe.html.UI.main;
-import static ujfe.html.UI.nav;
-import static ujfe.html.UI.p;
-import static ujfe.html.UI.section;
-import static ujfe.html.UI.span;
-import static ujfe.html.UI.strong;
-
 import app.components.LifecycleResourceComponent;
 import ujfe.core.Component;
 import ujfe.core.Lifecycle;
@@ -21,6 +7,8 @@ import ujfe.core.Node;
 import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
+
+import static ujfe.html.UI.*;
 
 @Page("/lifecycle")
 public final class LifecyclePage implements Component, Lifecycle {

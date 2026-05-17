@@ -1,16 +1,12 @@
 package app.components;
 
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.div;
-import static ujfe.html.UI.h2;
-import static ujfe.html.UI.p;
-import static ujfe.html.UI.span;
-
 import ujfe.core.Component;
 import ujfe.core.Lifecycle;
 import ujfe.core.Node;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
+
+import static ujfe.html.UI.*;
 
 public final class LifecycleResourceComponent implements Component, Lifecycle {
     private final Signal<Integer> mounts = Signals.signal(0);
