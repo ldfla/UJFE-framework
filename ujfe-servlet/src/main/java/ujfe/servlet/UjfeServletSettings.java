@@ -5,6 +5,7 @@ import jakarta.servlet.ServletContext;
 import ujfe.live.CssMode;
 import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveSessionConfig;
+import ujfe.live.SecurityHeadersConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +32,12 @@ final class UjfeServletSettings {
     static final String RATE_LIMIT_REFILL_TOKENS = "ujfe.live.rate-limit.refill-tokens";
     static final String RATE_LIMIT_REFILL_PERIOD_MS = "ujfe.live.rate-limit.refill-period-ms";
     static final String TRUSTED_PROXIES = "ujfe.live.trusted-proxies";
+    static final String SECURITY_HEADERS_ENABLED = "ujfe.security.headers.enabled";
+    static final String SECURITY_HEADER_CONTENT_TYPE_OPTIONS = "ujfe.security.headers.x-content-type-options";
+    static final String SECURITY_HEADER_FRAME_OPTIONS = "ujfe.security.headers.x-frame-options";
+    static final String SECURITY_HEADER_REFERRER_POLICY = "ujfe.security.headers.referrer-policy";
+    static final String SECURITY_HEADER_CONTENT_SECURITY_POLICY = "ujfe.security.headers.content-security-policy";
+    static final String SECURITY_HEADER_PERMISSIONS_POLICY = "ujfe.security.headers.permissions-policy";
 
     private final Properties values;
 
@@ -120,6 +127,7 @@ final class UjfeServletSettings {
                 builder.enableDevelopmentErrorDetailsUnsafe();
             }
         });
+        builder.securityHeaders(securityHeadersConfig());
         value(RATE_LIMIT_ENABLED).ifPresent(value -> builder.internalEndpointRateLimitingEnabled(Boolean.parseBoolean(value)));
         if (value(RATE_LIMIT_CAPACITY).isPresent()
                 || value(RATE_LIMIT_REFILL_TOKENS).isPresent()
@@ -138,6 +146,22 @@ final class UjfeServletSettings {
             );
         }
         value(TRUSTED_PROXIES).ifPresent(value -> builder.trustedProxies(splitCsv(value)));
+        return builder.build();
+    }
+
+    private SecurityHeadersConfig securityHeadersConfig() {
+        SecurityHeadersConfig.Builder builder = SecurityHeadersConfig.builder();
+        value(SECURITY_HEADERS_ENABLED).ifPresent(value -> builder.enabled(Boolean.parseBoolean(value)));
+        value(SECURITY_HEADER_CONTENT_TYPE_OPTIONS).ifPresent(value ->
+                builder.header(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS, value));
+        value(SECURITY_HEADER_FRAME_OPTIONS).ifPresent(value ->
+                builder.header(SecurityHeadersConfig.X_FRAME_OPTIONS, value));
+        value(SECURITY_HEADER_REFERRER_POLICY).ifPresent(value ->
+                builder.header(SecurityHeadersConfig.REFERRER_POLICY, value));
+        value(SECURITY_HEADER_CONTENT_SECURITY_POLICY).ifPresent(value ->
+                builder.header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, value));
+        value(SECURITY_HEADER_PERMISSIONS_POLICY).ifPresent(value ->
+                builder.header(SecurityHeadersConfig.PERMISSIONS_POLICY, value));
         return builder.build();
     }
 

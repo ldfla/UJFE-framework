@@ -29,6 +29,7 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.SecurityHeadersConfig;
 import ujfe.live.UjfeErrorResponse;
 import ujfe.runtime.action.RuntimePhase;
 
@@ -222,7 +223,7 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         return address == null ? null : address.toString();
     }
 
-    private static FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {
+    private FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,
@@ -231,11 +232,11 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         );
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
         response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
-        applySecurityHeaders(response);
+        applySecurityHeaders(response, liveSession.securityHeadersConfig());
         return response;
     }
 
-    private static FullHttpResponse errorResponse(UjfeErrorResponse error) {
+    private FullHttpResponse errorResponse(UjfeErrorResponse error) {
         FullHttpResponse response = response(
                 HttpResponseStatus.valueOf(error.httpStatus()),
                 UjfeErrorResponse.CONTENT_TYPE,
@@ -246,6 +247,10 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
     }
 
     static void applySecurityHeaders(FullHttpResponse response) {
-        LiveHttpSecurity.securityHeaders().forEach((name, value) -> response.headers().set(name, value));
+        applySecurityHeaders(response, SecurityHeadersConfig.defaults());
+    }
+
+    static void applySecurityHeaders(FullHttpResponse response, SecurityHeadersConfig config) {
+        LiveHttpSecurity.securityHeaders(config).forEach((name, value) -> response.headers().set(name, value));
     }
 }

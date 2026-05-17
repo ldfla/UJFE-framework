@@ -237,12 +237,12 @@ public final class UjfeServlet extends HttpServlet {
         }
     }
 
-    private static void write(HttpServletResponse response, int status, String contentType, String content)
+    private void write(HttpServletResponse response, int status, String contentType, String content)
             throws IOException {
         response.setStatus(status);
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
-        LiveHttpSecurity.securityHeaders().forEach(response::setHeader);
+        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig()).forEach(response::setHeader);
         response.getWriter().write(content);
     }
 

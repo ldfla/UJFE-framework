@@ -47,6 +47,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [CSRF protection](docs/security/csrf.md)
 - [Internal endpoint rate limiting](docs/security/rate-limiting.md)
 - [Safe error responses](docs/security/error-handling.md)
+- [Secure HTTP headers](docs/security/headers.md)
 - [Signals](docs/signals.md)
 - [Live events](docs/live-events.md)
 - [Router](docs/router.md)

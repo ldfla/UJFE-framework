@@ -178,7 +178,7 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         return RuntimePhase.ADAPTER;
     }
 
-    private static void write(HttpServletResponse response, int status, String contentType, String content) throws IOException {
+    private void write(HttpServletResponse response, int status, String contentType, String content) throws IOException {
         response.setStatus(status);
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
@@ -186,12 +186,16 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         response.getWriter().write(content);
     }
 
-    private static void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
+    private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
         error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
         write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
     }
 
-    private static void applySecurityHeaders(HttpServletResponse response) {
-        LiveHttpSecurity.securityHeaders().forEach(response::setHeader);
+    private void applySecurityHeaders(HttpServletResponse response) {
+        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig()).forEach((name, value) -> {
+            if (!response.containsHeader(name)) {
+                response.setHeader(name, value);
+            }
+        });
     }
 }

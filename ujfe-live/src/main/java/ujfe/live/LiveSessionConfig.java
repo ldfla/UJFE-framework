@@ -24,6 +24,7 @@ public final class LiveSessionConfig {
     private final RuntimeActionRegistry runtimeActions;
     private final boolean csrfProtectionDisabled;
     private final boolean developmentErrorDetailsEnabled;
+    private final SecurityHeadersConfig securityHeadersConfig;
     private final boolean internalEndpointRateLimitingEnabled;
     private final int internalEndpointRateLimitCapacity;
     private final int internalEndpointRateLimitRefillTokens;
@@ -40,6 +41,7 @@ public final class LiveSessionConfig {
         this.runtimeActions = builder.runtimeActions;
         this.csrfProtectionDisabled = builder.csrfProtectionDisabled;
         this.developmentErrorDetailsEnabled = builder.developmentErrorDetailsEnabled;
+        this.securityHeadersConfig = builder.securityHeadersConfig;
         this.internalEndpointRateLimitingEnabled = builder.internalEndpointRateLimitingEnabled;
         this.internalEndpointRateLimitCapacity = builder.internalEndpointRateLimitCapacity;
         this.internalEndpointRateLimitRefillTokens = builder.internalEndpointRateLimitRefillTokens;
@@ -91,6 +93,14 @@ public final class LiveSessionConfig {
         return developmentErrorDetailsEnabled;
     }
 
+    public SecurityHeadersConfig securityHeadersConfig() {
+        return securityHeadersConfig;
+    }
+
+    public Map<String, String> securityHeaders() {
+        return securityHeadersConfig.headers();
+    }
+
     public boolean isInternalEndpointRateLimitingEnabled() {
         return internalEndpointRateLimitingEnabled;
     }
@@ -121,6 +131,7 @@ public final class LiveSessionConfig {
         private RuntimeActionRegistry runtimeActions = RuntimeActionRegistry.empty();
         private boolean csrfProtectionDisabled;
         private boolean developmentErrorDetailsEnabled;
+        private SecurityHeadersConfig securityHeadersConfig = SecurityHeadersConfig.defaults();
         private boolean internalEndpointRateLimitingEnabled = true;
         private int internalEndpointRateLimitCapacity = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY;
         private int internalEndpointRateLimitRefillTokens = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS;
@@ -178,6 +189,25 @@ public final class LiveSessionConfig {
 
         public Builder enableDevelopmentErrorDetailsUnsafe() {
             this.developmentErrorDetailsEnabled = true;
+            return this;
+        }
+
+        public Builder securityHeaders(SecurityHeadersConfig securityHeadersConfig) {
+            this.securityHeadersConfig = Objects.requireNonNull(securityHeadersConfig, "securityHeadersConfig");
+            return this;
+        }
+
+        public Builder securityHeader(String name, String value) {
+            this.securityHeadersConfig = SecurityHeadersConfig.builder()
+                    .headers(this.securityHeadersConfig.headers())
+                    .header(name, value)
+                    .enabled(this.securityHeadersConfig.isEnabled())
+                    .build();
+            return this;
+        }
+
+        public Builder disableSecurityHeaders() {
+            this.securityHeadersConfig = SecurityHeadersConfig.disabled();
             return this;
         }
 
