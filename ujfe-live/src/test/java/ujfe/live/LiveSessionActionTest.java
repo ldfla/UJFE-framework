@@ -131,14 +131,18 @@ final class LiveSessionActionTest {
     void onErrorIsCalledOnRenderFailure() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.exception().getMessage()))
+                .onError(ctx -> errors.add(ctx.phase()
+                        + ":"
+                        + ctx.runtimeMetadata().get("errorCode")
+                        + ":"
+                        + ctx.exception().getMessage()))
                 .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             assertThrows(IllegalArgumentException.class, () -> session.renderPath("/nonexistent"));
         }
         assertEquals(1, errors.size());
-        assertTrue(errors.get(0).startsWith("RENDER:"));
+        assertTrue(errors.get(0).startsWith("ROUTING:UJFE_ROUTE_NOT_FOUND:"));
     }
 
     @Test

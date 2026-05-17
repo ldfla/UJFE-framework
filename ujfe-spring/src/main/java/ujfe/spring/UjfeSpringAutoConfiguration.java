@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.DispatcherServlet;
 import ujfe.live.LiveSession;
@@ -15,11 +16,16 @@ import ujfe.router.Router;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnClass(DispatcherServlet.class)
 @ConditionalOnBean(Router.class)
+@EnableConfigurationProperties(UjfeSpringProperties.class)
 public class UjfeSpringAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
-    public LiveSessionConfig ujfeLiveSessionConfig() {
-        return LiveSessionConfig.defaults();
+    public LiveSessionConfig ujfeLiveSessionConfig(UjfeSpringProperties properties) {
+        LiveSessionConfig.Builder builder = LiveSessionConfig.builder();
+        if (properties.isEnabled()) {
+            builder.enableDevelopmentErrorDetailsUnsafe();
+        }
+        return builder.build();
     }
 
     @Bean

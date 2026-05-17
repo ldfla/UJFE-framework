@@ -174,20 +174,32 @@ Spring Boot applications can expose this through their own configuration class w
 
 ## Safe Error Model
 
-Invalid live JSON requests produce deterministic safe messages. The client does not receive parser internals, stack traces, implementation class names, raw request bodies, headers, cookies, or secrets.
+Invalid live JSON requests produce deterministic JSON error responses through the shared `ErrorResponseRenderer`. The client does not receive parser internals, stack traces, implementation class names, raw request bodies, headers, cookies, CSRF tokens, authorization headers, or secrets.
 
-| Category | HTTP status | Client message |
-| --- | --- | --- |
-| empty request body | `400` | `Live JSON payload is empty.` |
-| empty JSON object | `400` | `Live JSON payload must not be empty.` |
-| malformed JSON | `400` | `Invalid live JSON payload.` |
-| missing event id | `400` | `Live event payload is missing eventId.` |
-| missing state object | `400` | `Live state payload is missing clientState.` |
-| payload too large | `413` | `Live JSON payload exceeds maximum size.` |
-| missing csrf token | `403` | `Missing CSRF token.` |
-| invalid csrf token | `403` | `Invalid CSRF token.` |
-| cross origin request | `403` | `Missing Origin and Referer headers.`, `Cross-origin request rejected.`, `Cross-origin scheme mismatch.`, or `Cross-origin port mismatch.` |
-| rate limit exceeded | `429` | `Rate limit exceeded.` |
+Example response:
+
+```json
+{
+  "error": {
+    "code": "UJFE_BAD_REQUEST",
+    "message": "The request is invalid.",
+    "requestId": "req-123"
+  }
+}
+```
+
+| Category | HTTP status | Error code | Client message |
+| --- | --- | --- | --- |
+| empty request body | `400` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| empty JSON object | `400` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| malformed JSON | `400` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| missing event id | `400` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| missing state object | `400` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| payload too large | `413` | `UJFE_BAD_REQUEST` | `The request is invalid.` |
+| missing csrf token | `403` | `UJFE_CSRF_VALIDATION_FAILED` | `The request could not be verified.` |
+| invalid csrf token | `403` | `UJFE_CSRF_VALIDATION_FAILED` | `The request could not be verified.` |
+| cross origin request | `403` | `UJFE_CSRF_VALIDATION_FAILED` | `The request could not be verified.` |
+| rate limit exceeded | `429` | `UJFE_RATE_LIMITED` | `Too many requests.` |
 
 Malformed, empty, incomplete, oversized, or rate-limited payloads are rejected before dispatching live event handlers. CSRF failures are also rejected before dispatching. Same-origin validation compares request scheme, host, and effective port.
 
