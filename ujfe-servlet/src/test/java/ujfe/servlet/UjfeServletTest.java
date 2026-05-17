@@ -16,6 +16,7 @@ import ujfe.router.Router;
 
 import java.io.*;
 import java.lang.reflect.Proxy;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -210,6 +211,63 @@ final class UjfeServletTest {
     }
 
     @Test
+    void rateLimitsEventEndpoint() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
+        TestResponse page = service(servlet, TestRequest.get("/"));
+        String eventId = firstEventId(page.body());
+
+        TestResponse first = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        TestResponse second;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            second = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
+                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(200, first.status());
+        assertEquals(429, second.status());
+        assertEquals("Rate limit exceeded.", second.body());
+        assertNotNull(second.header("Retry-After"));
+    }
+
+    @Test
+    void rateLimitsStateEndpoint() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
+        service(servlet, TestRequest.get("/"));
+
+        TestResponse first = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
+                .body("{\"clientState\":{\"localStorage\":{}}}"));
+        TestResponse second;
+        try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+            second = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
+                    .body("{\"clientState\":{\"localStorage\":{}}}"));
+        }
+
+        assertEquals(200, first.status());
+        assertEquals(429, second.status());
+        assertEquals("Rate limit exceeded.", second.body());
+    }
+
+    @Test
+    void publicPageRouteIsNotRateLimited() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
+
+        assertEquals(200, service(servlet, TestRequest.get("/")).status());
+        assertEquals(200, service(servlet, TestRequest.get("/")).status());
+    }
+
+    @Test
     void routeClaimingIsExplicitAndDoesNotClaimUnrelatedRoutes() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
 
@@ -307,6 +365,11 @@ final class UjfeServletTest {
         properties.setProperty(UjfeServletSettings.DEV_TOOLS_ENABLED, "true");
         properties.setProperty(UjfeServletSettings.CSS_MODE, "external");
         properties.setProperty(UjfeServletSettings.MAX_JSON_PAYLOAD_BYTES, "2048");
+        properties.setProperty(UjfeServletSettings.RATE_LIMIT_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.RATE_LIMIT_CAPACITY, "50");
+        properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_TOKENS, "25");
+        properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_PERIOD_MS, "30000");
+        properties.setProperty(UjfeServletSettings.TRUSTED_PROXIES, "10.0.0.1,10.0.0.2");
 
         UjfeServletSettings settings = UjfeServletSettings.fromProperties(properties);
         LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
@@ -314,6 +377,11 @@ final class UjfeServletTest {
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
         assertEquals("Servlet App", liveConfigTitle(liveConfig));
         assertEquals(2048, settings.maxJsonPayloadBytes());
+        assertTrue(liveConfig.isInternalEndpointRateLimitingEnabled());
+        assertEquals(50, liveConfig.internalEndpointRateLimitCapacity());
+        assertEquals(25, liveConfig.internalEndpointRateLimitRefillTokens());
+        assertEquals(Duration.ofSeconds(30), liveConfig.internalEndpointRateLimitRefillPeriod());
+        assertEquals(java.util.Set.of("10.0.0.1", "10.0.0.2"), liveConfig.trustedProxyAddresses());
     }
 
     @Test
@@ -327,11 +395,23 @@ final class UjfeServletTest {
                 + "    lang: en\n"
                 + "    dev-tools-enabled: true\n"
                 + "    max-json-payload-bytes: 4096\n"
-                + "    css-mode: internal\n");
+                + "    css-mode: internal\n"
+                + "    rate-limit:\n"
+                + "      enabled: false\n"
+                + "      capacity: 20\n"
+                + "      refill-tokens: 10\n"
+                + "      refill-period-ms: 15000\n"
+                + "    trusted-proxies: 10.0.0.1\n");
 
         assertEquals(java.util.List.of("app.pages", "app.admin"), settings.routePackages());
-        assertEquals("YAML App", liveConfigTitle(settings.toLiveSessionConfig()));
+        LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
+        assertEquals("YAML App", liveConfigTitle(liveConfig));
         assertEquals(4096, settings.maxJsonPayloadBytes());
+        assertFalse(liveConfig.isInternalEndpointRateLimitingEnabled());
+        assertEquals(20, liveConfig.internalEndpointRateLimitCapacity());
+        assertEquals(10, liveConfig.internalEndpointRateLimitRefillTokens());
+        assertEquals(Duration.ofSeconds(15), liveConfig.internalEndpointRateLimitRefillPeriod());
+        assertEquals(java.util.Set.of("10.0.0.1"), liveConfig.trustedProxyAddresses());
     }
 
     @Test
@@ -460,6 +540,7 @@ final class UjfeServletTest {
         private String servletPath = "";
         private String pathInfo;
         private String scheme = "http";
+        private String remoteAddr = "127.0.0.1";
         private String body = "";
 
         private TestRequest(String method, String requestUri) {
@@ -535,6 +616,9 @@ final class UjfeServletTest {
                 }
                 if ("getScheme".equals(name)) {
                     return scheme;
+                }
+                if ("getRemoteAddr".equals(name)) {
+                    return remoteAddr;
                 }
                 if ("getReader".equals(name)) {
                     return new BufferedReader(new StringReader(body));

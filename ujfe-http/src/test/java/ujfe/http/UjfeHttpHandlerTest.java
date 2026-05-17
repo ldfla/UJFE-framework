@@ -20,6 +20,7 @@ import ujfe.router.Page;
 import ujfe.router.Router;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -191,6 +192,73 @@ final class UjfeHttpHandlerTest {
                 assertEquals(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE, response.status());
                 assertEquals("Live JSON payload exceeds maximum size.", responseBody(response));
             }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rateLimitsLiveEventEndpoint() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            FullHttpResponse page = send(channel, request(HttpMethod.GET, "/", ""));
+            String eventId = firstEventId(responseBody(page));
+            FullHttpRequest firstRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+            FullHttpRequest secondRequest = request(HttpMethod.POST, LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+
+            assertEquals(HttpResponseStatus.OK, send(channel, firstRequest).status());
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse rejected = send(channel, secondRequest);
+
+                assertEquals(HttpResponseStatus.TOO_MANY_REQUESTS, rejected.status());
+                assertEquals("Rate limit exceeded.", responseBody(rejected));
+                assertNotNull(rejected.headers().get("Retry-After"));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void rateLimitsStateEndpoint() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+            send(channel, request(HttpMethod.GET, "/", ""));
+            FullHttpRequest firstRequest = request(HttpMethod.POST, LiveHttpPaths.STATE,
+                    "{\"clientState\":{\"localStorage\":{}}}");
+            FullHttpRequest secondRequest = request(HttpMethod.POST, LiveHttpPaths.STATE,
+                    "{\"clientState\":{\"localStorage\":{}}}");
+
+            assertEquals(HttpResponseStatus.OK, send(channel, firstRequest).status());
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                FullHttpResponse rejected = send(channel, secondRequest);
+
+                assertEquals(HttpResponseStatus.TOO_MANY_REQUESTS, rejected.status());
+                assertEquals("Rate limit exceeded.", responseBody(rejected));
+            }
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void publicPageRouteIsNotRateLimited() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            assertEquals(HttpResponseStatus.OK, send(channel, request(HttpMethod.GET, "/", "")).status());
+            assertEquals(HttpResponseStatus.OK, send(channel, request(HttpMethod.GET, "/", "")).status());
+            assertEquals(0, session.rateLimitMetrics().allowedRequests());
             channel.finishAndReleaseAll();
         }
     }

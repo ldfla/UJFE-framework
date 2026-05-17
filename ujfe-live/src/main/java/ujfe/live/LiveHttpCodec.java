@@ -151,6 +151,24 @@ public final class LiveHttpCodec {
                 + " message=\"" + exception.safeMessage() + "\"");
     }
 
+    public static void logRejectedRateLimit(
+            LiveRateLimitException exception,
+            String runtimeAdapter,
+            String traceId
+    ) {
+        Objects.requireNonNull(exception, "exception");
+        String adapter = safeLogValue(runtimeAdapter, "unknown");
+        String trace = safeLogValue(traceId, "unavailable");
+        LOGGER.warning(() -> "event=ujfe.live_rate_limit_rejected"
+                + " reason=rate_limit_exceeded"
+                + " endpoint=" + safeLogValue(exception.endpointPath(), "unknown")
+                + " keyType=" + exception.keyType().logValue()
+                + " adapter=" + adapter
+                + " retryAfterSeconds=" + exception.retryAfterSeconds().orElse(-1)
+                + " traceId=" + trace
+                + " message=\"" + exception.safeMessage() + "\"");
+    }
+
     static String validateJsonObjectPayload(String json, int maxPayloadBytes) {
         Objects.requireNonNull(json, "json");
         validateMaxPayloadBytes(maxPayloadBytes);
@@ -677,7 +695,7 @@ public final class LiveHttpCodec {
         if (value == null || value.isBlank()) {
             return fallback;
         }
-        return value.replaceAll("[^A-Za-z0-9_.:-]", "_");
+        return value.replaceAll("[^A-Za-z0-9_.:/-]", "_");
     }
 
     private static final class JsonString {

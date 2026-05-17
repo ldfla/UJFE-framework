@@ -6,10 +6,12 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import ujfe.core.Node;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
+import ujfe.live.LiveSessionConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -209,6 +211,79 @@ final class UjfeSpringHandlerTest {
 
             assertEquals(413, response.getStatus());
             assertEquals("Live JSON payload exceeds maximum size.", response.getContentAsString());
+        }
+    }
+
+    @Test
+    void rateLimitsLiveEventEndpoint() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse page = new MockHttpServletResponse();
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
+            String eventId = firstEventId(page.getContentAsString());
+
+            MockHttpServletResponse first = new MockHttpServletResponse();
+            handler.handleRequest(postJson(LiveHttpPaths.EVENT,
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), first);
+
+            MockHttpServletResponse second = new MockHttpServletResponse();
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                handler.handleRequest(postJson(LiveHttpPaths.EVENT,
+                        "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), second);
+            }
+
+            assertEquals(200, first.getStatus());
+            assertEquals(429, second.getStatus());
+            assertEquals("Rate limit exceeded.", second.getContentAsString());
+            assertNotNull(second.getHeader("Retry-After"));
+        }
+    }
+
+    @Test
+    void rateLimitsStateEndpoint() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), new MockHttpServletResponse());
+
+            MockHttpServletResponse first = new MockHttpServletResponse();
+            handler.handleRequest(postJson(LiveHttpPaths.STATE,
+                    "{\"clientState\":{\"localStorage\":{}}}"), first);
+
+            MockHttpServletResponse second = new MockHttpServletResponse();
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                handler.handleRequest(postJson(LiveHttpPaths.STATE,
+                        "{\"clientState\":{\"localStorage\":{}}}"), second);
+            }
+
+            assertEquals(200, first.getStatus());
+            assertEquals(429, second.getStatus());
+            assertEquals("Rate limit exceeded.", second.getContentAsString());
+        }
+    }
+
+    @Test
+    void publicPageRouteIsNotRateLimited() throws Exception {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse first = new MockHttpServletResponse();
+            MockHttpServletResponse second = new MockHttpServletResponse();
+
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), first);
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), second);
+
+            assertEquals(200, first.getStatus());
+            assertEquals(200, second.getStatus());
         }
     }
 

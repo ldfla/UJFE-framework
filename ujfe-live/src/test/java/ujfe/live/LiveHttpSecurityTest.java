@@ -126,6 +126,7 @@ final class LiveHttpSecurityTest {
         try (LiveSession first = new LiveSession(new Router());
              LiveSession second = new LiveSession(new Router())) {
             assertNotEquals(first.csrfToken(), second.csrfToken());
+            assertNotEquals(first.sessionId(), second.sessionId());
         }
     }
 }

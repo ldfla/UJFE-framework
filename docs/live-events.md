@@ -187,8 +187,9 @@ Invalid live JSON requests produce deterministic safe messages. The client does 
 | missing csrf token | `403` | `Missing CSRF token.` |
 | invalid csrf token | `403` | `Invalid CSRF token.` |
 | cross origin request | `403` | `Missing Origin and Referer headers.`, `Cross-origin request rejected.`, `Cross-origin scheme mismatch.`, or `Cross-origin port mismatch.` |
+| rate limit exceeded | `429` | `Rate limit exceeded.` |
 
-Malformed, empty, incomplete, or oversized payloads are rejected before dispatching live event handlers. CSRF failures are also rejected before dispatching. Same-origin validation compares request scheme, host, and effective port.
+Malformed, empty, incomplete, oversized, or rate-limited payloads are rejected before dispatching live event handlers. CSRF failures are also rejected before dispatching. Same-origin validation compares request scheme, host, and effective port.
 
 ## Logging And Observability
 
@@ -226,19 +227,22 @@ The log entry must not include:
 - stack traces;
 - request headers containing credentials.
 
-Future observability integrations can consume the same failure category and adapter metadata without changing the HTTP payload contract.
+Rate limit rejections are logged as `event=ujfe.live_rate_limit_rejected` with endpoint, adapter, key type, retry delay, and correlation id when available. Future observability integrations can consume the same failure category and adapter metadata without changing the HTTP payload contract.
 
 ## Runtime Reuse Contract
 
 New HTTP runtimes should follow this sequence for live JSON endpoints:
 
 1. Determine the adapter name for logs, such as `netty`, `servlet`, or `spring`.
-2. Enforce the configured maximum body size before parsing when the request length is available.
-3. Read the request body through a bounded path.
-4. Call `LiveHttpCodec.parseEventPayload(...)` or `LiveHttpCodec.parseStatePayload(...)`.
-5. Dispatch to `LiveSession`.
-6. Serialize the response through `LiveHttpCodec.livePayload(...)`.
-7. Catch `LiveCsrfException`, log it with safe metadata, and return `safeMessage()` with HTTP status `403`.
-8. Catch `LiveHttpCodecException`, log it with safe metadata, and return `safeMessage()` with its HTTP status.
+2. Build safe request metadata.
+3. Apply internal endpoint rate limiting before reading the body.
+4. Enforce the configured maximum body size before parsing when the request length is available.
+5. Read the request body through a bounded path.
+6. Call `LiveHttpCodec.parseEventPayload(...)` or `LiveHttpCodec.parseStatePayload(...)`.
+7. Dispatch to `LiveSession`.
+8. Serialize the response through `LiveHttpCodec.livePayload(...)`.
+9. Catch `LiveRateLimitException`, log it with safe metadata, and return `safeMessage()` with HTTP status `429`.
+10. Catch `LiveCsrfException`, log it with safe metadata, and return `safeMessage()` with HTTP status `403`.
+11. Catch `LiveHttpCodecException`, log it with safe metadata, and return `safeMessage()` with its HTTP status.
 
 Adapters should not duplicate JSON parsing rules or expose raw exception messages to clients.

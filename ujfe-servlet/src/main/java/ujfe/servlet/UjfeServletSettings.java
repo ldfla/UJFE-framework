@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -24,6 +25,11 @@ final class UjfeServletSettings {
     static final String CSS_MODE = "ujfe.live.css-mode";
     static final String MAX_JSON_PAYLOAD_BYTES = "ujfe.live.max-json-payload-bytes";
     static final String DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE = "ujfe.live.disable-csrf-protection-for-development-unsafe";
+    static final String RATE_LIMIT_ENABLED = "ujfe.live.rate-limit.enabled";
+    static final String RATE_LIMIT_CAPACITY = "ujfe.live.rate-limit.capacity";
+    static final String RATE_LIMIT_REFILL_TOKENS = "ujfe.live.rate-limit.refill-tokens";
+    static final String RATE_LIMIT_REFILL_PERIOD_MS = "ujfe.live.rate-limit.refill-period-ms";
+    static final String TRUSTED_PROXIES = "ujfe.live.trusted-proxies";
 
     private final Properties values;
 
@@ -108,6 +114,24 @@ final class UjfeServletSettings {
                 builder.disableCsrfProtectionForDevelopmentUnsafe();
             }
         });
+        value(RATE_LIMIT_ENABLED).ifPresent(value -> builder.internalEndpointRateLimitingEnabled(Boolean.parseBoolean(value)));
+        if (value(RATE_LIMIT_CAPACITY).isPresent()
+                || value(RATE_LIMIT_REFILL_TOKENS).isPresent()
+                || value(RATE_LIMIT_REFILL_PERIOD_MS).isPresent()) {
+            builder.internalEndpointRateLimit(
+                    value(RATE_LIMIT_CAPACITY)
+                            .map(Integer::parseInt)
+                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY),
+                    value(RATE_LIMIT_REFILL_TOKENS)
+                            .map(Integer::parseInt)
+                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS),
+                    value(RATE_LIMIT_REFILL_PERIOD_MS)
+                            .map(Long::parseLong)
+                            .map(Duration::ofMillis)
+                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD)
+            );
+        }
+        value(TRUSTED_PROXIES).ifPresent(value -> builder.trustedProxies(splitCsv(value)));
         return builder.build();
     }
 
@@ -125,6 +149,17 @@ final class UjfeServletSettings {
         return java.util.Optional.ofNullable(values.getProperty(key))
                 .map(String::trim)
                 .filter(value -> !value.isEmpty());
+    }
+
+    private static List<String> splitCsv(String value) {
+        List<String> items = new ArrayList<>();
+        for (String item : value.split(",")) {
+            String trimmed = item.trim();
+            if (!trimmed.isEmpty()) {
+                items.add(trimmed);
+            }
+        }
+        return items;
     }
 
     private static Properties loadClasspathSettings() {
