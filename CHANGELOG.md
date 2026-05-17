@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## Version 0.15.0 - 17/05/2026
+
+- Added application-level token bucket rate limiting for `/_ujfe/event` and `/_ujfe/state`.
+- Added session-based rate limit keys with safe IP fallback and explicit trusted proxy handling.
+- Added `429 Too Many Requests` responses with `Retry-After` for internal endpoint rate limit violations.
+- Added safe structured logging and runtime-neutral counters for allowed and rejected internal endpoint requests.
+- Documented internal endpoint rate limiting in `docs/security/rate-limiting.md`.
+
+## Version 0.14.0 - 17/05/2026
+
 - Standardized live HTTP JSON parsing, validation, serialization, payload limits, safe errors, and rejected-payload logging in `LiveHttpCodec`.
 - Updated Netty, Jakarta Servlet, and Spring MVC runtime adapters to reuse the shared live codec for `/_ujfe/event` and `/_ujfe/state`.
 - Added a default live JSON payload limit of `1,048,576` bytes with runtime-specific configuration hooks.

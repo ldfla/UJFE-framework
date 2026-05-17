@@ -22,6 +22,8 @@ public final class LiveSession implements AutoCloseable {
     private final RuntimeActionRegistry runtimeActions;
     private final LifecycleRuntime lifecycleRuntime;
     private final String csrfToken;
+    private final String sessionId;
+    private final RateLimiter rateLimiter;
     private String currentPath = "/";
     private Object currentPage;
     private ClientState clientState = ClientState.empty();
@@ -94,10 +96,27 @@ public final class LiveSession implements AutoCloseable {
                 config.cssMode()
         );
         this.csrfToken = LiveHttpSecurity.generateCsrfToken();
+        this.sessionId = UUID.randomUUID().toString();
+        this.rateLimiter = new TokenBucketRateLimiter(config);
     }
 
     public String csrfToken() {
         return csrfToken;
+    }
+
+    public String sessionId() {
+        return sessionId;
+    }
+
+    public RateLimitMetrics rateLimitMetrics() {
+        return rateLimiter.metrics();
+    }
+
+    public void checkInternalEndpointRateLimit(String endpointPath, LiveHttpRequestMetadata metadata) {
+        RateLimitDecision decision = rateLimiter.allow(new RateLimitRequest(endpointPath, sessionId, metadata));
+        if (!decision.allowed()) {
+            throw new LiveRateLimitException(endpointPath, decision.keyType(), decision.retryAfter().orElse(null));
+        }
     }
 
     public synchronized LiveRenderResult renderPath(String path) {

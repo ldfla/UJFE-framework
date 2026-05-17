@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.12.0-SNAPSHOT</version>
+        <version>0.15.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-spring</artifactId>

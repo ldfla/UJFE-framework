@@ -26,7 +26,10 @@ import ujfe.live.LiveRenderResult;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
+import ujfe.live.LiveRateLimitException;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +52,7 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     @Override
     protected void channelRead0(ChannelHandlerContext context, FullHttpRequest request) {
-        FullHttpResponse response = route(request);
+        FullHttpResponse response = route(context, request);
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (keepAlive) {
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
@@ -62,7 +65,7 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         }
     }
 
-    private FullHttpResponse route(FullHttpRequest request) {
+    private FullHttpResponse route(ChannelHandlerContext context, FullHttpRequest request) {
         QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
         String path = decoder.path();
 
@@ -81,17 +84,19 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             }
 
             if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.EVENT.equals(path)) {
+                LiveHttpRequestMetadata metadata = createMetadata(context, request);
+                liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
                         readJsonPayload(request),
                         maxJsonPayloadBytes
                 );
-                LiveHttpRequestMetadata metadata = createMetadata(request);
                 LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
 
             if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.STATE.equals(path)) {
-                LiveHttpRequestMetadata metadata = createMetadata(request);
+                LiveHttpRequestMetadata metadata = createMetadata(context, request);
+                liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveRenderResult result = liveSession.updateClientState(
                         LiveHttpCodec.parseStatePayload(readJsonPayload(request), maxJsonPayloadBytes),
                         metadata
@@ -106,6 +111,13 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             }
 
             return response(HttpResponseStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", "Method not allowed");
+        } catch (LiveRateLimitException exception) {
+            LiveHttpCodec.logRejectedRateLimit(exception, "netty", correlationId(request));
+            FullHttpResponse response = response(HttpResponseStatus.TOO_MANY_REQUESTS,
+                    "text/plain; charset=utf-8",
+                    exception.safeMessage());
+            exception.retryAfterSeconds().ifPresent(seconds -> response.headers().set("Retry-After", Long.toString(seconds)));
+            return response;
         } catch (LiveCsrfException exception) {
             LiveHttpCodec.logRejectedCsrf(exception, "netty", correlationId(request));
             return response(HttpResponseStatus.FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
@@ -143,14 +155,30 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         return request.headers().get("X-Correlation-Id");
     }
 
-    private static LiveHttpRequestMetadata createMetadata(FullHttpRequest request) {
+    private static LiveHttpRequestMetadata createMetadata(ChannelHandlerContext context, FullHttpRequest request) {
         return new LiveHttpRequestMetadata(
                 request.headers().get("X-UJFE-CSRF"),
                 request.headers().get(HttpHeaderNames.ORIGIN),
                 request.headers().get(HttpHeaderNames.REFERER),
                 request.headers().get(HttpHeaderNames.HOST),
-                "http"
+                "http",
+                remoteAddress(context),
+                request.headers().get("Forwarded"),
+                request.headers().get("X-Forwarded-For"),
+                request.headers().get("X-Real-IP")
         );
+    }
+
+    private static String remoteAddress(ChannelHandlerContext context) {
+        SocketAddress address = context.channel().remoteAddress();
+        if (address instanceof InetSocketAddress) {
+            InetSocketAddress inet = (InetSocketAddress) address;
+            if (inet.getAddress() != null) {
+                return inet.getAddress().getHostAddress();
+            }
+            return inet.getHostString();
+        }
+        return address == null ? null : address.toString();
     }
 
     private static FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {

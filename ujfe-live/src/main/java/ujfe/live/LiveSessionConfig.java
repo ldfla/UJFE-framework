@@ -4,12 +4,17 @@ import ujfe.core.Node;
 import ujfe.html.CssTheme;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
 
 import static ujfe.html.UI.link;
 
 public final class LiveSessionConfig {
+    public static final int DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY = 120;
+    public static final int DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS = 60;
+    public static final Duration DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD = Duration.ofMinutes(1);
+
     private final Supplier<CssTheme> themeSupplier;
     private final CssMode cssMode;
     private final boolean devToolsEnabled;
@@ -18,6 +23,11 @@ public final class LiveSessionConfig {
     private final List<Node> headNodes;
     private final RuntimeActionRegistry runtimeActions;
     private final boolean csrfProtectionDisabled;
+    private final boolean internalEndpointRateLimitingEnabled;
+    private final int internalEndpointRateLimitCapacity;
+    private final int internalEndpointRateLimitRefillTokens;
+    private final Duration internalEndpointRateLimitRefillPeriod;
+    private final Set<String> trustedProxyAddresses;
 
     private LiveSessionConfig(Builder builder) {
         this.themeSupplier = builder.themeSupplier;
@@ -28,6 +38,11 @@ public final class LiveSessionConfig {
         this.headNodes = List.copyOf(builder.headNodes);
         this.runtimeActions = builder.runtimeActions;
         this.csrfProtectionDisabled = builder.csrfProtectionDisabled;
+        this.internalEndpointRateLimitingEnabled = builder.internalEndpointRateLimitingEnabled;
+        this.internalEndpointRateLimitCapacity = builder.internalEndpointRateLimitCapacity;
+        this.internalEndpointRateLimitRefillTokens = builder.internalEndpointRateLimitRefillTokens;
+        this.internalEndpointRateLimitRefillPeriod = builder.internalEndpointRateLimitRefillPeriod;
+        this.trustedProxyAddresses = Set.copyOf(builder.trustedProxyAddresses);
     }
 
     public static LiveSessionConfig defaults() {
@@ -70,6 +85,26 @@ public final class LiveSessionConfig {
         return csrfProtectionDisabled;
     }
 
+    public boolean isInternalEndpointRateLimitingEnabled() {
+        return internalEndpointRateLimitingEnabled;
+    }
+
+    public int internalEndpointRateLimitCapacity() {
+        return internalEndpointRateLimitCapacity;
+    }
+
+    public int internalEndpointRateLimitRefillTokens() {
+        return internalEndpointRateLimitRefillTokens;
+    }
+
+    public Duration internalEndpointRateLimitRefillPeriod() {
+        return internalEndpointRateLimitRefillPeriod;
+    }
+
+    public Set<String> trustedProxyAddresses() {
+        return trustedProxyAddresses;
+    }
+
     public static final class Builder {
         private Supplier<CssTheme> themeSupplier = CssTheme::defaultTheme;
         private CssMode cssMode = CssMode.INTERNAL;
@@ -79,6 +114,11 @@ public final class LiveSessionConfig {
         private final List<Node> headNodes = new ArrayList<>();
         private RuntimeActionRegistry runtimeActions = RuntimeActionRegistry.empty();
         private boolean csrfProtectionDisabled;
+        private boolean internalEndpointRateLimitingEnabled = true;
+        private int internalEndpointRateLimitCapacity = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY;
+        private int internalEndpointRateLimitRefillTokens = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS;
+        private Duration internalEndpointRateLimitRefillPeriod = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD;
+        private final Set<String> trustedProxyAddresses = new LinkedHashSet<>();
 
         private Builder() {
         }
@@ -126,6 +166,39 @@ public final class LiveSessionConfig {
 
         public Builder disableCsrfProtectionForDevelopmentUnsafe() {
             this.csrfProtectionDisabled = true;
+            return this;
+        }
+
+        public Builder internalEndpointRateLimitingEnabled(boolean enabled) {
+            this.internalEndpointRateLimitingEnabled = enabled;
+            return this;
+        }
+
+        public Builder internalEndpointRateLimit(int capacity, int refillTokens, Duration refillPeriod) {
+            if (capacity < 1) {
+                throw new IllegalArgumentException("capacity must be positive");
+            }
+            if (refillTokens < 1) {
+                throw new IllegalArgumentException("refillTokens must be positive");
+            }
+            Objects.requireNonNull(refillPeriod, "refillPeriod");
+            if (refillPeriod.isNegative() || refillPeriod.isZero()) {
+                throw new IllegalArgumentException("refillPeriod must be positive");
+            }
+            this.internalEndpointRateLimitCapacity = capacity;
+            this.internalEndpointRateLimitRefillTokens = refillTokens;
+            this.internalEndpointRateLimitRefillPeriod = refillPeriod;
+            return this;
+        }
+
+        public Builder trustedProxy(String address) {
+            this.trustedProxyAddresses.add(requireText(address, "address"));
+            return this;
+        }
+
+        public Builder trustedProxies(Collection<String> addresses) {
+            Objects.requireNonNull(addresses, "addresses");
+            addresses.forEach(this::trustedProxy);
             return this;
         }
 

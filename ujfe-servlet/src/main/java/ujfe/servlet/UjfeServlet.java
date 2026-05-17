@@ -19,6 +19,7 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
+import ujfe.live.LiveRateLimitException;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
 
@@ -134,6 +135,10 @@ public final class UjfeServlet extends HttpServlet {
             Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
             String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
             write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
+        } catch (LiveRateLimitException exception) {
+            LiveHttpCodec.logRejectedRateLimit(exception, "servlet", correlationId(request));
+            exception.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
+            write(response, 429, "text/plain; charset=utf-8", exception.safeMessage());
         } catch (LiveCsrfException exception) {
             LiveHttpCodec.logRejectedCsrf(exception, "servlet", correlationId(request));
             write(response, HttpServletResponse.SC_FORBIDDEN, "text/plain; charset=utf-8", exception.safeMessage());
@@ -182,11 +187,12 @@ public final class UjfeServlet extends HttpServlet {
         }
 
         if ("POST".equals(method) && LiveHttpPaths.EVENT.equals(path)) {
+            LiveHttpRequestMetadata metadata = createMetadata(request);
+            liveSession.checkInternalEndpointRateLimit(path, metadata);
             LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
                     readBody(request),
                     maxJsonPayloadBytes
             );
-            LiveHttpRequestMetadata metadata = createMetadata(request);
             LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
             write(response, HttpServletResponse.SC_OK,
                     "application/json; charset=utf-8",
@@ -196,6 +202,7 @@ public final class UjfeServlet extends HttpServlet {
 
         if ("POST".equals(method) && LiveHttpPaths.STATE.equals(path)) {
             LiveHttpRequestMetadata metadata = createMetadata(request);
+            liveSession.checkInternalEndpointRateLimit(path, metadata);
             LiveRenderResult result = liveSession.updateClientState(
                     LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
                     metadata
@@ -249,7 +256,11 @@ public final class UjfeServlet extends HttpServlet {
                 request.getHeader("Origin"),
                 request.getHeader("Referer"),
                 request.getHeader("Host"),
-                request.getScheme()
+                request.getScheme(),
+                request.getRemoteAddr(),
+                request.getHeader("Forwarded"),
+                request.getHeader("X-Forwarded-For"),
+                request.getHeader("X-Real-IP")
         );
     }
 
