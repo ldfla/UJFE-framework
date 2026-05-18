@@ -1,5 +1,10 @@
 # Changelog
 ## Unreleased
+- Added adapter-independent accessibility and SEO validation helpers in `ujfe-core`.
+- Added `ValidationMode` support for `OFF`, `WARN`, and `STRICT`, with runtime validation off by default.
+- Added opt-in live runtime validation through `LiveSessionConfig`, Servlet properties, and Spring Boot validation properties.
+- Added stable validation findings with rule ids, severities, categories, messages, suggestions, element names, attributes, and selector-like locations.
+- Added documentation for accessibility validation, SEO validation, shared validation helpers, and strict validation in tests/CI.
 
 ## Version 0.21.1 - 18/05/2026
 - Updated the Maven project version to `0.21.1-SNAPSHOT`.
