@@ -47,7 +47,7 @@ public final class LiveComponentRenderer {
     }
 
     public LiveRenderResult render(Supplier<? extends Node> nodeSupplier, ClientState clientState) {
-        return render(nodeSupplier, clientState, null);
+        return render(nodeSupplier, clientState, null, null);
     }
 
     public LiveRenderResult render(
@@ -55,9 +55,18 @@ public final class LiveComponentRenderer {
         ClientState clientState,
         LifecycleTracker lifecycleTracker
     ) {
+        return render(nodeSupplier, clientState, lifecycleTracker, null);
+    }
+
+    LiveRenderResult render(
+        Supplier<? extends Node> nodeSupplier,
+        ClientState clientState,
+        LifecycleTracker lifecycleTracker,
+        String eventScope
+    ) {
         Objects.requireNonNull(nodeSupplier, "nodeSupplier");
         Objects.requireNonNull(clientState, "clientState");
-        eventRegistry.clear();
+        eventRegistry.beginRender(eventScope);
         UjfeContext.Builder contextBuilder = UjfeContext.builder()
             .elementIdGenerator(elementIdGenerator)
             .eventRegistrar(eventRegistry::register)
@@ -67,10 +76,16 @@ public final class LiveComponentRenderer {
         }
         UjfeContext context = contextBuilder.build();
 
-        Node node = UjfeContext.withCurrent(context, nodeSupplier);
-        String html = UjfeContext.withCurrent(context, () -> node.render(context));
-        String css = renderCss(context.cssClasses());
-        return new LiveRenderResult(html, css);
+        try {
+            Node node = UjfeContext.withCurrent(context, nodeSupplier);
+            String html = UjfeContext.withCurrent(context, () -> node.render(context));
+            String css = renderCss(context.cssClasses());
+            eventRegistry.completeRender();
+            return new LiveRenderResult(html, css);
+        } catch (RuntimeException | Error exception) {
+            eventRegistry.abortRender();
+            throw exception;
+        }
     }
 
     public String renderCss(Collection<String> classes) {

@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.17.0-SNAPSHOT</version>
+        <version>0.18.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-live</artifactId>
@@ -27,6 +27,12 @@
             <groupId>dev.ujfe</groupId>
             <artifactId>ujfe-router</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.ujfe</groupId>
+            <artifactId>ujfe-signals</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

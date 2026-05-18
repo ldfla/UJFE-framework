@@ -12,6 +12,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class LiveSession implements AutoCloseable {
     private final Router router;
@@ -24,6 +26,9 @@ public final class LiveSession implements AutoCloseable {
     private final String csrfToken;
     private final String sessionId;
     private final RateLimiter rateLimiter;
+    private final ReentrantReadWriteLock sessionLock = new ReentrantReadWriteLock(true);
+    private final Lock readLock = sessionLock.readLock();
+    private final Lock writeLock = sessionLock.writeLock();
     private String currentPath = "/";
     private Object currentPage;
     private ClientState clientState = ClientState.empty();
@@ -145,11 +150,16 @@ public final class LiveSession implements AutoCloseable {
         }
     }
 
-    public synchronized LiveRenderResult renderPath(String path) {
-        return renderPath(path, null);
+    public LiveRenderResult renderPath(String path) {
+        writeLock.lock();
+        try {
+            return renderPathLocked(path, null);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
-    private LiveRenderResult renderPath(String path, String eventId) {
+    private LiveRenderResult renderPathLocked(String path, String eventId) {
         String traceId = nextTraceId();
         Instant start = Instant.now();
         RouteDefinition route;
@@ -174,7 +184,7 @@ public final class LiveSession implements AutoCloseable {
         LifecycleTracker lifecycleTracker = lifecycleRuntime.beginRender(new LifecycleContext(
                 route.path(), this, traceId, Map.of()));
         try {
-            result = componentRenderer.render(() -> pageRenderer.render(page), clientState, lifecycleTracker);
+            result = componentRenderer.render(() -> pageRenderer.render(page), clientState, lifecycleTracker, route.path());
             routeLifecycleFailures(lifecycleTracker.complete(), route.path(), eventId, traceId);
             currentPath = route.path();
             currentPage = page;
@@ -193,11 +203,20 @@ public final class LiveSession implements AutoCloseable {
         return result;
     }
 
-    public synchronized LiveRenderResult handleEvent(String eventId, ClientState nextClientState) {
+    public LiveRenderResult handleEvent(String eventId, ClientState nextClientState) {
         return handleEvent(eventId, nextClientState, new LiveHttpRequestMetadata(null, null, null, null));
     }
 
-    public synchronized LiveRenderResult handleEvent(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+    public LiveRenderResult handleEvent(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+        writeLock.lock();
+        try {
+            return handleEventLocked(eventId, nextClientState, metadata);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private LiveRenderResult handleEventLocked(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
         String traceId = nextTraceId();
         try {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
@@ -220,7 +239,7 @@ public final class LiveSession implements AutoCloseable {
         try {
             clientState = eventClientState;
             componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId));
-            result = renderPath(currentPath, eventId);
+            result = renderPathLocked(currentPath, eventId);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
                     exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
@@ -237,11 +256,20 @@ public final class LiveSession implements AutoCloseable {
         return result;
     }
 
-    public synchronized LiveRenderResult updateClientState(ClientState nextClientState) {
+    public LiveRenderResult updateClientState(ClientState nextClientState) {
         return updateClientState(nextClientState, new LiveHttpRequestMetadata(null, null, null, null));
     }
 
-    public synchronized LiveRenderResult updateClientState(ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+    public LiveRenderResult updateClientState(ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+        writeLock.lock();
+        try {
+            return updateClientStateLocked(nextClientState, metadata);
+        } finally {
+            writeLock.unlock();
+        }
+    }
+
+    private LiveRenderResult updateClientStateLocked(ClientState nextClientState, LiveHttpRequestMetadata metadata) {
         String traceId = nextTraceId();
         try {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
@@ -252,7 +280,7 @@ public final class LiveSession implements AutoCloseable {
             throw exception;
         }
         mergeClientState(nextClientState);
-        return renderPath(currentPath);
+        return renderPathLocked(currentPath, null);
     }
 
     public void reportHttpError(
@@ -278,40 +306,55 @@ public final class LiveSession implements AutoCloseable {
         ));
     }
 
-    public synchronized String renderDocument(String path, ClientState initialClientState) {
-        mergeClientState(initialClientState);
-        LiveRenderResult result = renderPath(path);
-        return "<!doctype html>"
-                + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
-                + "<head>"
-                + "<meta charset=\"utf-8\">"
-                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
-                + renderHeadNodes()
-                + renderActionHeadContributions()
-                + renderInternalCss(result.css())
-                + renderCsrfMetaTag()
-                + "</head>"
-                + "<body>"
-                + "<div id=\"ujfe-root\">" + result.html() + "</div>"
-                + "<script src=\"/_ujfe/client.js\"></script>"
-                + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
-                + "</body>"
-                + "</html>";
+    public String renderDocument(String path, ClientState initialClientState) {
+        writeLock.lock();
+        try {
+            mergeClientState(initialClientState);
+            LiveRenderResult result = renderPathLocked(path, null);
+            return "<!doctype html>"
+                    + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
+                    + "<head>"
+                    + "<meta charset=\"utf-8\">"
+                    + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                    + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
+                    + renderHeadNodes()
+                    + renderActionHeadContributions()
+                    + renderInternalCss(result.css())
+                    + renderCsrfMetaTag()
+                    + "</head>"
+                    + "<body>"
+                    + "<div id=\"ujfe-root\">" + result.html() + "</div>"
+                    + "<script src=\"/_ujfe/client.js\"></script>"
+                    + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
+                    + "</body>"
+                    + "</html>";
+        } finally {
+            writeLock.unlock();
+        }
     }
 
-    public synchronized String renderCss(Collection<String> classes) {
-        return componentRenderer.renderCss(classes);
+    public String renderCss(Collection<String> classes) {
+        readLock.lock();
+        try {
+            return componentRenderer.renderCss(classes);
+        } finally {
+            readLock.unlock();
+        }
     }
 
     @Override
-    public synchronized void close() {
-        String traceId = nextTraceId();
-        List<LifecycleException> failures = lifecycleRuntime.cleanup(
-                new UnmountContext(currentPath, this, traceId, Map.of(), "session-close"));
-        routeLifecycleFailures(failures, currentPath, null, traceId);
-        eventRegistry.clear();
-        currentPage = null;
+    public void close() {
+        writeLock.lock();
+        try {
+            String traceId = nextTraceId();
+            List<LifecycleException> failures = lifecycleRuntime.cleanup(
+                    new UnmountContext(currentPath, this, traceId, Map.of(), "session-close"));
+            routeLifecycleFailures(failures, currentPath, null, traceId);
+            eventRegistry.clear();
+            currentPage = null;
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     private void mergeClientState(ClientState nextClientState) {
