@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.18.0-SNAPSHOT</version>
+        <version>0.19.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-examples</artifactId>

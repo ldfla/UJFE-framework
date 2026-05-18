@@ -5,6 +5,7 @@ import ujfe.core.UjfeContext;
 
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class Element implements Node {
@@ -16,7 +17,7 @@ public final class Element implements Node {
     private final Map<String, String> attributes;
     private final Map<String, Supplier<String>> dynamicAttributes;
     private final Map<String, Supplier<Boolean>> booleanAttributes;
-    private final Map<String, Runnable> eventHandlers;
+    private final Map<String, Consumer<String>> eventHandlers;
     private final List<ujfe.core.Node> children;
     private String cssClasses;
 
@@ -173,8 +174,16 @@ public final class Element implements Node {
         return on("change", handler);
     }
 
+    public Element onChange(Consumer<String> handler) {
+        return onValue("change", handler);
+    }
+
     public Element onInput(Runnable handler) {
         return on("input", handler);
+    }
+
+    public Element onInput(Consumer<String> handler) {
+        return onValue("input", handler);
     }
 
     public Element onSubmit(Runnable handler) {
@@ -182,6 +191,11 @@ public final class Element implements Node {
     }
 
     public Element on(String eventName, Runnable handler) {
+        Objects.requireNonNull(handler, "handler");
+        return onValue(eventName, value -> handler.run());
+    }
+
+    private Element onValue(String eventName, Consumer<String> handler) {
         eventHandlers.put(HtmlNames.validateEventName(eventName), Objects.requireNonNull(handler, "handler"));
         return this;
     }

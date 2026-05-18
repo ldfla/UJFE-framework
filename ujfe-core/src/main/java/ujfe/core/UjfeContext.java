@@ -4,6 +4,7 @@ import ujfe.runtime.lifecycle.LifecycleTracker;
 
 import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public final class UjfeContext {
@@ -62,7 +63,15 @@ public final class UjfeContext {
         if (eventRegistrar == null) {
             return Optional.empty();
         }
-        return Optional.of(eventRegistrar.register(handler));
+        Objects.requireNonNull(handler, "handler");
+        return Optional.of(eventRegistrar.register(value -> handler.run()));
+    }
+
+    public Optional<String> registerEvent(Consumer<String> handler) {
+        if (eventRegistrar == null) {
+            return Optional.empty();
+        }
+        return Optional.of(eventRegistrar.register(Objects.requireNonNull(handler, "handler")));
     }
 
     public Executor executor() {
@@ -106,7 +115,7 @@ public final class UjfeContext {
 
     @FunctionalInterface
     public interface EventRegistrar {
-        String register(Runnable handler);
+        String register(Consumer<String> handler);
     }
 
     public static final class Builder {

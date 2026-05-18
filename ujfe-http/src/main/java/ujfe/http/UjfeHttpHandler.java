@@ -95,7 +95,12 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                         readJsonPayload(request),
                         maxJsonPayloadBytes
                 );
-                LiveRenderResult result = liveSession.handleEvent(payload.eventId(), payload.clientState(), metadata);
+                LiveRenderResult result = liveSession.handleEvent(
+                        payload.eventId(),
+                        payload.value(),
+                        payload.clientState(),
+                        metadata
+                );
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
 

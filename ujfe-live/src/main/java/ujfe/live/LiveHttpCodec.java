@@ -28,8 +28,9 @@ public final class LiveHttpCodec {
         try {
             String payload = validateJsonObjectPayload(json, maxPayloadBytes);
             String eventId = extractRequiredEventId(payload, maxPayloadBytes);
+            String value = extractOptionalEventValue(payload);
             ClientState clientState = extractClientStateFromPayload(payload);
-            return new LiveHttpEventPayload(eventId, clientState);
+            return new LiveHttpEventPayload(eventId, clientState, value);
         } catch (LiveHttpCodecException exception) {
             throw normalizeInvalidPayloadLimit(exception, maxPayloadBytes);
         }
@@ -228,6 +229,28 @@ public final class LiveHttpCodec {
                 );
             }
             return eventId;
+        } catch (LiveHttpCodecException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            throw invalidPayload("Invalid live JSON payload.");
+        }
+    }
+
+    private static String extractOptionalEventValue(String json) {
+        Optional<JsonField> field = findObjectField(json, "value");
+        if (field.isEmpty()) {
+            return "";
+        }
+
+        JsonField valueField = field.get();
+        if (startsWith(json, valueField.valueStart(), "null")) {
+            return "";
+        }
+        if (json.charAt(valueField.valueStart()) != '"') {
+            throw invalidPayload("Invalid live JSON payload.");
+        }
+        try {
+            return readJsonString(json, valueField.valueStart()).value();
         } catch (LiveHttpCodecException exception) {
             throw exception;
         } catch (RuntimeException exception) {

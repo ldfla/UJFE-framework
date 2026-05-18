@@ -47,11 +47,12 @@ Application code usually does not call these endpoints directly. They are docume
 
 ## Event Payload
 
-`/_ujfe/event` accepts a JSON object with an opaque event id and optional client state:
+`/_ujfe/event` accepts a JSON object with an opaque event id, an optional string value, and optional client state:
 
 ```json
 {
   "eventId": "opaque-event-id",
+  "value": "current element value",
   "clientState": {
     "cookies": "ujfe_demo=active; theme=dark",
     "localStorage": {
@@ -65,6 +66,7 @@ Rules:
 
 - the request body must be a JSON object;
 - `eventId` is required and must be a nonblank string;
+- `value` is optional and defaults to an empty string;
 - `clientState.cookies` is a normal HTTP cookie header string when present;
 - `clientState.localStorage` is an object whose values are strings or `null`;
 - unknown fields are ignored by the current codec.
@@ -77,6 +79,80 @@ The server response is serialized by `LiveHttpCodec.livePayload(...)`:
   "css": ".generated-css{...}"
 }
 ```
+
+## Live Event APIs
+
+UJFE supports four standard server-side live event helpers:
+
+```java
+button("Save").onClick(this::save);
+
+inputText()
+        .name("displayName")
+        .onInput(value -> displayName.set(value));
+
+select()
+        .name("profile")
+        .onChange(value -> profile.set(value));
+
+form()
+        .onSubmit(this::submitWithoutReload);
+```
+
+The browser bridge keeps event ids opaque. Application code receives only the Java callback and, for typed handlers, the captured string value.
+
+| Event | Java API | Value sent |
+| --- | --- | --- |
+| click | `onClick(Runnable)` | current target value when available, otherwise empty string |
+| input | `onInput(Consumer<String>)` | current input, textarea, select, checkbox, or radio value |
+| change | `onChange(Consumer<String>)` | current input, textarea, select, checkbox, or radio value |
+| submit | `onSubmit(Runnable)` | URL-encoded successful form controls; handler itself remains `Runnable` |
+
+Existing `onInput(Runnable)` and `onChange(Runnable)` handlers remain available for cases where the value is not needed.
+
+### Form Pattern
+
+Use typed handlers to keep server-side state current while `onSubmit(...)` performs the final action without a browser reload:
+
+```java
+private final Signal<String> name = Signals.signal("");
+private final Signal<String> profile = Signals.signal("fullstack");
+private final Signal<Boolean> newsletter = Signals.signal(false);
+
+form()
+        .onSubmit(this::save)
+        .child(inputText()
+                .name("name")
+                .value(name::get)
+                .onInput(name::set))
+        .child(select()
+                .name("profile")
+                .onChange(profile::set)
+                .child(option("Java backend").value("backend"))
+                .child(option("Full stack Java").value("fullstack")))
+        .child(checkbox()
+                .name("newsletter")
+                .value("enabled")
+                .checked(newsletter::get)
+                .onChange(value -> newsletter.set(!value.isBlank())));
+```
+
+See `examples/forms` for a runnable page covering input, textarea, select, select multiple, checkbox, radio, and submit.
+
+### Value Rules
+
+Value capture follows browser form behavior with deterministic string output:
+
+- text inputs and textareas send `element.value`;
+- single selects send the selected option value;
+- multiple selects send selected option values in DOM order separated by `\n`;
+- checked checkboxes send their configured value, or `on` when no value exists;
+- unchecked checkboxes send an empty string;
+- checked radio inputs send their configured value, or `on` when no value exists;
+- unchecked radio inputs send an empty string;
+- live form submits call `preventDefault()` and send successful controls as a URL-encoded string, for example `name=Ada&profile=backend`.
+
+The server dispatches unknown event ids as safe event failures. Adapters render the configured safe error response instead of exposing internal handler details.
 
 ## State Payload
 

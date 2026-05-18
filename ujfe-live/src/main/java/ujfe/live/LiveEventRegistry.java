@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 public final class LiveEventRegistry {
     private final ConcurrentMap<String, LiveEventHandler> handlers = new ConcurrentHashMap<>();
@@ -47,12 +48,15 @@ public final class LiveEventRegistry {
 
     public synchronized String register(Runnable handler) {
         Objects.requireNonNull(handler, "handler");
-        LiveEventHandler liveHandler = handler::run;
-        return register(liveHandler);
+        return registerHandler(value -> handler.run());
     }
 
-    public synchronized String register(LiveEventHandler handler) {
+    public synchronized String register(Consumer<String> handler) {
         Objects.requireNonNull(handler, "handler");
+        return registerHandler(handler::accept);
+    }
+
+    private String registerHandler(LiveEventHandler handler) {
         String eventId = eventIdForCurrentRenderPosition();
         handlers.put(eventId, handler);
         return eventId;
@@ -63,9 +67,13 @@ public final class LiveEventRegistry {
     }
 
     public void handle(String eventId) {
+        handle(eventId, "");
+    }
+
+    public void handle(String eventId, String value) {
         LiveEventHandler handler = find(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown UJFE event: " + eventId));
-        handler.handle();
+        handler.handle(value == null ? "" : value);
     }
 
     public synchronized void clear() {

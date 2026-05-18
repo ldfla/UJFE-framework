@@ -19,6 +19,7 @@ public final class Main {
         var routes = new ManualRouteSource()
             .register("/", () -> new MainPage(appTheme))
             .register("/docs", () -> new DocumentationPage(appTheme))
+            .register("/forms", FormsPage::new)
             .register("/signals", SignalsPage::new)
             .register("/lifecycle", LifecyclePage::new)
             .register("/runtime-actions", () -> runtimeActionsPage);

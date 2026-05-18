@@ -69,7 +69,7 @@ public final class LiveComponentRenderer {
         eventRegistry.beginRender(eventScope);
         UjfeContext.Builder contextBuilder = UjfeContext.builder()
             .elementIdGenerator(elementIdGenerator)
-            .eventRegistrar(eventRegistry::register)
+            .eventRegistrar(handler -> eventRegistry.register(handler))
             .clientState(clientState);
         if (lifecycleTracker != null) {
             contextBuilder.lifecycleTracker(lifecycleTracker);
