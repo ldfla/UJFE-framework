@@ -52,6 +52,8 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Live events](docs/live-events.md)
 - [CSS modes](docs/css.md)
 - [Static assets](docs/static-assets.md)
+- [CLI](docs/cli.md)
+- [HTML converter](docs/cli/convert.md)
 - [Accessibility validation](docs/accessibility.md)
 - [SEO validation](docs/seo.md)
 - [Validation helpers](docs/quality/validation.md)
@@ -384,10 +386,10 @@ if (response.statusCode() == 200) {
 ## CLI Example
 
 ```bash
-java -cp ujfe-cli/target/classes ujfe.cli.UjfeCli convert page.html --out src/main/java/app/pages/Page.java --type html
+java -cp ujfe-cli/target/classes ujfe.cli.UjfeCli convert page.html --output src/main/java/app/pages/Page.java --type html
 ```
 
-The convert command reads an HTML file and writes a Java page using the UJFE DSL.
+The convert command reads an HTML file and writes a Java page using the UJFE DSL. It preserves attributes and classes, handles void and boolean attributes, supports custom elements through `element(...)`, and can extract inline CSS into a generated Java styles class.
 
 The generated code prefers attributes-first output:
 
