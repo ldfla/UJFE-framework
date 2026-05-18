@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## Version 0.19.0 - 17/05/2026
+
+- Updated the Maven project version to `0.19.0-SNAPSHOT`.
+- Added typed `onInput(Consumer<String>)` and `onChange(Consumer<String>)` live event handlers while preserving existing runnable handlers.
+- Extended live event payloads with a safe string `value` field and wired Netty, Servlet, and Spring adapters through the shared codec.
+- Updated the browser bridge to capture input, change, checkbox, radio, select multiple, textarea, and form submit values.
+- Preserved opaque event ids and native submit prevention for live submit handlers.
+- Added live event tests for click, input, change, submit, value payloads, missing ids, and handler failures.
+- Added a runnable forms example under `/forms` and documented live form event semantics in `docs/live-events.md`.
+
 ## Version 0.18.0 - 17/05/2026
 
 - Updated the Maven project version to `0.18.0-SNAPSHOT`.

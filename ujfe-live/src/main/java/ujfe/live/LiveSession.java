@@ -208,15 +208,29 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public LiveRenderResult handleEvent(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+        return handleEvent(eventId, "", nextClientState, metadata);
+    }
+
+    public LiveRenderResult handleEvent(
+            String eventId,
+            String eventValue,
+            ClientState nextClientState,
+            LiveHttpRequestMetadata metadata
+    ) {
         writeLock.lock();
         try {
-            return handleEventLocked(eventId, nextClientState, metadata);
+            return handleEventLocked(eventId, eventValue, nextClientState, metadata);
         } finally {
             writeLock.unlock();
         }
     }
 
-    private LiveRenderResult handleEventLocked(String eventId, ClientState nextClientState, LiveHttpRequestMetadata metadata) {
+    private LiveRenderResult handleEventLocked(
+            String eventId,
+            String eventValue,
+            ClientState nextClientState,
+            LiveHttpRequestMetadata metadata
+    ) {
         String traceId = nextTraceId();
         try {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
@@ -238,7 +252,7 @@ public final class LiveSession implements AutoCloseable {
         LiveRenderResult result;
         try {
             clientState = eventClientState;
-            componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId));
+            componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId, eventValue));
             result = renderPathLocked(currentPath, eventId);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(

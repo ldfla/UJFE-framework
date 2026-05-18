@@ -448,10 +448,12 @@ final class ElementRenderingTest {
         String html = form()
                 .onSubmit(() -> {
                 })
-                .child(inputText().onInput(() -> {
+                .child(inputText().onInput(value -> {
+                    assertNotNull(value);
                 }))
                 .child(select()
-                        .onChange(() -> {
+                        .onChange(value -> {
+                            assertNotNull(value);
                         })
                         .child(option("Java").value("java")))
                 .render(context);

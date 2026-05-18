@@ -7,10 +7,16 @@ import java.util.Objects;
 public final class LiveHttpEventPayload {
     private final String eventId;
     private final ClientState clientState;
+    private final String value;
 
     public LiveHttpEventPayload(String eventId, ClientState clientState) {
+        this(eventId, clientState, "");
+    }
+
+    public LiveHttpEventPayload(String eventId, ClientState clientState, String value) {
         this.eventId = requireText(eventId, "eventId");
         this.clientState = Objects.requireNonNull(clientState, "clientState");
+        this.value = Objects.requireNonNull(value, "value");
     }
 
     public String eventId() {
@@ -19,6 +25,10 @@ public final class LiveHttpEventPayload {
 
     public ClientState clientState() {
         return clientState;
+    }
+
+    public String value() {
+        return value;
     }
 
     private static String requireText(String value, String name) {

@@ -11,6 +11,7 @@ import ujfe.router.Router;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -128,8 +129,82 @@ final class LiveSessionTest {
         assertTrue(css.isEmpty());
     }
 
+    @Test
+    void handlesInputEventWithValuePayload() {
+        try (LiveSession session = new LiveSession(new Router().register(new TypedEventPage()))) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractNamedEventId(document, "input");
+
+            LiveRenderResult result = session.handleEvent(
+                    eventId,
+                    "Ada",
+                    ClientState.empty(),
+                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            );
+
+            assertTrue(result.html().contains("Input: Ada"));
+        }
+    }
+
+    @Test
+    void handlesChangeEventWithValuePayload() {
+        try (LiveSession session = new LiveSession(new Router().register(new TypedEventPage()))) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractNamedEventId(document, "change");
+
+            LiveRenderResult result = session.handleEvent(
+                    eventId,
+                    "backend",
+                    ClientState.empty(),
+                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            );
+
+            assertTrue(result.html().contains("Change: backend"));
+        }
+    }
+
+    @Test
+    void handlesSubmitEventWithoutFullPageReload() {
+        try (LiveSession session = new LiveSession(new Router().register(new TypedEventPage()))) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractNamedEventId(document, "submit");
+
+            LiveRenderResult result = session.handleEvent(
+                    eventId,
+                    "name=Ada",
+                    ClientState.empty(),
+                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            );
+
+            assertTrue(result.html().contains("Submits: 1"));
+        }
+    }
+
+    @Test
+    void typedHandlerFailurePropagatesSafely() {
+        try (LiveSession session = new LiveSession(new Router().register(new FailingTypedEventPage()))) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractNamedEventId(document, "input");
+
+            IllegalStateException exception = assertThrows(IllegalStateException.class, () -> session.handleEvent(
+                    eventId,
+                    "danger",
+                    ClientState.empty(),
+                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            ));
+
+            assertEquals("typed failure", exception.getMessage());
+        }
+    }
+
     private static String extractEventId(String html) {
         Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"").matcher(html);
+        assertTrue(matcher.find());
+        return matcher.group(1);
+    }
+
+    private static String extractNamedEventId(String html, String eventName) {
+        Matcher matcher = Pattern.compile("data-ujfe-event-" + eventName + "=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find());
         return matcher.group(1);
     }
@@ -159,6 +234,38 @@ final class LiveSessionTest {
             return div()
                     .child(p(() -> "Cookie: " + Ujfe.cookie("ujfe_demo").orElse("missing")))
                     .child(p(() -> "Theme: " + Ujfe.localStorage("ujfe.theme").orElse("missing")));
+        }
+    }
+
+    @Page("/")
+    public static final class TypedEventPage implements Component {
+        private final AtomicReference<String> inputValue = new AtomicReference<>("");
+        private final AtomicReference<String> changeValue = new AtomicReference<>("");
+        private final AtomicInteger submits = new AtomicInteger();
+
+        @Override
+        public Node render() {
+            return div()
+                    .child(p(() -> "Input: " + inputValue.get()))
+                    .child(p(() -> "Change: " + changeValue.get()))
+                    .child(p(() -> "Submits: " + submits.get()))
+                    .child(inputText().onInput(inputValue::set))
+                    .child(select()
+                            .onChange(changeValue::set)
+                            .child(option("Backend").value("backend")))
+                    .child(form()
+                            .onSubmit(submits::incrementAndGet)
+                            .child(inputText().name("name")));
+        }
+    }
+
+    @Page("/")
+    public static final class FailingTypedEventPage implements Component {
+        @Override
+        public Node render() {
+            return inputText().onInput(value -> {
+                throw new IllegalStateException("typed failure");
+            });
         }
     }
 }
