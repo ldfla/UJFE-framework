@@ -440,7 +440,7 @@ public final class DocumentationPage implements Component {
         return section()
             .css("rounded-lg border border-primary-200 bg-primary-50 p-6 shadow-sm flex flex-col gap-4")
             .child(h2("CLI").css("text-2xl font-bold text-primary-700"))
-            .child(p("The first CLI command converts plain HTML to a Java UJFE page. React/JSX stays outside the MVP because it requires dynamic props, hooks, conditionals, map, and external component handling.")
+            .child(p("The convert command migrates plain HTML into UJFE Java DSL pages with preserved classes and attributes, strict malformed HTML errors, optional unsafe fallback, CSS extraction, and deterministic component methods for larger pages.")
                 .css("text-base text-slate-700 leading-relaxed"))
             .child(
                 div()
@@ -984,8 +984,11 @@ public final class DocumentationPage implements Component {
 
     private String cliCommandCode() {
         return "ujfe convert page.html \\\n"
-            + "  --out src/main/java/app/pages/Page.java \\\n"
-            + "  --type html\n";
+            + "  --output src/main/java/app/pages/Page.java \\\n"
+            + "  --type html \\\n"
+            + "  --comments drop \\\n"
+            + "  --css extract \\\n"
+            + "  --componentize\n";
     }
 
     private String cliInputCode() {

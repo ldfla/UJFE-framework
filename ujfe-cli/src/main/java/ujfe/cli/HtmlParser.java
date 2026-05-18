@@ -6,6 +6,29 @@ import java.util.*;
 
 final class HtmlParser {
     HtmlParseResult parse(String html) {
+        return parse(html, CommentPolicy.DROP, false);
+    }
+
+    HtmlParseResult parse(String html, CommentPolicy commentPolicy, boolean unsafeFallbackEnabled) {
+        Objects.requireNonNull(html, "html");
+        Objects.requireNonNull(commentPolicy, "commentPolicy");
+        if (commentPolicy == CommentPolicy.PRESERVE) {
+            throw new HtmlConversionException("HTML comment preserve policy is not supported because UJFE has no safe comment node API. Use --comments drop or --comments unsafe-fallback.");
+        }
+        try {
+            return parseStrict(html, commentPolicy);
+        } catch (HtmlConversionException exception) {
+            if (!unsafeFallbackEnabled) {
+                throw exception;
+            }
+            return new HtmlParseResult(
+                List.of(HtmlNode.unsafe(html, exception.getMessage())),
+                List.of("Malformed HTML emitted through unsafeHtml(...): " + exception.getMessage())
+            );
+        }
+    }
+
+    private HtmlParseResult parseStrict(String html, CommentPolicy commentPolicy) {
         List<HtmlNode> roots = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
         Deque<HtmlNode> stack = new ArrayDeque<>();
@@ -22,20 +45,30 @@ final class HtmlParser {
 
             if (startsWith(html, tagStart, "<!--")) {
                 int commentEnd = html.indexOf("-->", tagStart + 4);
-                index = commentEnd < 0 ? html.length() : commentEnd + 3;
+                if (commentEnd < 0) {
+                    throw malformed("Unterminated HTML comment at index " + tagStart);
+                }
+                String comment = html.substring(tagStart, commentEnd + 3);
+                if (commentPolicy == CommentPolicy.UNSAFE_FALLBACK) {
+                    appendNode(HtmlNode.unsafe(comment, "HTML comment"), stack, roots);
+                    warnings.add("HTML comment emitted through unsafeHtml(...).");
+                }
+                index = commentEnd + 3;
                 continue;
             }
 
             if (startsWith(html, tagStart, "<!")) {
                 int declarationEnd = html.indexOf('>', tagStart + 2);
-                index = declarationEnd < 0 ? html.length() : declarationEnd + 1;
+                if (declarationEnd < 0) {
+                    throw malformed("Unterminated HTML declaration at index " + tagStart);
+                }
+                index = declarationEnd + 1;
                 continue;
             }
 
             int tagEnd = findTagEnd(html, tagStart + 1);
             if (tagEnd < 0) {
-                warnings.add("Ignoring unterminated tag at index " + tagStart);
-                break;
+                throw malformed("Unterminated tag at index " + tagStart);
             }
 
             String rawTag = html.substring(tagStart + 1, tagEnd)
@@ -47,7 +80,7 @@ final class HtmlParser {
 
             if (rawTag.startsWith("/")) {
                 closeTag(rawTag.substring(1)
-                    .trim(), stack, warnings);
+                    .trim(), stack);
                 index = tagEnd + 1;
                 continue;
             }
@@ -58,7 +91,7 @@ final class HtmlParser {
                     .trim();
             }
 
-            ParsedTag parsedTag = parseTag(rawTag);
+            ParsedTag parsedTag = parseTag(rawTag, tagStart);
             HtmlNode node = HtmlNode.element(parsedTag.name(), parsedTag.attributes());
             appendNode(node, stack, roots);
 
@@ -70,7 +103,7 @@ final class HtmlParser {
         }
 
         while (!stack.isEmpty()) {
-            warnings.add("Unclosed tag: <" + stack.pop()
+            throw malformed("Unclosed tag: <" + stack.pop()
                 .tagName() + ">");
         }
 
@@ -83,7 +116,7 @@ final class HtmlParser {
             .isEmpty()) {
             return;
         }
-        appendNode(HtmlNode.text(text.trim()), stack, roots);
+        appendNode(HtmlNode.text(normalizeText(text)), stack, roots);
     }
 
     private static void appendNode(HtmlNode node, Deque<HtmlNode> stack, List<HtmlNode> roots) {
@@ -95,26 +128,29 @@ final class HtmlParser {
         }
     }
 
-    private static void closeTag(String rawName, Deque<HtmlNode> stack, List<String> warnings) {
+    private static void closeTag(String rawName, Deque<HtmlNode> stack) {
         String name = tagName(rawName);
-        while (!stack.isEmpty()) {
-            HtmlNode current = stack.pop();
-            if (current.tagName()
-                .equals(name)) {
-                return;
-            }
-            warnings.add("Auto-closing <" + current.tagName() + "> before </" + name + ">");
+        if (stack.isEmpty()) {
+            throw malformed("Unexpected closing tag </" + name + "> with no open element.");
         }
-        warnings.add("Ignoring unmatched closing tag </" + name + ">");
+        HtmlNode current = stack.peek();
+        if (!current.tagName()
+            .equals(name)) {
+            throw malformed("Unexpected closing tag </" + name + ">; expected </" + current.tagName() + ">.");
+        }
+        stack.pop();
     }
 
-    private static ParsedTag parseTag(String rawTag) {
+    private static ParsedTag parseTag(String rawTag, int sourceIndex) {
         int index = 0;
         while (index < rawTag.length() && !Character.isWhitespace(rawTag.charAt(index))) {
             index++;
         }
 
         String name = tagName(rawTag.substring(0, index));
+        if (name.isBlank()) {
+            throw malformed("Missing tag name at index " + sourceIndex + ".");
+        }
         Map<String, String> attributes = new LinkedHashMap<>();
 
         while (index < rawTag.length()) {
@@ -128,8 +164,7 @@ final class HtmlParser {
                 index++;
             }
             if (index == nameStart) {
-                index++;
-                continue;
+                throw malformed("Broken attribute syntax near <" + name + "> at index " + sourceIndex + ".");
             }
 
             String attributeName = rawTag.substring(nameStart, index);
@@ -137,7 +172,7 @@ final class HtmlParser {
             String value = "";
             if (index < rawTag.length() && rawTag.charAt(index) == '=') {
                 index = skipWhitespace(rawTag, index + 1);
-                AttributeValue attributeValue = readAttributeValue(rawTag, index);
+                AttributeValue attributeValue = readAttributeValue(rawTag, index, attributeName);
                 value = decodeEntities(attributeValue.value());
                 index = attributeValue.nextIndex();
             }
@@ -147,7 +182,7 @@ final class HtmlParser {
         return new ParsedTag(name, attributes);
     }
 
-    private static AttributeValue readAttributeValue(String value, int startIndex) {
+    private static AttributeValue readAttributeValue(String value, int startIndex, String attributeName) {
         if (startIndex >= value.length()) {
             return new AttributeValue("", startIndex);
         }
@@ -162,7 +197,7 @@ final class HtmlParser {
                 }
                 result.append(current);
             }
-            return new AttributeValue(result.toString(), value.length());
+            throw malformed("Unterminated quoted attribute value for " + attributeName + ".");
         }
 
         int index = startIndex;
@@ -214,7 +249,7 @@ final class HtmlParser {
     }
 
     private static String decodeEntities(String value) {
-        return value
+        String decoded = value
             .replace("&nbsp;", " ")
             .replace("&lt;", "<")
             .replace("&gt;", ">")
@@ -222,6 +257,44 @@ final class HtmlParser {
             .replace("&#39;", "'")
             .replace("&apos;", "'")
             .replace("&amp;", "&");
+        StringBuilder result = new StringBuilder(decoded.length());
+        for (int index = 0; index < decoded.length(); index++) {
+            char current = decoded.charAt(index);
+            if (current == '&' && index + 3 < decoded.length() && decoded.charAt(index + 1) == '#') {
+                int semicolon = decoded.indexOf(';', index + 2);
+                if (semicolon > 0) {
+                    String entity = decoded.substring(index + 2, semicolon);
+                    try {
+                        int codePoint = parseEntityCodePoint(entity);
+                        result.appendCodePoint(codePoint);
+                        index = semicolon;
+                        continue;
+                    } catch (IllegalArgumentException ignored) {
+                        // Leave unknown numeric entities unchanged.
+                    }
+                }
+            }
+            result.append(current);
+        }
+        return result.toString();
+    }
+
+    private static String normalizeText(String text) {
+        if (text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) {
+            return text.trim();
+        }
+        return text;
+    }
+
+    private static int parseEntityCodePoint(String entity) {
+        if (entity.startsWith("x") || entity.startsWith("X")) {
+            return Integer.parseInt(entity.substring(1), 16);
+        }
+        return Integer.parseInt(entity);
+    }
+
+    private static HtmlConversionException malformed(String message) {
+        return new HtmlConversionException("Malformed HTML: " + message);
     }
 
     private static final class ParsedTag {

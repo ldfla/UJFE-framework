@@ -1,5 +1,9 @@
 # Changelog
 ## Unreleased
+- Improved `ujfe-cli convert` with stricter HTML parsing, doctype handling, entity decoding, comment policies, explicit unsafe fallback, and actionable file/encoding errors.
+- Preserved classes, generic attributes, boolean attributes, forms, tables, media tags, and custom elements in generated UJFE DSL output.
+- Added converter options for `--output`, `--class-name`, `--package`, `--comments`, `--unsafe-fallback`, `--css extract`, `--css-class-name`, `--componentize`, `--encoding`, `--safe-class-name`, and `--debug`.
+- Added generated CSS class output for inline and readable local stylesheet extraction, deterministic componentization for larger pages, and compile coverage for generated Java.
 - Added adapter-independent accessibility and SEO validation helpers in `ujfe-core`.
 - Added `ValidationMode` support for `OFF`, `WARN`, and `STRICT`, with runtime validation off by default.
 - Added opt-in live runtime validation through `LiveSessionConfig`, Servlet properties, and Spring Boot validation properties.
