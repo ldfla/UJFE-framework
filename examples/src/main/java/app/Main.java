@@ -34,6 +34,9 @@ public final class Main {
             .lang("en")
             .title("UJFE Example")
             .runtimeActions(actions)
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("ujfe.theme")
+            .allowSessionStorageKey("ujfe.tab")
             .build();
         var liveSession = new LiveSession(router, liveConfig);
         var server = new UjfeServer(

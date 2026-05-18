@@ -86,6 +86,10 @@ public final class UjfeContext {
         return clientState.localStorage(key);
     }
 
+    public Optional<String> sessionStorage(String key) {
+        return clientState.sessionStorage(key);
+    }
+
     public ClientState clientState() {
         return clientState;
     }

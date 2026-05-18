@@ -21,16 +21,19 @@ final class EscaperTest {
     void exposesCurrentClientState() {
         ClientState clientState = ClientState.of(
                 Map.of("ujfe_demo", "ativo"),
-                Map.of("ujfe.theme", "dark")
+                Map.of("ujfe.theme", "dark"),
+                Map.of("ujfe.tab", "docs")
         );
         UjfeContext context = UjfeContext.builder()
                 .clientState(clientState)
                 .build();
 
         String value = UjfeContext.withCurrent(context, () ->
-                Ujfe.cookie("ujfe_demo").orElse("missing") + "/" + Ujfe.localStorage("ujfe.theme").orElse("missing")
+                Ujfe.cookie("ujfe_demo").orElse("missing")
+                        + "/" + Ujfe.localStorage("ujfe.theme").orElse("missing")
+                        + "/" + Ujfe.sessionStorage("ujfe.tab").orElse("missing")
         );
 
-        assertEquals("ativo/dark", value);
+        assertEquals("ativo/dark/docs", value);
     }
 }

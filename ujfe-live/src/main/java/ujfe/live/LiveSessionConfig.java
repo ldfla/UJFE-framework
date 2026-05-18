@@ -1,6 +1,7 @@
 package ujfe.live;
 
 import ujfe.core.Node;
+import ujfe.core.ClientStatePolicy;
 import ujfe.html.CssTheme;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
@@ -25,6 +26,7 @@ public final class LiveSessionConfig {
     private final boolean csrfProtectionDisabled;
     private final boolean developmentErrorDetailsEnabled;
     private final SecurityHeadersConfig securityHeadersConfig;
+    private final ClientStatePolicy clientStatePolicy;
     private final boolean internalEndpointRateLimitingEnabled;
     private final int internalEndpointRateLimitCapacity;
     private final int internalEndpointRateLimitRefillTokens;
@@ -42,6 +44,7 @@ public final class LiveSessionConfig {
         this.csrfProtectionDisabled = builder.csrfProtectionDisabled;
         this.developmentErrorDetailsEnabled = builder.developmentErrorDetailsEnabled;
         this.securityHeadersConfig = builder.securityHeadersConfig;
+        this.clientStatePolicy = builder.clientStatePolicy;
         this.internalEndpointRateLimitingEnabled = builder.internalEndpointRateLimitingEnabled;
         this.internalEndpointRateLimitCapacity = builder.internalEndpointRateLimitCapacity;
         this.internalEndpointRateLimitRefillTokens = builder.internalEndpointRateLimitRefillTokens;
@@ -101,6 +104,10 @@ public final class LiveSessionConfig {
         return securityHeadersConfig.headers();
     }
 
+    public ClientStatePolicy clientStatePolicy() {
+        return clientStatePolicy;
+    }
+
     public boolean isInternalEndpointRateLimitingEnabled() {
         return internalEndpointRateLimitingEnabled;
     }
@@ -132,6 +139,7 @@ public final class LiveSessionConfig {
         private boolean csrfProtectionDisabled;
         private boolean developmentErrorDetailsEnabled;
         private SecurityHeadersConfig securityHeadersConfig = SecurityHeadersConfig.defaults();
+        private ClientStatePolicy clientStatePolicy = ClientStatePolicy.denyAll();
         private boolean internalEndpointRateLimitingEnabled = true;
         private int internalEndpointRateLimitCapacity = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY;
         private int internalEndpointRateLimitRefillTokens = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS;
@@ -208,6 +216,59 @@ public final class LiveSessionConfig {
 
         public Builder disableSecurityHeaders() {
             this.securityHeadersConfig = SecurityHeadersConfig.disabled();
+            return this;
+        }
+
+        public Builder clientStatePolicy(ClientStatePolicy clientStatePolicy) {
+            this.clientStatePolicy = Objects.requireNonNull(clientStatePolicy, "clientStatePolicy");
+            return this;
+        }
+
+        public Builder allowClientCookie(String name) {
+            this.clientStatePolicy = ClientStatePolicy.builder()
+                    .allowCookies(this.clientStatePolicy.allowedCookies())
+                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                    .allowCookie(name)
+                    .build();
+            return this;
+        }
+
+        public Builder allowClientCookies(Collection<String> names) {
+            Objects.requireNonNull(names, "names");
+            names.forEach(this::allowClientCookie);
+            return this;
+        }
+
+        public Builder allowLocalStorageKey(String key) {
+            this.clientStatePolicy = ClientStatePolicy.builder()
+                    .allowCookies(this.clientStatePolicy.allowedCookies())
+                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                    .allowLocalStorageKey(key)
+                    .build();
+            return this;
+        }
+
+        public Builder allowLocalStorageKeys(Collection<String> keys) {
+            Objects.requireNonNull(keys, "keys");
+            keys.forEach(this::allowLocalStorageKey);
+            return this;
+        }
+
+        public Builder allowSessionStorageKey(String key) {
+            this.clientStatePolicy = ClientStatePolicy.builder()
+                    .allowCookies(this.clientStatePolicy.allowedCookies())
+                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                    .allowSessionStorageKey(key)
+                    .build();
+            return this;
+        }
+
+        public Builder allowSessionStorageKeys(Collection<String> keys) {
+            Objects.requireNonNull(keys, "keys");
+            keys.forEach(this::allowSessionStorageKey);
             return this;
         }
 

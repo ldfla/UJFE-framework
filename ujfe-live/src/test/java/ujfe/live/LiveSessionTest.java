@@ -69,16 +69,79 @@ final class LiveSessionTest {
     void exposesClientStateDuringRender() {
         ClientState clientState = ClientState.of(
                 Map.of("ujfe_demo", "ativo"),
-                Map.of("ujfe.theme", "dark")
+                Map.of("ujfe.theme", "dark"),
+                Map.of("ujfe.tab", "docs")
         );
 
         String document;
-        try (LiveSession session = new LiveSession(new Router().register(new ClientStatePage()))) {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("ujfe.theme")
+                .allowSessionStorageKey("ujfe.tab")
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new ClientStatePage()), config)) {
             document = session.renderDocument("/", clientState);
         }
 
         assertTrue(document.contains("Cookie: ativo"));
         assertTrue(document.contains("Theme: dark"));
+        assertTrue(document.contains("Tab: docs"));
+        assertTrue(document.contains("data-ujfe-client-state-cookies=\"[&quot;ujfe_demo&quot;]\""));
+        assertTrue(document.contains("data-ujfe-local-storage-keys=\"[&quot;ujfe.theme&quot;]\""));
+        assertTrue(document.contains("data-ujfe-session-storage-keys=\"[&quot;ujfe.tab&quot;]\""));
+    }
+
+    @Test
+    void clientStatePolicyBlocksUnauthorizedStateBeforeRender() {
+        ClientState clientState = ClientState.of(
+                Map.of("ujfe_demo", "ativo", "secret", "hidden"),
+                Map.of("ujfe.theme", "dark", "token", "hidden"),
+                Map.of("ujfe.tab", "docs", "draft", "hidden")
+        );
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("ujfe.theme")
+                .allowSessionStorageKey("ujfe.tab")
+                .build();
+
+        String document;
+        try (LiveSession session = new LiveSession(new Router().register(new ClientStatePage()), config)) {
+            document = session.renderDocument("/", clientState);
+        }
+
+        assertTrue(document.contains("Cookie: ativo"));
+        assertTrue(document.contains("Theme: dark"));
+        assertTrue(document.contains("Tab: docs"));
+        assertTrue(document.contains("Secret: missing"));
+        assertTrue(document.contains("Token: missing"));
+        assertTrue(document.contains("Draft: missing"));
+    }
+
+    @Test
+    void allowedClientStateReachesLiveEventHandler() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("ujfe.theme")
+                .allowSessionStorageKey("ujfe.tab")
+                .build();
+        try (LiveSession session = new LiveSession(new Router().register(new ClientStateEventPage()), config)) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String eventId = extractEventId(document);
+            ClientState nextClientState = ClientState.of(
+                    Map.of("ujfe_demo", "ativo", "secret", "hidden"),
+                    Map.of("ujfe.theme", "dark", "token", "hidden"),
+                    Map.of("ujfe.tab", "docs", "draft", "hidden")
+            );
+
+            LiveRenderResult result = session.handleEvent(
+                    eventId,
+                    nextClientState,
+                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            );
+
+            assertTrue(result.html().contains("Seen: ativo/dark/docs"));
+            assertTrue(result.html().contains("Blocked: none/none/none"));
+        }
     }
 
     @Test
@@ -233,7 +296,32 @@ final class LiveSessionTest {
         public Node render() {
             return div()
                     .child(p(() -> "Cookie: " + Ujfe.cookie("ujfe_demo").orElse("missing")))
-                    .child(p(() -> "Theme: " + Ujfe.localStorage("ujfe.theme").orElse("missing")));
+                    .child(p(() -> "Theme: " + Ujfe.localStorage("ujfe.theme").orElse("missing")))
+                    .child(p(() -> "Tab: " + Ujfe.sessionStorage("ujfe.tab").orElse("missing")))
+                    .child(p(() -> "Secret: " + Ujfe.cookie("secret").orElse("missing")))
+                    .child(p(() -> "Token: " + Ujfe.localStorage("token").orElse("missing")))
+                    .child(p(() -> "Draft: " + Ujfe.sessionStorage("draft").orElse("missing")));
+        }
+    }
+
+    @Page("/")
+    public static final class ClientStateEventPage implements Component {
+        private final AtomicReference<String> seen = new AtomicReference<>("none");
+        private final AtomicReference<String> blocked = new AtomicReference<>("none");
+
+        @Override
+        public Node render() {
+            return div()
+                    .child(p(() -> "Seen: " + seen.get()))
+                    .child(p(() -> "Blocked: " + blocked.get()))
+                    .child(button("Read").onClick(() -> {
+                        seen.set(Ujfe.cookie("ujfe_demo").orElse("none")
+                                + "/" + Ujfe.localStorage("ujfe.theme").orElse("none")
+                                + "/" + Ujfe.sessionStorage("ujfe.tab").orElse("none"));
+                        blocked.set(Ujfe.cookie("secret").orElse("none")
+                                + "/" + Ujfe.localStorage("token").orElse("none")
+                                + "/" + Ujfe.sessionStorage("draft").orElse("none"));
+                    }));
         }
     }
 

@@ -32,6 +32,9 @@ final class UjfeServletSettings {
     static final String RATE_LIMIT_REFILL_TOKENS = "ujfe.live.rate-limit.refill-tokens";
     static final String RATE_LIMIT_REFILL_PERIOD_MS = "ujfe.live.rate-limit.refill-period-ms";
     static final String TRUSTED_PROXIES = "ujfe.live.trusted-proxies";
+    static final String CLIENT_STATE_COOKIES = "ujfe.client-state.cookies";
+    static final String CLIENT_STATE_LOCAL_STORAGE_KEYS = "ujfe.client-state.local-storage-keys";
+    static final String CLIENT_STATE_SESSION_STORAGE_KEYS = "ujfe.client-state.session-storage-keys";
     static final String SECURITY_HEADERS_ENABLED = "ujfe.security.headers.enabled";
     static final String SECURITY_HEADER_CONTENT_TYPE_OPTIONS = "ujfe.security.headers.x-content-type-options";
     static final String SECURITY_HEADER_FRAME_OPTIONS = "ujfe.security.headers.x-frame-options";
@@ -146,6 +149,9 @@ final class UjfeServletSettings {
             );
         }
         value(TRUSTED_PROXIES).ifPresent(value -> builder.trustedProxies(splitCsv(value)));
+        value(CLIENT_STATE_COOKIES).ifPresent(value -> builder.allowClientCookies(splitCsv(value)));
+        value(CLIENT_STATE_LOCAL_STORAGE_KEYS).ifPresent(value -> builder.allowLocalStorageKeys(splitCsv(value)));
+        value(CLIENT_STATE_SESSION_STORAGE_KEYS).ifPresent(value -> builder.allowSessionStorageKeys(splitCsv(value)));
         return builder.build();
     }
 

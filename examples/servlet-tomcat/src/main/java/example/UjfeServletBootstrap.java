@@ -20,6 +20,9 @@ public final class UjfeServletBootstrap implements ServletContextListener {
         var config = LiveSessionConfig.builder()
                 .title("UJFE Servlet Tomcat Example")
                 .devToolsEnabled(true)
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("ujfe.theme")
+                .allowSessionStorageKey("ujfe.tab")
                 .build();
 
         ServletContext context = event.getServletContext();

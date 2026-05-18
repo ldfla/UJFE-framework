@@ -13,4 +13,8 @@ public final class Ujfe {
     public static Optional<String> localStorage(String key) {
         return UjfeContext.current().flatMap(context -> context.localStorage(key));
     }
+
+    public static Optional<String> sessionStorage(String key) {
+        return UjfeContext.current().flatMap(context -> context.sessionStorage(key));
+    }
 }

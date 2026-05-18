@@ -16,19 +16,25 @@ import ujfe.router.Router;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnClass(DispatcherServlet.class)
 @ConditionalOnBean(Router.class)
-@EnableConfigurationProperties({UjfeSpringProperties.class, UjfeSpringSecurityHeadersProperties.class})
+@EnableConfigurationProperties({
+        UjfeSpringProperties.class,
+        UjfeSpringSecurityHeadersProperties.class,
+        UjfeSpringClientStateProperties.class
+})
 public class UjfeSpringAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LiveSessionConfig ujfeLiveSessionConfig(
             UjfeSpringProperties properties,
-            UjfeSpringSecurityHeadersProperties securityHeadersProperties
+            UjfeSpringSecurityHeadersProperties securityHeadersProperties,
+            UjfeSpringClientStateProperties clientStateProperties
     ) {
         LiveSessionConfig.Builder builder = LiveSessionConfig.builder();
         if (properties.isEnabled()) {
             builder.enableDevelopmentErrorDetailsUnsafe();
         }
         builder.securityHeaders(securityHeadersProperties.toSecurityHeadersConfig());
+        builder.clientStatePolicy(clientStateProperties.toClientStatePolicy());
         return builder.build();
     }
 

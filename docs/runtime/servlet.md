@@ -156,8 +156,8 @@ For browser state synchronization:
 ```text
 DOMContentLoaded
   -> client.js sends POST /_ujfe/state
-  -> cookies and localStorage become available through Ujfe.cookie(...) and Ujfe.localStorage(...)
-  -> LiveSession re-renders the current route with the merged ClientState
+  -> policy-allowed cookies, localStorage, and sessionStorage become available through Ujfe
+  -> LiveSession re-renders the current route with the filtered ClientState
 ```
 
 ## Choosing A Registration Model
@@ -288,6 +288,9 @@ ujfe.live.lang=en
 ujfe.live.dev-tools-enabled=true
 ujfe.live.css-mode=internal
 ujfe.live.max-json-payload-bytes=262144
+ujfe.client-state.cookies=ujfe_demo
+ujfe.client-state.local-storage-keys=ujfe.theme
+ujfe.client-state.session-storage-keys=ujfe.tab
 ```
 
 Equivalent `application.yml`:
@@ -302,6 +305,10 @@ ujfe:
     dev-tools-enabled: true
     css-mode: internal
     max-json-payload-bytes: 262144
+  client-state:
+    cookies: ujfe_demo
+    local-storage-keys: ujfe.theme
+    session-storage-keys: ujfe.tab
 ```
 
 Supported keys:
@@ -314,6 +321,9 @@ Supported keys:
 | `ujfe.live.dev-tools-enabled` | `true` | Whether `/_ujfe/dev.js` is added to rendered documents |
 | `ujfe.live.css-mode` | `internal` | CSS delivery mode used by `LiveSessionConfig` |
 | `ujfe.live.max-json-payload-bytes` | `262144` | Maximum accepted JSON body size for `/_ujfe/event` and `/_ujfe/state`; defaults to `1048576` |
+| `ujfe.client-state.cookies` | `ujfe_demo` | Comma-separated cookies exposed through `Ujfe.cookie(...)` |
+| `ujfe.client-state.local-storage-keys` | `ujfe.theme` | Comma-separated `localStorage` keys exposed through `Ujfe.localStorage(...)` |
+| `ujfe.client-state.session-storage-keys` | `ujfe.tab` | Comma-separated `sessionStorage` keys exposed through `Ujfe.sessionStorage(...)` |
 
 ## ServletContext Attributes
 
@@ -372,7 +382,7 @@ UJFE internal endpoints must be mapped to the servlet, usually with `/_ujfe/*`.
 | `/_ujfe/dev.js` | `GET` | `application/javascript; charset=utf-8` | Optional dev preview script |
 | `/_ujfe/css` | `GET` | `text/css; charset=utf-8` | Runtime CSS for requested utility classes |
 | `/_ujfe/event` | `POST` | `application/json; charset=utf-8` | Live event dispatch |
-| `/_ujfe/state` | `POST` | `application/json; charset=utf-8` | Cookie/localStorage synchronization |
+| `/_ujfe/state` | `POST` | `application/json; charset=utf-8` | Policy-allowed client state synchronization |
 
 The live payload contract is shared with the other runtimes:
 
@@ -383,6 +393,9 @@ The live payload contract is shared with the other runtimes:
     "cookies": "theme=dark; user=42",
     "localStorage": {
       "ujfe.theme": "dark"
+    },
+    "sessionStorage": {
+      "ujfe.tab": "docs"
     }
   }
 }

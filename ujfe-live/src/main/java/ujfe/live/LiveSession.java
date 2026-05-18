@@ -243,7 +243,7 @@ public final class LiveSession implements AutoCloseable {
 
         Instant start = Instant.now();
 
-        ClientState eventClientState = clientState.mergeCookiesAndReplaceLocalStorage(nextClientState);
+        ClientState eventClientState = clientState.mergeCookiesAndReplaceLocalStorage(filterClientState(nextClientState));
 
         LiveEventContext eventContext = new LiveEventContext(
                 eventId, "live", this, Map.of(), eventClientState, null, Map.of(), traceId, Map.of());
@@ -337,7 +337,7 @@ public final class LiveSession implements AutoCloseable {
                     + renderCsrfMetaTag()
                     + "</head>"
                     + "<body>"
-                    + "<div id=\"ujfe-root\">" + result.html() + "</div>"
+                    + "<div" + renderRootAttributes() + ">" + result.html() + "</div>"
                     + "<script src=\"/_ujfe/client.js\"></script>"
                     + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
                     + "</body>"
@@ -372,7 +372,11 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private void mergeClientState(ClientState nextClientState) {
-        clientState = clientState.mergeCookiesAndReplaceLocalStorage(nextClientState);
+        clientState = clientState.mergeCookiesAndReplaceLocalStorage(filterClientState(nextClientState));
+    }
+
+    private ClientState filterClientState(ClientState nextClientState) {
+        return config.clientStatePolicy().filter(nextClientState);
     }
 
     private Object pageFor(RouteDefinition route) {
@@ -456,10 +460,63 @@ public final class LiveSession implements AutoCloseable {
         return "<meta name=\"ujfe-csrf-token\" content=\"" + HtmlEscaper.escape(csrfToken) + "\">";
     }
 
+    private String renderRootAttributes() {
+        return " id=\"ujfe-root\""
+                + clientStatePolicyAttribute("data-ujfe-client-state-cookies", config.clientStatePolicy().allowedCookies())
+                + clientStatePolicyAttribute("data-ujfe-local-storage-keys", config.clientStatePolicy().allowedLocalStorageKeys())
+                + clientStatePolicyAttribute("data-ujfe-session-storage-keys", config.clientStatePolicy().allowedSessionStorageKeys());
+    }
+
+    private static String clientStatePolicyAttribute(String name, Collection<String> values) {
+        return " " + name + "=\"" + AttributeEscaper.escape(jsonStringArray(values)) + "\"";
+    }
+
+    private static String jsonStringArray(Collection<String> values) {
+        StringBuilder json = new StringBuilder("[");
+        boolean first = true;
+        for (String value : values) {
+            if (!first) {
+                json.append(',');
+            }
+            json.append('"').append(jsonEscape(value)).append('"');
+            first = false;
+        }
+        return json.append(']').toString();
+    }
+
+    private static String jsonEscape(String value) {
+        StringBuilder escaped = new StringBuilder();
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            switch (current) {
+                case '"':
+                    escaped.append("\\\"");
+                    break;
+                case '\\':
+                    escaped.append("\\\\");
+                    break;
+                case '\n':
+                    escaped.append("\\n");
+                    break;
+                case '\r':
+                    escaped.append("\\r");
+                    break;
+                case '\t':
+                    escaped.append("\\t");
+                    break;
+                default:
+                    escaped.append(current);
+                    break;
+            }
+        }
+        return escaped.toString();
+    }
+
     private Map<String, Object> clientStateMetadata() {
         return Map.of(
                 "cookies", clientState.cookies(),
-                "localStorage", clientState.localStorage()
+                "localStorage", clientState.localStorage(),
+                "sessionStorage", clientState.sessionStorage()
         );
     }
 

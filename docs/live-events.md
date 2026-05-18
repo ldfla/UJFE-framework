@@ -38,7 +38,7 @@ Live HTTP requests use UJFE internal endpoints:
 | Path | Method | Purpose |
 | --- | --- | --- |
 | `/_ujfe/event` | `POST` | Dispatch a browser event to its server-side Java handler |
-| `/_ujfe/state` | `POST` | Synchronize browser cookie/localStorage state with the current live session |
+| `/_ujfe/state` | `POST` | Synchronize policy-allowed browser state with the current live session |
 | `/_ujfe/css` | `GET` | Render server-side CSS for requested classes |
 | `/_ujfe/client.js` | `GET` | Serve the browser event bridge |
 | `/_ujfe/dev.js` | `GET` | Serve optional development preview tooling |
@@ -57,6 +57,9 @@ Application code usually does not call these endpoints directly. They are docume
     "cookies": "ujfe_demo=active; theme=dark",
     "localStorage": {
       "ujfe.theme": "dark"
+    },
+    "sessionStorage": {
+      "ujfe.tab": "docs"
     }
   }
 }
@@ -69,6 +72,8 @@ Rules:
 - `value` is optional and defaults to an empty string;
 - `clientState.cookies` is a normal HTTP cookie header string when present;
 - `clientState.localStorage` is an object whose values are strings or `null`;
+- `clientState.sessionStorage` is an object whose values are strings or `null`;
+- the live runtime filters client state through `ClientStatePolicy` before exposing it to application code;
 - unknown fields are ignored by the current codec.
 
 The server response is serialized by `LiveHttpCodec.livePayload(...)`:
@@ -164,10 +169,15 @@ The server dispatches unknown event ids as safe event failures. Adapters render 
     "cookies": "ujfe_demo=active",
     "localStorage": {
       "ujfe.theme": "dark"
+    },
+    "sessionStorage": {
+      "ujfe.tab": "docs"
     }
   }
 }
 ```
+
+The browser bridge only sends cookies, local storage keys, and session storage keys explicitly allowed by the active `ClientStatePolicy`. See `docs/client-state.md` and `docs/security/client-state.md` for configuration and privacy guidance.
 
 The response uses the same live response shape:
 

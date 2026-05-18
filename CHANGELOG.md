@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## Version 0.20.0 - 18/05/2026
+
+- Updated the Maven project version to `0.20.0-SNAPSHOT`.
+- Added explicit `ClientStatePolicy` allowlists for cookies, local storage keys, and session storage keys.
+- Extended `ClientState` and `Ujfe` with session storage access while preserving cookie and local storage APIs.
+- Updated the live browser bridge to collect only policy-allowed client state keys and added server-side filtering before state reaches render or event handlers.
+- Added Servlet and Spring configuration support for client state allowlists.
+- Updated the example app to allow and display `ujfe_demo`, `ujfe.theme`, and `ujfe.tab`.
+- Added direct tests for allowed/disallowed client state and documented merge semantics for `ClientState`.
+- Documented client state synchronization and security guidance in `docs/client-state.md` and `docs/security/client-state.md`.
+
 ## Version 0.19.0 - 17/05/2026
 
 - Updated the Maven project version to `0.19.0-SNAPSHOT`.

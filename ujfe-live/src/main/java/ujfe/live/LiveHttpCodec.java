@@ -366,7 +366,8 @@ public final class LiveHttpCodec {
     private static ClientState extractClientStateFromObject(String json) {
         String cookieHeader = extractStringField(json, "cookies").orElse("");
         Map<String, String> localStorage = extractStringMapField(json, "localStorage");
-        return ClientState.of(parseCookies(cookieHeader), localStorage);
+        Map<String, String> sessionStorage = extractStringMapField(json, "sessionStorage");
+        return ClientState.of(parseCookies(cookieHeader), localStorage, sessionStorage);
     }
 
     private static Optional<JsonField> findObjectField(String json, String fieldName) {
