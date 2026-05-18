@@ -32,7 +32,7 @@ import static ujfe.html.UI.*;
 final class UjfeServletTest {
     @Test
     void rendersUjfePageThroughJakartaServletResponse() throws Exception {
-        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), clientStateConfig());
         TestResponse response = service(servlet, TestRequest.get("/app/", "/app"));
 
         assertEquals(200, response.status());
@@ -68,7 +68,7 @@ final class UjfeServletTest {
 
     @Test
     void eventAndStateEndpointsReturnLiveJsonPayloads() throws Exception {
-        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), clientStateConfig());
         TestResponse page = service(servlet, TestRequest.get("/"));
         String eventId = firstEventId(page.body());
         String csrfToken = firstCsrfToken(page.body());
@@ -90,6 +90,16 @@ final class UjfeServletTest {
         assertTrue(event.body().contains("\"html\""));
         assertEquals(200, state.status());
         assertTrue(state.body().contains("Cookie: novo"));
+    }
+
+    @Test
+    void defaultClientStatePolicyDoesNotExposeCookiesFromPageRequests() throws Exception {
+        UjfeServlet servlet = new UjfeServlet(new Router().register(new StrictCookiePage()));
+
+        TestResponse response = service(servlet, TestRequest.get("/"));
+
+        assertEquals(200, response.status());
+        assertTrue(response.body().contains("Cookie: missing"));
     }
 
     @Test
@@ -433,6 +443,9 @@ final class UjfeServletTest {
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_TOKENS, "25");
         properties.setProperty(UjfeServletSettings.RATE_LIMIT_REFILL_PERIOD_MS, "30000");
         properties.setProperty(UjfeServletSettings.TRUSTED_PROXIES, "10.0.0.1,10.0.0.2");
+        properties.setProperty(UjfeServletSettings.CLIENT_STATE_COOKIES, "ujfe_demo,theme");
+        properties.setProperty(UjfeServletSettings.CLIENT_STATE_LOCAL_STORAGE_KEYS, "ujfe.theme");
+        properties.setProperty(UjfeServletSettings.CLIENT_STATE_SESSION_STORAGE_KEYS, "ujfe.tab");
 
         UjfeServletSettings settings = UjfeServletSettings.fromProperties(properties);
         LiveSessionConfig liveConfig = settings.toLiveSessionConfig();
@@ -448,6 +461,9 @@ final class UjfeServletTest {
         assertEquals(25, liveConfig.internalEndpointRateLimitRefillTokens());
         assertEquals(Duration.ofSeconds(30), liveConfig.internalEndpointRateLimitRefillPeriod());
         assertEquals(java.util.Set.of("10.0.0.1", "10.0.0.2"), liveConfig.trustedProxyAddresses());
+        assertEquals(java.util.Set.of("ujfe_demo", "theme"), liveConfig.clientStatePolicy().allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy().allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy().allowedSessionStorageKeys());
     }
 
     @Test
@@ -471,6 +487,10 @@ final class UjfeServletTest {
                 + "      refill-tokens: 10\n"
                 + "      refill-period-ms: 15000\n"
                 + "    trusted-proxies: 10.0.0.1\n"
+                + "  client-state:\n"
+                + "    cookies: ujfe_demo\n"
+                + "    local-storage-keys: ujfe.theme\n"
+                + "    session-storage-keys: ujfe.tab\n"
                 + "  security:\n"
                 + "    headers:\n"
                 + "      enabled: false\n");
@@ -486,6 +506,9 @@ final class UjfeServletTest {
         assertEquals(10, liveConfig.internalEndpointRateLimitRefillTokens());
         assertEquals(Duration.ofSeconds(15), liveConfig.internalEndpointRateLimitRefillPeriod());
         assertEquals(java.util.Set.of("10.0.0.1"), liveConfig.trustedProxyAddresses());
+        assertEquals(java.util.Set.of("ujfe_demo"), liveConfig.clientStatePolicy().allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy().allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy().allowedSessionStorageKeys());
     }
 
     @Test
@@ -540,6 +563,13 @@ final class UjfeServletTest {
                     .replaceFirst("(?s).*<title>", "")
                     .replaceFirst("</title>.*", "");
         }
+    }
+
+    private static LiveSessionConfig clientStateConfig() {
+        return LiveSessionConfig.builder()
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("theme")
+                .build();
     }
 
     private static ServletConfig servletConfig(
@@ -612,6 +642,13 @@ final class UjfeServletTest {
                     .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("ativo")))
                     .child(p(() -> "Clicks: " + clicks))
                     .child(button("Click").onClick(() -> clicks++));
+        }
+    }
+
+    @Page("/")
+    public static final class StrictCookiePage {
+        public Node render() {
+            return p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("missing"));
         }
     }
 

@@ -231,6 +231,8 @@ public final class MainPage implements Component {
                         .css(bodyTextClass()))
                     .child(p(() -> "LocalStorage    : " + Ujfe.localStorage("ujfe.theme").orElse("not found"))
                         .css(bodyTextClass()))
+                    .child(p(() -> "SessionStorage  : " + Ujfe.sessionStorage("ujfe.tab").orElse("not found"))
+                        .css(bodyTextClass()))
                     .child(p(() -> "Log             : " + lastBrowserRead.get())
                         .css(theme.darkMode()
                             ? "text-slate-400 italic border-t border-slate-700 pt-2 mt-1"
@@ -242,14 +244,22 @@ public final class MainPage implements Component {
                         ? "w-full px-4 h-10 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all"
                         : "w-full px-4 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
                     .onClick(this::readBrowserState)
-            );
+            )
+            .child(pre()
+                .css(theme.darkMode()
+                    ? "overflow-x-auto rounded-lg border border-slate-700 bg-slate-950 p-3 text-[11px] leading-relaxed text-slate-300"
+                    : "overflow-x-auto rounded-lg border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-500")
+                .child(code("document.cookie = \"ujfe_demo=active\";\n"
+                    + "localStorage.setItem(\"ujfe.theme\", \"dark\");\n"
+                    + "sessionStorage.setItem(\"ujfe.tab\", \"docs\");")));
     }
 
     private void readBrowserState() {
         pageEvents.update(value -> value + 1);
         var cookie = Ujfe.cookie("ujfe_demo").orElse("not sent");
         var theme = Ujfe.localStorage("ujfe.theme").orElse("not found");
-        lastBrowserRead.set("cookie=" + cookie + " | theme=" + theme);
+        var tab = Ujfe.sessionStorage("ujfe.tab").orElse("not found");
+        lastBrowserRead.set("cookie=" + cookie + " | theme=" + theme + " | tab=" + tab);
     }
 
     private Node stylePanel() {

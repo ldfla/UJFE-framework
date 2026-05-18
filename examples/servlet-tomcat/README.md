@@ -10,7 +10,7 @@ Use a Jakarta Servlet container such as Tomcat 10+ / 11. Tomcat 9.x uses the leg
 - `UjfeServletBootstrap`: a `ServletContextListener` that creates the router and registers `UjfeServlet`.
 - `application.properties`: document/runtime settings used by the servlet runtime.
 
-The properties file also sets `ujfe.live.max-json-payload-bytes`, the shared live JSON body limit used by `/_ujfe/event` and `/_ujfe/state`.
+The properties file also sets `ujfe.live.max-json-payload-bytes`, the shared live JSON body limit used by `/_ujfe/event` and `/_ujfe/state`, and example client state allowlists for `ujfe_demo`, `ujfe.theme`, and `ujfe.tab`.
 
 The bootstrap maps only:
 
@@ -45,6 +45,9 @@ var router = new Router().register(routes);
 var config = LiveSessionConfig.builder()
         .title("UJFE Servlet Tomcat Example")
         .devToolsEnabled(true)
+        .allowClientCookie("ujfe_demo")
+        .allowLocalStorageKey("ujfe.theme")
+        .allowSessionStorageKey("ujfe.tab")
         .build();
 
 ServletRegistration.Dynamic servlet = context.addServlet("ujfe", new UjfeServlet(router, config));

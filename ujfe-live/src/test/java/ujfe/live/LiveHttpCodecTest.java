@@ -23,7 +23,8 @@ final class LiveHttpCodecTest {
                 + "\"value\":\"Ada Lovelace\","
                 + "\"clientState\":{"
                 + "\"cookies\":\"ujfe_demo=ativo; theme=dark\","
-                + "\"localStorage\":{\"ujfe.theme\":\"dark\",\"escaped\":\"A\\nB\"}"
+                + "\"localStorage\":{\"ujfe.theme\":\"dark\",\"escaped\":\"A\\nB\"},"
+                + "\"sessionStorage\":{\"ujfe.tab\":\"docs\"}"
                 + "}"
                 + "}");
 
@@ -32,6 +33,7 @@ final class LiveHttpCodecTest {
         assertEquals("ativo", payload.clientState().cookie("ujfe_demo").orElseThrow());
         assertEquals("dark", payload.clientState().localStorage("ujfe.theme").orElseThrow());
         assertEquals("A\nB", payload.clientState().localStorage("escaped").orElseThrow());
+        assertEquals("docs", payload.clientState().sessionStorage("ujfe.tab").orElseThrow());
     }
 
     @Test
@@ -45,12 +47,14 @@ final class LiveHttpCodecTest {
         ClientState state = LiveHttpCodec.parseStatePayload("{"
                 + "\"clientState\":{"
                 + "\"cookies\":\"ujfe_demo=novo\","
-                + "\"localStorage\":{\"theme\":\"light\"}"
+                + "\"localStorage\":{\"theme\":\"light\"},"
+                + "\"sessionStorage\":{\"tab\":\"settings\"}"
                 + "}"
                 + "}");
 
         assertEquals("novo", state.cookie("ujfe_demo").orElseThrow());
         assertEquals("light", state.localStorage("theme").orElseThrow());
+        assertEquals("settings", state.sessionStorage("tab").orElseThrow());
     }
 
     @Test

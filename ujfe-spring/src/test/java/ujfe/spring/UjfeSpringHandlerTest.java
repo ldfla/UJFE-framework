@@ -41,7 +41,11 @@ final class UjfeSpringHandlerTest {
         properties.setEnabled(true);
 
         LiveSessionConfig config = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(properties, new UjfeSpringSecurityHeadersProperties());
+                .ujfeLiveSessionConfig(
+                        properties,
+                        new UjfeSpringSecurityHeadersProperties(),
+                        new UjfeSpringClientStateProperties()
+                );
 
         assertTrue(config.isDevelopmentErrorDetailsEnabled());
     }
@@ -57,7 +61,11 @@ final class UjfeSpringHandlerTest {
         custom.setPermissionsPolicy("geolocation=()");
 
         LiveSessionConfig customConfig = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(new UjfeSpringProperties(), custom);
+                .ujfeLiveSessionConfig(
+                        new UjfeSpringProperties(),
+                        custom,
+                        new UjfeSpringClientStateProperties()
+                );
 
         assertTrue(custom.getEnabled());
         assertEquals("nosniff", custom.getXContentTypeOptions());
@@ -71,15 +79,41 @@ final class UjfeSpringHandlerTest {
         UjfeSpringSecurityHeadersProperties disabled = new UjfeSpringSecurityHeadersProperties();
         disabled.setEnabled(false);
         LiveSessionConfig disabledConfig = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(new UjfeSpringProperties(), disabled);
+                .ujfeLiveSessionConfig(
+                        new UjfeSpringProperties(),
+                        disabled,
+                        new UjfeSpringClientStateProperties()
+                );
 
         assertFalse(disabledConfig.securityHeadersConfig().isEnabled());
         assertTrue(disabledConfig.securityHeaders().isEmpty());
     }
 
     @Test
+    void springPropertiesCanConfigureClientStatePolicy() {
+        UjfeSpringClientStateProperties clientState = new UjfeSpringClientStateProperties();
+        clientState.setCookies(java.util.List.of("ujfe_demo"));
+        clientState.setLocalStorageKeys(java.util.List.of("ujfe.theme"));
+        clientState.setSessionStorageKeys(java.util.List.of("ujfe.tab"));
+
+        LiveSessionConfig config = new UjfeSpringAutoConfiguration()
+                .ujfeLiveSessionConfig(
+                        new UjfeSpringProperties(),
+                        new UjfeSpringSecurityHeadersProperties(),
+                        clientState
+                );
+
+        assertEquals(java.util.Set.of("ujfe_demo"), config.clientStatePolicy().allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), config.clientStatePolicy().allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), config.clientStatePolicy().allowedSessionStorageKeys());
+        assertEquals(java.util.List.of("ujfe_demo"), clientState.getCookies());
+        assertEquals(java.util.List.of("ujfe.theme"), clientState.getLocalStorageKeys());
+        assertEquals(java.util.List.of("ujfe.tab"), clientState.getSessionStorageKeys());
+    }
+
+    @Test
     void rendersUjfePageThroughServletResponse() throws Exception {
-        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()), clientStateConfig())) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
             request.addHeader("Cookie", "ujfe_demo=ativo");
@@ -94,6 +128,21 @@ final class UjfeSpringHandlerTest {
             assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
             assertEquals("strict-origin-when-cross-origin", response.getHeader("Referrer-Policy"));
             assertTrue(response.getHeader("Content-Security-Policy").contains("default-src 'self'"));
+        }
+    }
+
+    @Test
+    void defaultClientStatePolicyDoesNotExposeCookiesFromPageRequests() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/");
+            request.addHeader("Cookie", "ujfe_demo=ativo");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            handler.handleRequest(request, response);
+
+            assertEquals(200, response.getStatus());
+            assertTrue(response.getContentAsString().contains("Cookie: missing"));
         }
     }
 
@@ -405,6 +454,13 @@ final class UjfeSpringHandlerTest {
         request.setContent(body.getBytes(StandardCharsets.UTF_8));
         request.setContentType("application/json");
         return request;
+    }
+
+    private static LiveSessionConfig clientStateConfig() {
+        return LiveSessionConfig.builder()
+                .allowClientCookie("ujfe_demo")
+                .allowLocalStorageKey("theme")
+                .build();
     }
 
     private static String firstEventId(String html) {
