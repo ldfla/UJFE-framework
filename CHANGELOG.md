@@ -1,6 +1,10 @@
 # Changelog
-
 ## Unreleased
+
+## Version 0.21.1 - 18/05/2026
+- Updated the Maven project version to `0.21.1-SNAPSHOT`.
+- Updated Netty to version 4.1.133-Final due DNS Cache Poisoning / Domain Validation Bypass / Denial of Service / Malformed DNS Packets
+- Vulnerability Type: CWE-20: Improper Input Validation / CWE-626: Null Byte Interaction Error / CWE-400: Uncontrolled Resource Consumption
 
 ## Version 0.21.0 - 18/05/2026
 

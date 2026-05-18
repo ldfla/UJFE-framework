@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="ujfe-live" />
+        <module name="ujfe-signals" />
+        <module name="ujfe-http" />
+        <module name="ujfe-servlet" />
+        <module name="ujfe-cli" />
+        <module name="ujfe-spring" />
+        <module name="ujfe-core" />
+        <module name="ujfe-servlet-tomcat" />
+        <module name="ujfe-examples" />
+        <module name="ujfe-router" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ujfe-html" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
