@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/examples/servlet-tomcat/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/examples/servlet-tomcat/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/examples/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/examples/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-cli/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-cli/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-html/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-html/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-http/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-http/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-live/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-live/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-router/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-router/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-servlet/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-servlet/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-signals/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-signals/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-spring/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/ujfe-spring/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
