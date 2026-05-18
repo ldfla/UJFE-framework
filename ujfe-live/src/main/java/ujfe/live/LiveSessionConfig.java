@@ -4,6 +4,8 @@ import ujfe.core.ClientStatePolicy;
 import ujfe.core.CssTheme;
 import ujfe.core.Node;
 import ujfe.runtime.action.RuntimeActionRegistry;
+import ujfe.validation.ValidationMode;
+import ujfe.validation.ValidationOptions;
 
 import java.time.Duration;
 import java.util.*;
@@ -31,6 +33,7 @@ public final class LiveSessionConfig {
     private final int internalEndpointRateLimitRefillTokens;
     private final Duration internalEndpointRateLimitRefillPeriod;
     private final Set<String> trustedProxyAddresses;
+    private final ValidationOptions validationOptions;
 
     private LiveSessionConfig(Builder builder) {
         this.themeSupplier = builder.themeSupplier;
@@ -50,6 +53,7 @@ public final class LiveSessionConfig {
         this.internalEndpointRateLimitRefillTokens = builder.internalEndpointRateLimitRefillTokens;
         this.internalEndpointRateLimitRefillPeriod = builder.internalEndpointRateLimitRefillPeriod;
         this.trustedProxyAddresses = Set.copyOf(builder.trustedProxyAddresses);
+        this.validationOptions = builder.validationOptions;
     }
 
     public static LiveSessionConfig defaults() {
@@ -132,6 +136,10 @@ public final class LiveSessionConfig {
         return trustedProxyAddresses;
     }
 
+    public ValidationOptions validationOptions() {
+        return validationOptions;
+    }
+
     public static final class Builder {
         private Supplier<CssTheme> themeSupplier = CssTheme::defaultTheme;
         private CssMode cssMode = CssMode.INTERNAL;
@@ -150,6 +158,7 @@ public final class LiveSessionConfig {
         private int internalEndpointRateLimitRefillTokens = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS;
         private Duration internalEndpointRateLimitRefillPeriod = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD;
         private final Set<String> trustedProxyAddresses = new LinkedHashSet<>();
+        private ValidationOptions validationOptions = ValidationOptions.off();
 
         private Builder() {
         }
@@ -308,6 +317,67 @@ public final class LiveSessionConfig {
         public Builder trustedProxies(Collection<String> addresses) {
             Objects.requireNonNull(addresses, "addresses");
             addresses.forEach(this::trustedProxy);
+            return this;
+        }
+
+        public Builder validationOptions(ValidationOptions validationOptions) {
+            this.validationOptions = Objects.requireNonNull(validationOptions, "validationOptions");
+            return this;
+        }
+
+        public Builder validationMode(ValidationMode mode) {
+            this.validationOptions = validationOptions.toBuilder()
+                .mode(mode)
+                .build();
+            return this;
+        }
+
+        public Builder accessibilityValidationEnabled(boolean enabled) {
+            this.validationOptions = validationOptions.toBuilder()
+                .accessibilityValidationEnabled(enabled)
+                .build();
+            return this;
+        }
+
+        public Builder seoValidationEnabled(boolean enabled) {
+            this.validationOptions = validationOptions.toBuilder()
+                .seoValidationEnabled(enabled)
+                .build();
+            return this;
+        }
+
+        public Builder canonicalLinkValidationEnabled(boolean enabled) {
+            this.validationOptions = validationOptions.toBuilder()
+                .canonicalLinkValidationEnabled(enabled)
+                .build();
+            return this;
+        }
+
+        public Builder openGraphValidationEnabled(boolean enabled) {
+            this.validationOptions = validationOptions.toBuilder()
+                .openGraphValidationEnabled(enabled)
+                .build();
+            return this;
+        }
+
+        public Builder htmlLangValidationEnabled(boolean enabled) {
+            this.validationOptions = validationOptions.toBuilder()
+                .htmlLangValidationEnabled(enabled)
+                .build();
+            return this;
+        }
+
+        public Builder disableValidationRule(String ruleId) {
+            this.validationOptions = validationOptions.toBuilder()
+                .disableRule(ruleId)
+                .build();
+            return this;
+        }
+
+        public Builder strictValidationRule(String ruleId) {
+            this.validationOptions = validationOptions.toBuilder()
+                .strictRule(ruleId)
+                .build();
             return this;
         }
 

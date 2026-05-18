@@ -19,15 +19,30 @@ import ujfe.router.Router;
 @EnableConfigurationProperties({
     UjfeSpringProperties.class,
     UjfeSpringSecurityHeadersProperties.class,
-    UjfeSpringClientStateProperties.class
+    UjfeSpringClientStateProperties.class,
+    UjfeSpringValidationProperties.class
 })
 public class UjfeSpringAutoConfiguration {
+    public LiveSessionConfig ujfeLiveSessionConfig(
+        UjfeSpringProperties properties,
+        UjfeSpringSecurityHeadersProperties securityHeadersProperties,
+        UjfeSpringClientStateProperties clientStateProperties
+    ) {
+        return ujfeLiveSessionConfig(
+            properties,
+            securityHeadersProperties,
+            clientStateProperties,
+            new UjfeSpringValidationProperties()
+        );
+    }
+
     @Bean
     @ConditionalOnMissingBean
     public LiveSessionConfig ujfeLiveSessionConfig(
         UjfeSpringProperties properties,
         UjfeSpringSecurityHeadersProperties securityHeadersProperties,
-        UjfeSpringClientStateProperties clientStateProperties
+        UjfeSpringClientStateProperties clientStateProperties,
+        UjfeSpringValidationProperties validationProperties
     ) {
         LiveSessionConfig.Builder builder = LiveSessionConfig.builder();
         if (properties.isEnabled()) {
@@ -35,6 +50,7 @@ public class UjfeSpringAutoConfiguration {
         }
         builder.securityHeaders(securityHeadersProperties.toSecurityHeadersConfig());
         builder.clientStatePolicy(clientStateProperties.toClientStatePolicy());
+        validationProperties.applyTo(builder);
         return builder.build();
     }
 

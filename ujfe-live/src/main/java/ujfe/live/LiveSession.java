@@ -6,6 +6,10 @@ import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
 import ujfe.runtime.action.*;
 import ujfe.runtime.lifecycle.*;
+import ujfe.validation.DocumentValidator;
+import ujfe.validation.ValidationFinding;
+import ujfe.validation.ValidationMode;
+import ujfe.validation.ValidationResult;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,10 +17,13 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 import static ujfe.core.UI.link;
 
 public final class LiveSession implements AutoCloseable {
+    private static final Logger VALIDATION_LOGGER = Logger.getLogger(LiveSession.class.getName());
+
     private final Router router;
     private final PageRenderer pageRenderer;
     private final LiveEventRegistry eventRegistry;
@@ -338,7 +345,7 @@ public final class LiveSession implements AutoCloseable {
         try {
             mergeClientState(initialClientState);
             LiveRenderResult result = renderPathLocked(path, null);
-            return "<!doctype html>"
+            String document = "<!doctype html>"
                 + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
                 + "<head>"
                 + "<meta charset=\"utf-8\">"
@@ -356,6 +363,8 @@ public final class LiveSession implements AutoCloseable {
                 + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
                 + "</body>"
                 + "</html>";
+            validateRenderedDocument(path, document);
+            return document;
         } finally {
             writeLock.unlock();
         }
@@ -556,6 +565,58 @@ public final class LiveSession implements AutoCloseable {
             "localStorage", clientState.localStorage(),
             "sessionStorage", clientState.sessionStorage()
         );
+    }
+
+    private void validateRenderedDocument(String path, String document) {
+        if (config.validationOptions()
+            .mode() == ValidationMode.OFF) {
+            return;
+        }
+        DocumentValidator validator = DocumentValidator.of(config.validationOptions());
+        ValidationResult result = validator.validate(document);
+        if (!result.hasFindings()) {
+            return;
+        }
+        if (config.validationOptions()
+            .mode() == ValidationMode.STRICT) {
+            result.throwIfInvalid();
+        }
+        for (ValidationFinding finding : result.findings()) {
+            VALIDATION_LOGGER.warning(() -> "event=ujfe.validation_finding"
+                + " mode=" + config.validationOptions()
+                .mode()
+                + " rule=" + safeLogValue(finding.ruleId(), "unknown")
+                + " severity=" + finding.severity()
+                + " category=" + finding.category()
+                .value()
+                + " path=" + safeLogValue(path, "unknown")
+                + optionalLogValue(" element=", finding.element())
+                + optionalLogValue(" attribute=", finding.attribute())
+                + optionalLogValue(" location=", finding.location())
+                + " message=\"" + safeLogMessage(finding.message()) + "\"");
+        }
+    }
+
+    private static String optionalLogValue(String prefix, String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return prefix + safeLogValue(value, "unknown");
+    }
+
+    private static String safeLogMessage(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return value.replaceAll("[\\r\\n\\t]+", " ")
+            .replace('"', '\'');
+    }
+
+    private static String safeLogValue(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.replaceAll("[^A-Za-z0-9_.:/#()=-]", "_");
     }
 
     private static String nextTraceId() {

@@ -9,6 +9,8 @@ import ujfe.router.Router;
 import ujfe.router.source.ManualRouteSource;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
+import static ujfe.core.UI.meta;
+
 public final class Main {
     private Main() {
     }
@@ -33,6 +35,9 @@ public final class Main {
             .devToolsEnabled(true)
             .lang("en")
             .title("UJFE Example")
+            .head(meta()
+                .attr("name", "description")
+                .attr("content", "Interactive UJFE example application for server-rendered Java UI."))
             .runtimeActions(actions)
             .allowClientCookie("ujfe_demo")
             .allowLocalStorageKey("ujfe.theme")

@@ -10,6 +10,8 @@ import ujfe.core.Node;
 import ujfe.live.*;
 import ujfe.router.Page;
 import ujfe.router.Router;
+import ujfe.validation.AccessibilityValidator;
+import ujfe.validation.ValidationMode;
 
 import java.io.*;
 import java.lang.reflect.Proxy;
@@ -566,6 +568,37 @@ final class UjfeServletTest {
             .allowedLocalStorageKeys());
         assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy()
             .allowedSessionStorageKeys());
+    }
+
+    @Test
+    void servletSettingsReadValidationProperties() {
+        Properties properties = new Properties();
+        properties.setProperty(UjfeServletSettings.VALIDATION_MODE, "strict");
+        properties.setProperty(UjfeServletSettings.ACCESSIBILITY_VALIDATION_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.SEO_VALIDATION_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.CANONICAL_LINK_VALIDATION_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.OPEN_GRAPH_VALIDATION_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.HTML_LANG_VALIDATION_ENABLED, "true");
+        properties.setProperty(UjfeServletSettings.DISABLED_VALIDATION_RULES, AccessibilityValidator.INTERACTIVE_NESTED);
+
+        LiveSessionConfig liveConfig = UjfeServletSettings.fromProperties(properties)
+            .toLiveSessionConfig();
+
+        assertEquals(ValidationMode.STRICT, liveConfig.validationOptions()
+            .mode());
+        assertTrue(liveConfig.validationOptions()
+            .accessibilityValidationEnabled());
+        assertTrue(liveConfig.validationOptions()
+            .seoValidationEnabled());
+        assertTrue(liveConfig.validationOptions()
+            .canonicalLinkValidationEnabled());
+        assertTrue(liveConfig.validationOptions()
+            .openGraphValidationEnabled());
+        assertTrue(liveConfig.validationOptions()
+            .htmlLangValidationEnabled());
+        assertTrue(liveConfig.validationOptions()
+            .disabledRuleIds()
+            .contains(AccessibilityValidator.INTERACTIVE_NESTED));
     }
 
     @Test

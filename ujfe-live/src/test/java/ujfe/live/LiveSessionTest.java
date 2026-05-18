@@ -7,11 +7,19 @@ import ujfe.core.Node;
 import ujfe.core.Ujfe;
 import ujfe.router.Page;
 import ujfe.router.Router;
+import ujfe.validation.ValidationException;
+import ujfe.validation.ValidationMode;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -215,6 +223,51 @@ final class LiveSessionTest {
     }
 
     @Test
+    void validationIsOffByDefaultDuringDocumentRendering() {
+        String document;
+        try (LiveSession session = new LiveSession(new Router().register(new MissingMainPage()))) {
+            document = session.renderDocument("/", ClientState.empty());
+        }
+
+        assertTrue(document.contains("<h1>Missing main</h1>"));
+    }
+
+    @Test
+    void warningValidationModeDoesNotFailDocumentRendering() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+            .validationMode(ValidationMode.WARN)
+            .accessibilityValidationEnabled(true)
+            .build();
+
+        String document;
+        try (ValidationLogCapture logs = ValidationLogCapture.attach();
+             LiveSession session = new LiveSession(new Router().register(new MissingMainPage()), config)) {
+            document = session.renderDocument("/", ClientState.empty());
+            assertTrue(logs.messages()
+                .stream()
+                .anyMatch(message -> message.contains("accessibility.document.single-main")));
+        }
+
+        assertTrue(document.contains("<h1>Missing main</h1>"));
+    }
+
+    @Test
+    void strictValidationModeFailsDocumentRendering() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+            .validationMode(ValidationMode.STRICT)
+            .accessibilityValidationEnabled(true)
+            .build();
+
+        try (LiveSession session = new LiveSession(new Router().register(new MissingMainPage()), config)) {
+            ValidationException exception = assertThrows(ValidationException.class,
+                () -> session.renderDocument("/", ClientState.empty()));
+
+            assertTrue(exception.getMessage()
+                .contains("accessibility.document.single-main"));
+        }
+    }
+
+    @Test
     void internalCssIsScopedToClassesSeenDuringCurrentPageRender() {
         Router router = new Router()
             .register(new FirstCssPage())
@@ -326,6 +379,48 @@ final class LiveSessionTest {
         return matcher.group(1);
     }
 
+    private static final class ValidationLogCapture implements AutoCloseable {
+        private final Logger logger = Logger.getLogger(LiveSession.class.getName());
+        private final boolean useParentHandlers = logger.getUseParentHandlers();
+        private final Level level = logger.getLevel();
+        private final List<String> messages = new ArrayList<>();
+        private final Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                messages.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+
+        private ValidationLogCapture() {
+            logger.setUseParentHandlers(false);
+            logger.setLevel(Level.ALL);
+            logger.addHandler(handler);
+        }
+
+        static ValidationLogCapture attach() {
+            return new ValidationLogCapture();
+        }
+
+        List<String> messages() {
+            return messages;
+        }
+
+        @Override
+        public void close() {
+            logger.removeHandler(handler);
+            logger.setUseParentHandlers(useParentHandlers);
+            logger.setLevel(level);
+        }
+    }
+
     @Page("/")
     public static final class CounterPage implements Component {
         private final AtomicInteger count = new AtomicInteger();
@@ -341,6 +436,15 @@ final class LiveSessionTest {
                         .css("px-4 py-2 rounded bg-blue-600 text-white")
                         .onClick(count::incrementAndGet)
                 );
+        }
+    }
+
+    @Page("/")
+    public static final class MissingMainPage implements Component {
+        @Override
+        public Node render() {
+            return div()
+                .child(h1("Missing main"));
         }
     }
 

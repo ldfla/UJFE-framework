@@ -10,6 +10,8 @@ import ujfe.live.LiveSessionConfig;
 import ujfe.live.SecurityHeadersConfig;
 import ujfe.router.Page;
 import ujfe.router.Router;
+import ujfe.validation.AccessibilityValidator;
+import ujfe.validation.ValidationMode;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -116,6 +118,42 @@ final class UjfeSpringHandlerTest {
         assertEquals(java.util.List.of("ujfe_demo"), clientState.getCookies());
         assertEquals(java.util.List.of("ujfe.theme"), clientState.getLocalStorageKeys());
         assertEquals(java.util.List.of("ujfe.tab"), clientState.getSessionStorageKeys());
+    }
+
+    @Test
+    void springPropertiesCanConfigureValidation() {
+        UjfeSpringValidationProperties validation = new UjfeSpringValidationProperties();
+        validation.setMode(ValidationMode.WARN);
+        validation.setAccessibilityEnabled(true);
+        validation.setSeoEnabled(true);
+        validation.setCanonicalEnabled(true);
+        validation.setOpenGraphEnabled(true);
+        validation.setHtmlLangEnabled(true);
+        validation.setDisabledRules(java.util.List.of(AccessibilityValidator.INTERACTIVE_NESTED));
+
+        LiveSessionConfig config = new UjfeSpringAutoConfiguration()
+            .ujfeLiveSessionConfig(
+                new UjfeSpringProperties(),
+                new UjfeSpringSecurityHeadersProperties(),
+                new UjfeSpringClientStateProperties(),
+                validation
+            );
+
+        assertEquals(ValidationMode.WARN, config.validationOptions()
+            .mode());
+        assertTrue(config.validationOptions()
+            .accessibilityValidationEnabled());
+        assertTrue(config.validationOptions()
+            .seoValidationEnabled());
+        assertTrue(config.validationOptions()
+            .canonicalLinkValidationEnabled());
+        assertTrue(config.validationOptions()
+            .openGraphValidationEnabled());
+        assertTrue(config.validationOptions()
+            .htmlLangValidationEnabled());
+        assertTrue(config.validationOptions()
+            .disabledRuleIds()
+            .contains(AccessibilityValidator.INTERACTIVE_NESTED));
     }
 
     @Test

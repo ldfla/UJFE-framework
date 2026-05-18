@@ -6,6 +6,7 @@ import ujfe.live.CssMode;
 import ujfe.live.LiveHttpCodec;
 import ujfe.live.LiveSessionConfig;
 import ujfe.live.SecurityHeadersConfig;
+import ujfe.validation.ValidationMode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +32,13 @@ final class UjfeServletSettings {
     static final String CLIENT_STATE_COOKIES = "ujfe.client-state.cookies";
     static final String CLIENT_STATE_LOCAL_STORAGE_KEYS = "ujfe.client-state.local-storage-keys";
     static final String CLIENT_STATE_SESSION_STORAGE_KEYS = "ujfe.client-state.session-storage-keys";
+    static final String VALIDATION_MODE = "ujfe.validation.mode";
+    static final String ACCESSIBILITY_VALIDATION_ENABLED = "ujfe.validation.accessibility.enabled";
+    static final String SEO_VALIDATION_ENABLED = "ujfe.validation.seo.enabled";
+    static final String CANONICAL_LINK_VALIDATION_ENABLED = "ujfe.validation.canonical.enabled";
+    static final String OPEN_GRAPH_VALIDATION_ENABLED = "ujfe.validation.open-graph.enabled";
+    static final String HTML_LANG_VALIDATION_ENABLED = "ujfe.validation.html-lang.enabled";
+    static final String DISABLED_VALIDATION_RULES = "ujfe.validation.disabled-rules";
     static final String SECURITY_HEADERS_ENABLED = "ujfe.security.headers.enabled";
     static final String SECURITY_HEADER_CONTENT_TYPE_OPTIONS = "ujfe.security.headers.x-content-type-options";
     static final String SECURITY_HEADER_FRAME_OPTIONS = "ujfe.security.headers.x-frame-options";
@@ -153,6 +161,14 @@ final class UjfeServletSettings {
         value(CLIENT_STATE_COOKIES).ifPresent(value -> builder.allowClientCookies(splitCsv(value)));
         value(CLIENT_STATE_LOCAL_STORAGE_KEYS).ifPresent(value -> builder.allowLocalStorageKeys(splitCsv(value)));
         value(CLIENT_STATE_SESSION_STORAGE_KEYS).ifPresent(value -> builder.allowSessionStorageKeys(splitCsv(value)));
+        value(VALIDATION_MODE).ifPresent(value -> builder.validationMode(ValidationMode.valueOf(value.trim()
+            .toUpperCase())));
+        value(ACCESSIBILITY_VALIDATION_ENABLED).ifPresent(value -> builder.accessibilityValidationEnabled(Boolean.parseBoolean(value)));
+        value(SEO_VALIDATION_ENABLED).ifPresent(value -> builder.seoValidationEnabled(Boolean.parseBoolean(value)));
+        value(CANONICAL_LINK_VALIDATION_ENABLED).ifPresent(value -> builder.canonicalLinkValidationEnabled(Boolean.parseBoolean(value)));
+        value(OPEN_GRAPH_VALIDATION_ENABLED).ifPresent(value -> builder.openGraphValidationEnabled(Boolean.parseBoolean(value)));
+        value(HTML_LANG_VALIDATION_ENABLED).ifPresent(value -> builder.htmlLangValidationEnabled(Boolean.parseBoolean(value)));
+        value(DISABLED_VALIDATION_RULES).ifPresent(value -> splitCsv(value).forEach(builder::disableValidationRule));
         return builder.build();
     }
 
