@@ -13,11 +13,11 @@ public final class LiveHttpPaths {
     public static final String STATE = "/_ujfe/state";
 
     private static final Set<String> INTERNAL_PATHS = Collections.unmodifiableSet(new LinkedHashSet<>(List.of(
-            CLIENT_SCRIPT,
-            DEV_SCRIPT,
-            CSS,
-            EVENT,
-            STATE
+        CLIENT_SCRIPT,
+        DEV_SCRIPT,
+        CSS,
+        EVENT,
+        STATE
     )));
 
     private LiveHttpPaths() {

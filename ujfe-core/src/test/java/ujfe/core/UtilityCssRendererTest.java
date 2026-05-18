@@ -10,8 +10,8 @@ final class UtilityCssRendererTest {
     @Test
     void rendersThemeVariablesAndThemeUtilities() {
         String css = UtilityCssRenderer.render(
-                Set.of("bg-primary-500", "text-secondary-700", "border-primary-200"),
-                CssTheme.of("#336699", "#cc3300")
+            Set.of("bg-primary-500", "text-secondary-700", "border-primary-200"),
+            CssTheme.of("#336699", "#cc3300")
         );
 
         assertTrue(css.contains("--ujfe-primary-500:#336699;"));
@@ -24,16 +24,16 @@ final class UtilityCssRendererTest {
     @Test
     void rendersDynamicSpacingUtilities() {
         String css = UtilityCssRenderer.render(Set.of(
-                "p-7",
-                "px-9",
-                "py-1.5",
-                "pt-11",
-                "gap-10",
-                "gap-x-3",
-                "gap-y-5",
-                "mt-12",
-                "-mb-6",
-                "mx-px"
+            "p-7",
+            "px-9",
+            "py-1.5",
+            "pt-11",
+            "gap-10",
+            "gap-x-3",
+            "gap-y-5",
+            "mt-12",
+            "-mb-6",
+            "mx-px"
         ));
 
         assertTrue(css.contains(".p-7{padding:1.75rem;}"));
@@ -51,12 +51,12 @@ final class UtilityCssRendererTest {
     @Test
     void rendersResponsiveAndStateVariants() {
         String css = UtilityCssRenderer.render(Set.of(
-                "lg:grid-cols-4",
-                "hover:bg-slate-800",
-                "focus:ring-indigo-500/50",
-                "placeholder:text-slate-400",
-                "active:scale-[0.98]",
-                "bg-white/80"
+            "lg:grid-cols-4",
+            "hover:bg-slate-800",
+            "focus:ring-indigo-500/50",
+            "placeholder:text-slate-400",
+            "active:scale-[0.98]",
+            "bg-white/80"
         ));
 
         assertTrue(css.contains("@media(min-width:1024px){.lg\\3a grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}}"));

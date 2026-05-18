@@ -30,24 +30,25 @@ public final class BankSelectComponent implements Component {
     @Override
     public Node render() {
         return div()
-                .css("rounded-lg border border-secondary-200 bg-secondary-50 p-4 shadow-sm flex flex-col gap-3")
-                .child(h3("Select preenchido por API REST").css("text-lg font-bold text-secondary-700"))
-                .child(p(() -> status.get()).css("text-sm text-slate-700 leading-relaxed"))
-                .child(
-                        select()
-                                .name("bank")
-                                .css("w-full rounded border border-secondary-200 bg-white p-2 text-sm")
-                                .children(banks.get().stream()
-                                        .map(bank -> option(bank.label()).value(bank.selectValue()))
-                                        .collect(Collectors.toList()))
-                )
-                .child(
-                        button("Carregar bancos da BrasilAPI")
-                                .css("px-4 py-2 rounded bg-secondary-700 text-white font-semibold")
-                                .onClick(this::loadBanks)
-                )
-                .child(p("Endpoint usado: https://brasilapi.com.br/api/banks/v1")
-                        .css("text-xs text-slate-600 font-mono"));
+            .css("rounded-lg border border-secondary-200 bg-secondary-50 p-4 shadow-sm flex flex-col gap-3")
+            .child(h3("Select preenchido por API REST").css("text-lg font-bold text-secondary-700"))
+            .child(p(() -> status.get()).css("text-sm text-slate-700 leading-relaxed"))
+            .child(
+                select()
+                    .name("bank")
+                    .css("w-full rounded border border-secondary-200 bg-white p-2 text-sm")
+                    .children(banks.get()
+                        .stream()
+                        .map(bank -> option(bank.label()).value(bank.selectValue()))
+                        .collect(Collectors.toList()))
+            )
+            .child(
+                button("Carregar bancos da BrasilAPI")
+                    .css("px-4 py-2 rounded bg-secondary-700 text-white font-semibold")
+                    .onClick(this::loadBanks)
+            )
+            .child(p("Endpoint usado: https://brasilapi.com.br/api/banks/v1")
+                .css("text-xs text-slate-600 font-mono"));
     }
 
     private void loadBanks() {

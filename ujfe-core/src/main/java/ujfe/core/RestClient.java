@@ -27,10 +27,10 @@ public final class RestClient {
     public static RestClient create(Duration timeout) {
         Objects.requireNonNull(timeout, "timeout");
         return new RestClient(
-                HttpClient.newBuilder()
-                        .connectTimeout(timeout)
-                        .build(),
-                timeout
+            HttpClient.newBuilder()
+                .connectTimeout(timeout)
+                .build(),
+            timeout
         );
     }
 
@@ -41,10 +41,10 @@ public final class RestClient {
     public RestResponse get(URI uri) {
         Objects.requireNonNull(uri, "uri");
         HttpRequest request = HttpRequest.newBuilder(uri)
-                .timeout(timeout)
-                .GET()
-                .header("Accept", "application/json")
-                .build();
+            .timeout(timeout)
+            .GET()
+            .header("Accept", "application/json")
+            .build();
         return send(request);
     }
 
@@ -52,14 +52,16 @@ public final class RestClient {
         Objects.requireNonNull(request, "request");
         try {
             HttpResponse<String> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
             );
-            return new RestResponse(response.statusCode(), response.body(), response.headers().map());
+            return new RestResponse(response.statusCode(), response.body(), response.headers()
+                .map());
         } catch (IOException exception) {
             throw new IllegalStateException("REST request failed", exception);
         } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                .interrupt();
             throw new IllegalStateException("REST request interrupted", exception);
         }
     }

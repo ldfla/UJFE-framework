@@ -17,10 +17,10 @@ final class HtmlNode {
 
     static HtmlNode element(String tagName, Map<String, String> attributes) {
         return new HtmlNode(
-                Objects.requireNonNull(tagName, "tagName"),
-                null,
-                new LinkedHashMap<>(Objects.requireNonNull(attributes, "attributes")),
-                new ArrayList<>()
+            Objects.requireNonNull(tagName, "tagName"),
+            null,
+            new LinkedHashMap<>(Objects.requireNonNull(attributes, "attributes")),
+            new ArrayList<>()
         );
     }
 

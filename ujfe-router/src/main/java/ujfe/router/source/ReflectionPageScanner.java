@@ -22,9 +22,10 @@ public final class ReflectionPageScanner implements RouteSource {
 
     public ReflectionPageScanner(Class<?>... candidates) {
         this(
-                copyCandidates(candidates),
-                List.of(),
-                Thread.currentThread().getContextClassLoader()
+            copyCandidates(candidates),
+            List.of(),
+            Thread.currentThread()
+                .getContextClassLoader()
         );
     }
 
@@ -45,9 +46,10 @@ public final class ReflectionPageScanner implements RouteSource {
             packages.add(packageName);
         }
         return new ReflectionPageScanner(
-                List.of(),
-                List.copyOf(packages),
-                Thread.currentThread().getContextClassLoader()
+            List.of(),
+            List.copyOf(packages),
+            Thread.currentThread()
+                .getContextClassLoader()
         );
     }
 
@@ -71,8 +73,8 @@ public final class ReflectionPageScanner implements RouteSource {
             Class<?> previous = seenPaths.putIfAbsent(route.path(), pageType);
             if (previous != null) {
                 throw new RouteDiscoveryException("Duplicate route path '" + route.path()
-                        + "' for " + previous.getName()
-                        + " and " + pageType.getName());
+                    + "' for " + previous.getName()
+                    + " and " + pageType.getName());
             }
             discovered.add(route);
         }
@@ -114,11 +116,13 @@ public final class ReflectionPageScanner implements RouteSource {
             List<Class<?>> classes = new ArrayList<>();
             try (var stream = Files.walk(root)) {
                 stream.filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().endsWith(".class"))
-                        .map(path -> toClassName(packageName, root, path))
-                        .filter(ReflectionPageScanner::isTopLevelApplicationClass)
-                        .map(this::loadClass)
-                        .forEach(classes::add);
+                    .filter(path -> path.getFileName()
+                        .toString()
+                        .endsWith(".class"))
+                    .map(path -> toClassName(packageName, root, path))
+                    .filter(ReflectionPageScanner::isTopLevelApplicationClass)
+                    .map(this::loadClass)
+                    .forEach(classes::add);
             }
             return classes;
         } catch (IOException | URISyntaxException exception) {
@@ -136,11 +140,12 @@ public final class ReflectionPageScanner implements RouteSource {
                     JarEntry entry = entries.nextElement();
                     String name = entry.getName();
                     if (entry.isDirectory()
-                            || !name.startsWith(resourcePath)
-                            || !name.endsWith(".class")) {
+                        || !name.startsWith(resourcePath)
+                        || !name.endsWith(".class")) {
                         continue;
                     }
-                    String className = name.substring(0, name.length() - ".class".length()).replace('/', '.');
+                    String className = name.substring(0, name.length() - ".class".length())
+                        .replace('/', '.');
                     if (isTopLevelApplicationClass(className)) {
                         classes.add(loadClass(className));
                     }
@@ -163,8 +168,8 @@ public final class ReflectionPageScanner implements RouteSource {
     private static String toClassName(String packageName, Path root, Path classFile) {
         Path relative = root.relativize(classFile);
         String nestedName = relative.toString()
-                .replace('\\', '.')
-                .replace('/', '.');
+            .replace('\\', '.')
+            .replace('/', '.');
         String suffix = nestedName.substring(0, nestedName.length() - ".class".length());
         return packageName + "." + suffix;
     }
@@ -175,7 +180,8 @@ public final class ReflectionPageScanner implements RouteSource {
 
     private static List<Class<?>> copyCandidates(Class<?>... candidates) {
         Objects.requireNonNull(candidates, "candidates");
-        Arrays.stream(candidates).forEach(candidate -> Objects.requireNonNull(candidate, "candidate"));
+        Arrays.stream(candidates)
+            .forEach(candidate -> Objects.requireNonNull(candidate, "candidate"));
         return List.copyOf(Arrays.asList(candidates));
     }
 }

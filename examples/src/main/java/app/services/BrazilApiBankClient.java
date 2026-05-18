@@ -25,7 +25,8 @@ public final class BrazilApiBankClient {
     }
 
     public List<Bank> fetchBanks() {
-        RestResponse response = restClient.get(BANKS_ENDPOINT).requireSuccessful();
+        RestResponse response = restClient.get(BANKS_ENDPOINT)
+            .requireSuccessful();
         List<Bank> banks = parseBanks(response.body(), MAX_BANKS);
         if (banks.isEmpty()) {
             throw new IllegalStateException("BrasilAPI returned no banks");
@@ -48,12 +49,12 @@ public final class BrazilApiBankClient {
         for (String object : topLevelObjects(json)) {
             String ispb = stringField(object, "ispb").orElse("");
             String code = stringField(object, "code")
-                    .or(() -> numberField(object, "code"))
-                    .orElse("");
+                .or(() -> numberField(object, "code"))
+                .orElse("");
             String name = stringField(object, "name").orElse("Banco sem nome");
             String fullName = stringField(object, "fullName")
-                    .or(() -> stringField(object, "full_name"))
-                    .orElse(name);
+                .or(() -> stringField(object, "full_name"))
+                .orElse(name);
             banks.add(new Bank(ispb, code, name, fullName));
             if (banks.size() >= maxItems) {
                 return banks;

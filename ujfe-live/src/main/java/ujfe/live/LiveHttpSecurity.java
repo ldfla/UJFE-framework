@@ -11,7 +11,8 @@ public final class LiveHttpSecurity {
     }
 
     public static Map<String, String> securityHeaders(SecurityHeadersConfig config) {
-        return Map.copyOf(java.util.Objects.requireNonNull(config, "config").headers());
+        return Map.copyOf(java.util.Objects.requireNonNull(config, "config")
+            .headers());
     }
 
     private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
@@ -19,7 +20,9 @@ public final class LiveHttpSecurity {
     public static String generateCsrfToken() {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
-        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return java.util.Base64.getUrlEncoder()
+            .withoutPadding()
+            .encodeToString(bytes);
     }
 
     public static void validateCsrf(LiveSessionConfig config, String sessionToken, LiveHttpRequestMetadata metadata) {
@@ -27,29 +30,34 @@ public final class LiveHttpSecurity {
             return;
         }
 
-        String requestToken = metadata.csrfToken().orElse(null);
+        String requestToken = metadata.csrfToken()
+            .orElse(null);
         boolean hasHeader = requestToken != null && !requestToken.isBlank();
         if (!hasHeader) {
             throw new LiveCsrfException(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, "Missing CSRF token.", false);
         }
 
         if (!java.security.MessageDigest.isEqual(sessionToken.getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                requestToken.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+            requestToken.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
             throw new LiveCsrfException(LiveHttpFailureCategory.INVALID_CSRF_TOKEN, "Invalid CSRF token.", true);
         }
 
         if (metadata.hasOrigin()) {
-            validateSameOrigin(metadata.origin().get(), metadata);
+            validateSameOrigin(metadata.origin()
+                .get(), metadata);
         } else if (metadata.hasReferer()) {
-            validateSameOrigin(metadata.referer().get(), metadata);
+            validateSameOrigin(metadata.referer()
+                .get(), metadata);
         } else {
             throw new LiveCsrfException(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, "Missing Origin and Referer headers.", true);
         }
     }
 
     private static void validateSameOrigin(String originOrReferer, LiveHttpRequestMetadata metadata) {
-        String hostHeader = metadata.host().orElse("");
-        String requestScheme = metadata.scheme().orElse("");
+        String hostHeader = metadata.host()
+            .orElse("");
+        String requestScheme = metadata.scheme()
+            .orElse("");
         if (hostHeader.isBlank()) {
             throw new LiveCsrfException(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, "Missing Host header for origin validation.", true);
         }

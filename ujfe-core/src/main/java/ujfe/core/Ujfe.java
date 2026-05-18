@@ -7,14 +7,17 @@ public final class Ujfe {
     }
 
     public static Optional<String> cookie(String name) {
-        return UjfeContext.current().flatMap(context -> context.cookie(name));
+        return UjfeContext.current()
+            .flatMap(context -> context.cookie(name));
     }
 
     public static Optional<String> localStorage(String key) {
-        return UjfeContext.current().flatMap(context -> context.localStorage(key));
+        return UjfeContext.current()
+            .flatMap(context -> context.localStorage(key));
     }
 
     public static Optional<String> sessionStorage(String key) {
-        return UjfeContext.current().flatMap(context -> context.sessionStorage(key));
+        return UjfeContext.current()
+            .flatMap(context -> context.sessionStorage(key));
     }
 }

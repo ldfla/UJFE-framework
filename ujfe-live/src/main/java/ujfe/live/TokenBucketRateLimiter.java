@@ -47,10 +47,10 @@ public final class TokenBucketRateLimiter implements RateLimiter {
 
     private RateLimitKey keyFor(RateLimitRequest request) {
         return request.sessionId()
-                .map(sessionId -> new RateLimitKey(RateLimitKeyType.SESSION, "session:" + sessionId))
-                .orElseGet(() -> new RateLimitKey(
-                        RateLimitKeyType.IP,
-                        "ip:" + ClientIpResolver.resolve(request.metadata(), config)));
+            .map(sessionId -> new RateLimitKey(RateLimitKeyType.SESSION, "session:" + sessionId))
+            .orElseGet(() -> new RateLimitKey(
+                RateLimitKeyType.IP,
+                "ip:" + ClientIpResolver.resolve(request.metadata(), config)));
     }
 
     private static final class Bucket {
@@ -63,9 +63,9 @@ public final class TokenBucketRateLimiter implements RateLimiter {
         }
 
         private synchronized RateLimitDecision tryConsume(
-                LiveSessionConfig config,
-                RateLimitKeyType keyType,
-                long nowNanos
+            LiveSessionConfig config,
+            RateLimitKeyType keyType,
+            long nowNanos
         ) {
             if (tokens < 0) {
                 tokens = config.internalEndpointRateLimitCapacity();
@@ -82,7 +82,8 @@ public final class TokenBucketRateLimiter implements RateLimiter {
 
         private void refill(LiveSessionConfig config, long nowNanos) {
             long elapsed = Math.max(0, nowNanos - lastRefillNanos);
-            long period = config.internalEndpointRateLimitRefillPeriod().toNanos();
+            long period = config.internalEndpointRateLimitRefillPeriod()
+                .toNanos();
             if (elapsed < period) {
                 return;
             }
@@ -94,7 +95,8 @@ public final class TokenBucketRateLimiter implements RateLimiter {
         }
 
         private Duration retryAfter(LiveSessionConfig config, long nowNanos) {
-            long period = config.internalEndpointRateLimitRefillPeriod().toNanos();
+            long period = config.internalEndpointRateLimitRefillPeriod()
+                .toNanos();
             long elapsed = Math.max(0, nowNanos - lastRefillNanos);
             long remaining = Math.max(1, period - elapsed);
             return Duration.ofNanos(remaining);

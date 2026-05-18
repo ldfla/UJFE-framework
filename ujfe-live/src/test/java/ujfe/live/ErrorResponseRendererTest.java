@@ -13,23 +13,26 @@ final class ErrorResponseRendererTest {
     @Test
     void productionResponseHidesExceptionDetailsAndIncludesStableCode() {
         RuntimeException failure = new RuntimeException(
-                "render-secret at /Users/leandrof/Dev/ujfe/FailingPage.java via ujfe.internal.Renderer"
+            "render-secret at /Users/leandrof/Dev/ujfe/FailingPage.java via ujfe.internal.Renderer"
         );
         ErrorResponseContext context = ErrorResponseContext.builder()
-                .adapter("test")
-                .method("GET")
-                .path("/")
-                .requestId("req-42")
-                .phase(RuntimePhase.RENDER)
-                .build();
+            .adapter("test")
+            .method("GET")
+            .path("/")
+            .requestId("req-42")
+            .phase(RuntimePhase.RENDER)
+            .build();
 
         UjfeErrorResponse response;
         try (LogCapture logs = LogCapture.attach()) {
-            response = ErrorResponseRenderer.create(false).render(failure, context);
+            response = ErrorResponseRenderer.create(false)
+                .render(failure, context);
 
             assertSame(failure, logs.thrown());
-            assertTrue(logs.message().contains("code=UJFE_RENDER_ERROR"));
-            assertTrue(logs.message().contains("requestId=req-42"));
+            assertTrue(logs.message()
+                .contains("code=UJFE_RENDER_ERROR"));
+            assertTrue(logs.message()
+                .contains("requestId=req-42"));
         }
 
         assertEquals(500, response.httpStatus());
@@ -37,70 +40,83 @@ final class ErrorResponseRendererTest {
         assertJsonContains(response.body(), "\"code\":\"UJFE_RENDER_ERROR\"");
         assertJsonContains(response.body(), "\"message\":\"An error occurred while rendering the page.\"");
         assertJsonContains(response.body(), "\"requestId\":\"req-42\"");
-        assertFalse(response.body().contains("render-secret"));
-        assertFalse(response.body().contains("FailingPage.java"));
-        assertFalse(response.body().contains("ujfe.internal"));
-        assertFalse(response.body().contains("RuntimeException"));
+        assertFalse(response.body()
+            .contains("render-secret"));
+        assertFalse(response.body()
+            .contains("FailingPage.java"));
+        assertFalse(response.body()
+            .contains("ujfe.internal"));
+        assertFalse(response.body()
+            .contains("RuntimeException"));
     }
 
     @Test
     void developmentResponseIncludesControlledSanitizedDetailsOnlyWhenEnabled() {
         RuntimeException failure = new RuntimeException(
-                "token=abc123 cookie=sessionid authorization=Bearer password=hunter2 expected detail"
+            "token=abc123 cookie=sessionid authorization=Bearer password=hunter2 expected detail"
         );
         ErrorResponseContext context = ErrorResponseContext.builder()
-                .adapter("test")
-                .method("POST")
-                .path("/_ujfe/event")
-                .phase(RuntimePhase.EVENT)
-                .build();
+            .adapter("test")
+            .method("POST")
+            .path("/_ujfe/event")
+            .phase(RuntimePhase.EVENT)
+            .build();
 
         UjfeErrorResponse production;
         UjfeErrorResponse development;
         try (LogCapture ignored = LogCapture.attach()) {
-            production = ErrorResponseRenderer.create(false).render(failure, context);
-            development = ErrorResponseRenderer.create(true).render(failure, context);
+            production = ErrorResponseRenderer.create(false)
+                .render(failure, context);
+            development = ErrorResponseRenderer.create(true)
+                .render(failure, context);
         }
 
-        assertFalse(production.body().contains("details"));
+        assertFalse(production.body()
+            .contains("details"));
         assertJsonContains(development.body(), "\"details\":\"Development diagnostics only:");
         assertJsonContains(development.body(), "expected detail");
-        assertFalse(development.body().contains("abc123"));
-        assertFalse(development.body().contains("sessionid"));
-        assertFalse(development.body().contains("hunter2"));
+        assertFalse(development.body()
+            .contains("abc123"));
+        assertFalse(development.body()
+            .contains("sessionid"));
+        assertFalse(development.body()
+            .contains("hunter2"));
     }
 
     @Test
     void mapsSecurityAndValidationExceptionsToStableCodes() {
         ErrorResponseContext eventContext = ErrorResponseContext.builder()
-                .adapter("test")
-                .method("POST")
-                .path("/_ujfe/event")
-                .phase(RuntimePhase.EVENT)
-                .build();
+            .adapter("test")
+            .method("POST")
+            .path("/_ujfe/event")
+            .phase(RuntimePhase.EVENT)
+            .build();
 
         UjfeErrorResponse csrf;
         UjfeErrorResponse payload;
         UjfeErrorResponse rateLimit;
         try (LogCapture ignored = LogCapture.attach()) {
-            csrf = ErrorResponseRenderer.create(false).render(
+            csrf = ErrorResponseRenderer.create(false)
+                .render(
                     new LiveCsrfException(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, "Missing CSRF token.", false),
                     eventContext
-            );
-            payload = ErrorResponseRenderer.create(false).render(
+                );
+            payload = ErrorResponseRenderer.create(false)
+                .render(
                     new LiveHttpCodecException(
-                            LiveHttpFailureCategory.INVALID_JSON,
-                            "Invalid live JSON payload.",
-                            400,
-                            128,
-                            12
+                        LiveHttpFailureCategory.INVALID_JSON,
+                        "Invalid live JSON payload.",
+                        400,
+                        128,
+                        12
                     ),
                     eventContext
-            );
-            rateLimit = ErrorResponseRenderer.create(false).render(
+                );
+            rateLimit = ErrorResponseRenderer.create(false)
+                .render(
                     new LiveRateLimitException("/_ujfe/event", RateLimitKeyType.SESSION, java.time.Duration.ofSeconds(2)),
                     eventContext
-            );
+                );
         }
 
         assertEquals(403, csrf.httpStatus());
@@ -109,16 +125,18 @@ final class ErrorResponseRendererTest {
         assertEquals(UjfeErrorCode.UJFE_BAD_REQUEST, payload.code());
         assertEquals(429, rateLimit.httpStatus());
         assertEquals(UjfeErrorCode.UJFE_RATE_LIMITED, rateLimit.code());
-        assertEquals(2, rateLimit.retryAfterSeconds().orElseThrow());
+        assertEquals(2, rateLimit.retryAfterSeconds()
+            .orElseThrow());
     }
 
     @Test
     void liveSessionConfigDisablesDevelopmentDetailsByDefault() {
-        assertFalse(LiveSessionConfig.defaults().isDevelopmentErrorDetailsEnabled());
+        assertFalse(LiveSessionConfig.defaults()
+            .isDevelopmentErrorDetailsEnabled());
         assertTrue(LiveSessionConfig.builder()
-                .enableDevelopmentErrorDetailsUnsafe()
-                .build()
-                .isDevelopmentErrorDetailsEnabled());
+            .enableDevelopmentErrorDetailsUnsafe()
+            .build()
+            .isDevelopmentErrorDetailsEnabled());
     }
 
     private static void assertJsonContains(String json, String expected) {

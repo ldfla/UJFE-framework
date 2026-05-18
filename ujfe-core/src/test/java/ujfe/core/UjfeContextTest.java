@@ -24,12 +24,13 @@ final class UjfeContextTest {
         };
 
         UjfeContext context = UjfeContext.builder()
-                .executor(executor)
-                .lifecycleTracker(tracker)
-                .build();
+            .executor(executor)
+            .lifecycleTracker(tracker)
+            .build();
 
-        context.executor().execute(() -> {
-        });
+        context.executor()
+            .execute(() -> {
+            });
         context.trackLifecycle(lifecycle);
         tracker.complete();
 

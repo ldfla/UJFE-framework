@@ -18,12 +18,12 @@ public final class MountedComponent {
     }
 
     private MountedComponent(
-            Lifecycle lifecycle,
-            long mountIndex,
-            String path,
-            String traceId,
-            Instant mountedAt,
-            LifecycleState state
+        Lifecycle lifecycle,
+        long mountIndex,
+        String path,
+        String traceId,
+        Instant mountedAt,
+        LifecycleState state
     ) {
         this.lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");
         this.mountIndex = mountIndex;

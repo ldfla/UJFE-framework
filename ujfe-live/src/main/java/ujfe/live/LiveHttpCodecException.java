@@ -8,11 +8,11 @@ public final class LiveHttpCodecException extends IllegalArgumentException {
     private final long payloadSizeBytes;
 
     public LiveHttpCodecException(
-            LiveHttpFailureCategory category,
-            String safeMessage,
-            int httpStatus,
-            int payloadLimitBytes,
-            long payloadSizeBytes
+        LiveHttpFailureCategory category,
+        String safeMessage,
+        int httpStatus,
+        int payloadLimitBytes,
+        long payloadSizeBytes
     ) {
         super(safeMessage);
         this.category = category;

@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 public final class Element implements Node {
     private static final Set<String> URL_ATTRIBUTES = Set.of("action", "background", "cite", "data",
-            "formaction", "href", "poster", "src");
+        "formaction", "href", "poster", "src");
 
     private final String tagName;
     private final ElementNamespace namespace;
@@ -53,7 +53,8 @@ public final class Element implements Node {
     }
 
     public Element css(String classes) {
-        if (classes == null || classes.trim().isEmpty()) {
+        if (classes == null || classes.trim()
+            .isEmpty()) {
             return this;
         }
 
@@ -145,7 +146,8 @@ public final class Element implements Node {
     }
 
     public Element children(Node... nodes) {
-        Arrays.stream(nodes).forEach(this::child);
+        Arrays.stream(nodes)
+            .forEach(this::child);
         return this;
     }
 
@@ -478,8 +480,8 @@ public final class Element implements Node {
         if (cssClasses != null && !cssClasses.isBlank()) {
             String currentClass = renderedAttributes.get("class");
             String mergedClass = currentClass == null || currentClass.isBlank()
-                    ? cssClasses
-                    : currentClass + " " + cssClasses;
+                ? cssClasses
+                : currentClass + " " + cssClasses;
             renderedAttributes.put("class", mergedClass);
             context.registerCssClasses(mergedClass);
         }
@@ -498,13 +500,15 @@ public final class Element implements Node {
         }
 
         StringBuilder html = new StringBuilder();
-        html.append('<').append(tagName);
+        html.append('<')
+            .append(tagName);
         renderedAttributes.forEach((name, value) -> {
-            html.append(' ').append(name);
+            html.append(' ')
+                .append(name);
             if (value != null) {
                 html.append("=\"")
-                        .append(AttributeEscaper.escape(value))
-                        .append('"');
+                    .append(AttributeEscaper.escape(value))
+                    .append('"');
             }
         });
         html.append('>');
@@ -519,7 +523,9 @@ public final class Element implements Node {
         for (Node child : children) {
             html.append(child.render(context));
         }
-        html.append("</").append(tagName).append('>');
+        html.append("</")
+            .append(tagName)
+            .append('>');
         return html.toString();
     }
 

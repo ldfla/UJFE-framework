@@ -9,20 +9,20 @@ import java.util.Set;
  */
 public final class HtmlElementMetadata {
     private static final Set<String> VOID_ELEMENTS = Set.of(
-            "area",
-            "base",
-            "br",
-            "col",
-            "embed",
-            "hr",
-            "img",
-            "input",
-            "link",
-            "meta",
-            "param",
-            "source",
-            "track",
-            "wbr"
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr"
     );
 
     private HtmlElementMetadata() {

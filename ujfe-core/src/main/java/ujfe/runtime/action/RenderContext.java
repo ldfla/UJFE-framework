@@ -23,24 +23,24 @@ public final class RenderContext {
     private final Map<String, Object> runtimeMetadata;
 
     public RenderContext(
-            String path,
-            ClientState clientState,
-            Instant renderTimestamp,
-            String traceId,
-            Map<String, Object> metadata
+        String path,
+        ClientState clientState,
+        Instant renderTimestamp,
+        String traceId,
+        Map<String, Object> metadata
     ) {
         this(path, null, null, Map.of(), clientState, renderTimestamp, traceId, metadata);
     }
 
     public RenderContext(
-            String path,
-            Object page,
-            Object session,
-            Map<String, Object> requestMetadata,
-            ClientState clientState,
-            Instant renderTimestamp,
-            String traceId,
-            Map<String, Object> runtimeMetadata
+        String path,
+        Object page,
+        Object session,
+        Map<String, Object> requestMetadata,
+        ClientState clientState,
+        Instant renderTimestamp,
+        String traceId,
+        Map<String, Object> runtimeMetadata
     ) {
         this.path = Objects.requireNonNull(path, "path");
         this.page = page;

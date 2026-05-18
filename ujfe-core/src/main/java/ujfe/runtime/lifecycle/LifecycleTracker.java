@@ -32,9 +32,9 @@ public final class LifecycleTracker {
         ensureOpen();
         completed = true;
         return registry.reconcile(
-                new MountContext(context),
-                new UnmountContext(context, "render-reconcile"),
-                List.copyOf(observed)
+            new MountContext(context),
+            new UnmountContext(context, "render-reconcile"),
+            List.copyOf(observed)
         );
     }
 

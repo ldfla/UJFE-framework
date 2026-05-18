@@ -12,11 +12,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 
 final class UjfeServletSettings {
     static final String ROUTE_PACKAGES = "ujfe.routes.packages";
@@ -65,11 +61,13 @@ final class UjfeServletSettings {
 
     static UjfeServletSettings fromYaml(String yaml) {
         Properties values = new Properties();
-        String[] lines = Objects.requireNonNull(yaml, "yaml").split("\\R");
+        String[] lines = Objects.requireNonNull(yaml, "yaml")
+            .split("\\R");
         List<String> path = new ArrayList<>();
         for (String line : lines) {
             String withoutComment = stripComment(line);
-            if (withoutComment.trim().isEmpty()) {
+            if (withoutComment.trim()
+                .isEmpty()) {
                 continue;
             }
 
@@ -85,8 +83,10 @@ final class UjfeServletSettings {
                 path.remove(path.size() - 1);
             }
 
-            String key = trimmed.substring(0, separator).trim();
-            String value = trimmed.substring(separator + 1).trim();
+            String key = trimmed.substring(0, separator)
+                .trim();
+            String value = trimmed.substring(separator + 1)
+                .trim();
             if (value.isEmpty()) {
                 path.add(key);
             } else {
@@ -119,7 +119,8 @@ final class UjfeServletSettings {
         value(TITLE).ifPresent(builder::title);
         value(LANG).ifPresent(builder::lang);
         value(DEV_TOOLS_ENABLED).ifPresent(value -> builder.devToolsEnabled(Boolean.parseBoolean(value)));
-        value(CSS_MODE).ifPresent(value -> builder.cssMode(CssMode.valueOf(value.trim().toUpperCase())));
+        value(CSS_MODE).ifPresent(value -> builder.cssMode(CssMode.valueOf(value.trim()
+            .toUpperCase())));
         value(DISABLE_CSRF_PROTECTION_FOR_DEVELOPMENT_UNSAFE).ifPresent(value -> {
             if (Boolean.parseBoolean(value)) {
                 builder.disableCsrfProtectionForDevelopmentUnsafe();
@@ -133,19 +134,19 @@ final class UjfeServletSettings {
         builder.securityHeaders(securityHeadersConfig());
         value(RATE_LIMIT_ENABLED).ifPresent(value -> builder.internalEndpointRateLimitingEnabled(Boolean.parseBoolean(value)));
         if (value(RATE_LIMIT_CAPACITY).isPresent()
-                || value(RATE_LIMIT_REFILL_TOKENS).isPresent()
-                || value(RATE_LIMIT_REFILL_PERIOD_MS).isPresent()) {
+            || value(RATE_LIMIT_REFILL_TOKENS).isPresent()
+            || value(RATE_LIMIT_REFILL_PERIOD_MS).isPresent()) {
             builder.internalEndpointRateLimit(
-                    value(RATE_LIMIT_CAPACITY)
-                            .map(Integer::parseInt)
-                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY),
-                    value(RATE_LIMIT_REFILL_TOKENS)
-                            .map(Integer::parseInt)
-                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS),
-                    value(RATE_LIMIT_REFILL_PERIOD_MS)
-                            .map(Long::parseLong)
-                            .map(Duration::ofMillis)
-                            .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD)
+                value(RATE_LIMIT_CAPACITY)
+                    .map(Integer::parseInt)
+                    .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY),
+                value(RATE_LIMIT_REFILL_TOKENS)
+                    .map(Integer::parseInt)
+                    .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_TOKENS),
+                value(RATE_LIMIT_REFILL_PERIOD_MS)
+                    .map(Long::parseLong)
+                    .map(Duration::ofMillis)
+                    .orElse(LiveSessionConfig.DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD)
             );
         }
         value(TRUSTED_PROXIES).ifPresent(value -> builder.trustedProxies(splitCsv(value)));
@@ -159,32 +160,32 @@ final class UjfeServletSettings {
         SecurityHeadersConfig.Builder builder = SecurityHeadersConfig.builder();
         value(SECURITY_HEADERS_ENABLED).ifPresent(value -> builder.enabled(Boolean.parseBoolean(value)));
         value(SECURITY_HEADER_CONTENT_TYPE_OPTIONS).ifPresent(value ->
-                builder.header(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS, value));
+            builder.header(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS, value));
         value(SECURITY_HEADER_FRAME_OPTIONS).ifPresent(value ->
-                builder.header(SecurityHeadersConfig.X_FRAME_OPTIONS, value));
+            builder.header(SecurityHeadersConfig.X_FRAME_OPTIONS, value));
         value(SECURITY_HEADER_REFERRER_POLICY).ifPresent(value ->
-                builder.header(SecurityHeadersConfig.REFERRER_POLICY, value));
+            builder.header(SecurityHeadersConfig.REFERRER_POLICY, value));
         value(SECURITY_HEADER_CONTENT_SECURITY_POLICY).ifPresent(value ->
-                builder.header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, value));
+            builder.header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, value));
         value(SECURITY_HEADER_PERMISSIONS_POLICY).ifPresent(value ->
-                builder.header(SecurityHeadersConfig.PERMISSIONS_POLICY, value));
+            builder.header(SecurityHeadersConfig.PERMISSIONS_POLICY, value));
         return builder.build();
     }
 
     int maxJsonPayloadBytes() {
         return value(MAX_JSON_PAYLOAD_BYTES)
-                .map(Integer::parseInt)
-                .map(value -> {
-                    LiveHttpCodec.requirePayloadSize(0, value);
-                    return value;
-                })
-                .orElse(LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
+            .map(Integer::parseInt)
+            .map(value -> {
+                LiveHttpCodec.requirePayloadSize(0, value);
+                return value;
+            })
+            .orElse(LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES);
     }
 
     private java.util.Optional<String> value(String key) {
         return java.util.Optional.ofNullable(values.getProperty(key))
-                .map(String::trim)
-                .filter(value -> !value.isEmpty());
+            .map(String::trim)
+            .filter(value -> !value.isEmpty());
     }
 
     private static List<String> splitCsv(String value) {
@@ -200,7 +201,8 @@ final class UjfeServletSettings {
 
     private static Properties loadClasspathSettings() {
         Properties values = new Properties();
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader loader = Thread.currentThread()
+            .getContextClassLoader();
         if (loader == null) {
             loader = UjfeServletSettings.class.getClassLoader();
         }
@@ -232,9 +234,9 @@ final class UjfeServletSettings {
     }
 
     private static void copyInitParameters(
-            Enumeration<String> names,
-            ParameterLookup lookup,
-            Properties target
+        Enumeration<String> names,
+        ParameterLookup lookup,
+        Properties target
     ) {
         if (names == null) {
             return;
@@ -271,8 +273,8 @@ final class UjfeServletSettings {
 
     private static String unquote(String value) {
         if (value.length() >= 2
-                && ((value.startsWith("\"") && value.endsWith("\""))
-                || (value.startsWith("'") && value.endsWith("'")))) {
+            && ((value.startsWith("\"") && value.endsWith("\""))
+            || (value.startsWith("'") && value.endsWith("'")))) {
             return value.substring(1, value.length() - 1);
         }
         return value;

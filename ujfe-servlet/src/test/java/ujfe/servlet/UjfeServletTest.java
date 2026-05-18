@@ -7,11 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import ujfe.core.Node;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveHttpPaths;
-import ujfe.live.LiveSession;
-import ujfe.live.LiveSessionConfig;
-import ujfe.live.SecurityHeadersConfig;
+import ujfe.live.*;
 import ujfe.router.Page;
 import ujfe.router.Router;
 
@@ -36,34 +32,44 @@ final class UjfeServletTest {
         TestResponse response = service(servlet, TestRequest.get("/app/", "/app"));
 
         assertEquals(200, response.status());
-        assertTrue(response.contentType().startsWith("text/html"));
+        assertTrue(response.contentType()
+            .startsWith("text/html"));
         assertEquals("UTF-8", response.characterEncoding());
-        assertTrue(response.body().contains("Home"));
-        assertTrue(response.body().contains("Cookie: ativo"));
+        assertTrue(response.body()
+            .contains("Home"));
+        assertTrue(response.body()
+            .contains("Cookie: ativo"));
         assertEquals("nosniff", response.header("X-Content-Type-Options"));
         assertEquals("strict-origin-when-cross-origin", response.header("Referrer-Policy"));
-        assertTrue(response.header("Content-Security-Policy").contains("default-src 'self'"));
+        assertTrue(response.header("Content-Security-Policy")
+            .contains("default-src 'self'"));
     }
 
     @Test
     void servesClientDevAndCssInternalEndpoints() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()));
 
-        assertTrue(LiveHttpPaths.internalPaths().contains(LiveHttpPaths.CLIENT_SCRIPT));
+        assertTrue(LiveHttpPaths.internalPaths()
+            .contains(LiveHttpPaths.CLIENT_SCRIPT));
 
         TestResponse client = service(servlet, TestRequest.get(LiveHttpPaths.CLIENT_SCRIPT));
         TestResponse dev = service(servlet, TestRequest.get(LiveHttpPaths.DEV_SCRIPT));
         TestResponse css = service(servlet, TestRequest.get(LiveHttpPaths.CSS)
-                .parameter("classes", "p-4 text-slate-900"));
+            .parameter("classes", "p-4 text-slate-900"));
 
         assertEquals(200, client.status());
-        assertTrue(client.contentType().startsWith("application/javascript"));
-        assertTrue(client.body().contains(LiveHttpPaths.EVENT));
+        assertTrue(client.contentType()
+            .startsWith("application/javascript"));
+        assertTrue(client.body()
+            .contains(LiveHttpPaths.EVENT));
         assertEquals(200, dev.status());
-        assertTrue(dev.body().contains("ujfe-dev-preview"));
+        assertTrue(dev.body()
+            .contains("ujfe-dev-preview"));
         assertEquals(200, css.status());
-        assertTrue(css.contentType().startsWith("text/css"));
-        assertTrue(css.body().contains("padding"));
+        assertTrue(css.contentType()
+            .startsWith("text/css"));
+        assertTrue(css.body()
+            .contains("padding"));
     }
 
     @Test
@@ -74,22 +80,25 @@ final class UjfeServletTest {
         String csrfToken = firstCsrfToken(page.body());
 
         TestResponse event = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                .header("X-UJFE-CSRF", csrfToken)
-                .header("Origin", "http://localhost")
-                .header("Host", "localhost")
-                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
-                        + "\"localStorage\":{\"theme\":\"dark\"}}}"));
+            .header("X-UJFE-CSRF", csrfToken)
+            .header("Origin", "http://localhost")
+            .header("Host", "localhost")
+            .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
+                + "\"localStorage\":{\"theme\":\"dark\"}}}"));
         TestResponse state = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
-                .header("X-UJFE-CSRF", csrfToken)
-                .header("Origin", "http://localhost")
-                .header("Host", "localhost")
-                .body("{\"clientState\":{\"cookies\":\"ujfe_demo=novo\",\"localStorage\":{}}}"));
+            .header("X-UJFE-CSRF", csrfToken)
+            .header("Origin", "http://localhost")
+            .header("Host", "localhost")
+            .body("{\"clientState\":{\"cookies\":\"ujfe_demo=novo\",\"localStorage\":{}}}"));
 
         assertEquals(200, event.status());
-        assertTrue(event.contentType().startsWith("application/json"));
-        assertTrue(event.body().contains("\"html\""));
+        assertTrue(event.contentType()
+            .startsWith("application/json"));
+        assertTrue(event.body()
+            .contains("\"html\""));
         assertEquals(200, state.status());
-        assertTrue(state.body().contains("Cookie: novo"));
+        assertTrue(state.body()
+            .contains("Cookie: novo"));
     }
 
     @Test
@@ -99,7 +108,8 @@ final class UjfeServletTest {
         TestResponse response = service(servlet, TestRequest.get("/"));
 
         assertEquals(200, response.status());
-        assertTrue(response.body().contains("Cookie: missing"));
+        assertTrue(response.body()
+            .contains("Cookie: missing"));
     }
 
     @Test
@@ -111,9 +121,9 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .header("Origin", "http://localhost")
-                    .header("Host", "localhost")
-                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+                .header("Origin", "http://localhost")
+                .header("Host", "localhost")
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(403, response.status());
@@ -129,10 +139,10 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .header("X-UJFE-CSRF", "invalid-token")
-                    .header("Origin", "http://localhost")
-                    .header("Host", "localhost")
-                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+                .header("X-UJFE-CSRF", "invalid-token")
+                .header("Origin", "http://localhost")
+                .header("Host", "localhost")
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(403, response.status());
@@ -149,10 +159,10 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .header("X-UJFE-CSRF", csrfToken)
-                    .header("Origin", "http://evil.test")
-                    .header("Host", "localhost")
-                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+                .header("X-UJFE-CSRF", csrfToken)
+                .header("Origin", "http://evil.test")
+                .header("Host", "localhost")
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(403, response.status());
@@ -166,9 +176,9 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
-                    .header("Origin", "http://localhost")
-                    .header("Host", "localhost")
-                    .body("{\"clientState\":{\"localStorage\":{}}}"));
+                .header("Origin", "http://localhost")
+                .header("Host", "localhost")
+                .body("{\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(403, response.status());
@@ -178,16 +188,20 @@ final class UjfeServletTest {
     @Test
     void developmentOverrideAllowsMissingCsrfToken() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()),
-                LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build());
+            LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .build());
         TestResponse page = service(servlet, TestRequest.get("/"));
         String eventId = firstEventId(page.body());
 
         TestResponse response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+            .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
 
         assertEquals(200, response.status());
-        assertTrue(response.body().contains("\"html\""));
-        assertFalse(page.body().contains("ujfe-csrf-token"));
+        assertTrue(response.body()
+            .contains("\"html\""));
+        assertFalse(page.body()
+            .contains("ujfe-csrf-token"));
     }
 
     @Test
@@ -197,7 +211,7 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .body("{\"eventId\":}"));
+                .body("{\"eventId\":}"));
         }
 
         assertError(response, 400, "UJFE_BAD_REQUEST", "The request is invalid.");
@@ -206,13 +220,13 @@ final class UjfeServletTest {
     @Test
     void rejectsOversizedLiveJsonWithConfiguredLimit() throws Exception {
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()),
-                LiveSessionConfig.defaults(),
-                32);
+            LiveSessionConfig.defaults(),
+            32);
 
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .body("{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"));
+                .body("{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertError(response, 413, "UJFE_BAD_REQUEST", "The request is invalid.");
@@ -221,19 +235,19 @@ final class UjfeServletTest {
     @Test
     void rateLimitsEventEndpoint() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
         TestResponse page = service(servlet, TestRequest.get("/"));
         String eventId = firstEventId(page.body());
 
         TestResponse first = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+            .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         TestResponse second;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             second = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(200, first.status());
@@ -244,18 +258,18 @@ final class UjfeServletTest {
     @Test
     void rateLimitsStateEndpoint() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
         service(servlet, TestRequest.get("/"));
 
         TestResponse first = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
-                .body("{\"clientState\":{\"localStorage\":{}}}"));
+            .body("{\"clientState\":{\"localStorage\":{}}}"));
         TestResponse second;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             second = service(servlet, TestRequest.post(LiveHttpPaths.STATE)
-                    .body("{\"clientState\":{\"localStorage\":{}}}"));
+                .body("{\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertEquals(200, first.status());
@@ -265,8 +279,8 @@ final class UjfeServletTest {
     @Test
     void publicPageRouteIsNotRateLimited() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         UjfeServlet servlet = new UjfeServlet(new Router().register(new HomePage()), config);
 
         assertEquals(200, service(servlet, TestRequest.get("/")).status());
@@ -306,7 +320,8 @@ final class UjfeServletTest {
         }
 
         assertEquals(400, response.status());
-        assertTrue(response.contentType().startsWith("text/plain"));
+        assertTrue(response.contentType()
+            .startsWith("text/plain"));
         assertEquals("Invalid static asset path.", response.body());
     }
 
@@ -326,11 +341,11 @@ final class UjfeServletTest {
     @Test
     void customAndDisabledSecurityHeadersAreApplied() throws Exception {
         LiveSessionConfig customConfig = LiveSessionConfig.builder()
-                .securityHeaders(SecurityHeadersConfig.builder()
-                        .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
-                        .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'")
-                        .build())
-                .build();
+            .securityHeaders(SecurityHeadersConfig.builder()
+                .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+                .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'")
+                .build())
+            .build();
         UjfeServlet customServlet = new UjfeServlet(new Router().register(new HomePage()), customConfig);
 
         TestResponse custom = service(customServlet, TestRequest.get("/"));
@@ -340,7 +355,9 @@ final class UjfeServletTest {
         assertEquals("nosniff", custom.header("X-Content-Type-Options"));
 
         UjfeServlet disabledServlet = new UjfeServlet(new Router().register(new HomePage()),
-                LiveSessionConfig.builder().disableSecurityHeaders().build());
+            LiveSessionConfig.builder()
+                .disableSecurityHeaders()
+                .build());
 
         TestResponse disabled = service(disabledServlet, TestRequest.get("/"));
 
@@ -356,20 +373,23 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.get("/")
-                    .header("X-Request-Id", "req-render-1"));
+                .header("X-Request-Id", "req-render-1"));
         }
 
         assertError(response, 500, "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
-        assertTrue(response.body().contains("\"requestId\":\"req-render-1\""));
-        assertFalse(response.body().contains("render-secret"));
-        assertFalse(response.body().contains("FailingRenderPage"));
+        assertTrue(response.body()
+            .contains("\"requestId\":\"req-render-1\""));
+        assertFalse(response.body()
+            .contains("render-secret"));
+        assertFalse(response.body()
+            .contains("FailingRenderPage"));
     }
 
     @Test
     void eventFailureReturnsSafeJsonErrorResponse() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .build();
         UjfeServlet servlet = new UjfeServlet(new Router().register(new FailingEventPage()), config);
         TestResponse page = service(servlet, TestRequest.get("/"));
         String eventId = firstEventId(page.body());
@@ -377,25 +397,28 @@ final class UjfeServletTest {
         TestResponse response;
         try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
             response = service(servlet, TestRequest.post(LiveHttpPaths.EVENT)
-                    .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
+                .body("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"));
         }
 
         assertError(response, 500, "UJFE_EVENT_HANDLER_ERROR", "An error occurred while handling the live event.");
-        assertFalse(response.body().contains("event-secret"));
-        assertFalse(response.body().contains("FailingEventPage"));
+        assertFalse(response.body()
+            .contains("event-secret"));
+        assertFalse(response.body()
+            .contains("FailingEventPage"));
     }
 
     @Test
     void constructorsSupportExplicitLiveSessionConfigAndExternalSession() throws Exception {
         Router configuredRouter = new Router().register(new HomePage());
         UjfeServlet configuredServlet = new UjfeServlet(configuredRouter, LiveSessionConfig.builder()
-                .title("Configured")
-                .build(),
-                4096);
+            .title("Configured")
+            .build(),
+            4096);
 
         TestResponse configuredResponse = service(configuredServlet, TestRequest.get("/"));
 
-        assertTrue(configuredResponse.body().contains("<title>Configured</title>"));
+        assertTrue(configuredResponse.body()
+            .contains("<title>Configured</title>"));
 
         Router externalRouter = new Router().register(new HomePage());
         try (LiveSession externalSession = new LiveSession(externalRouter)) {
@@ -423,16 +446,18 @@ final class UjfeServletTest {
     void canInitializeRoutesAndLiveConfigFromServletInitParameters() throws Exception {
         UjfeServlet servlet = new UjfeServlet();
         Map<String, String> servletParameters = Map.of(
-                UjfeServletSettings.ROUTE_PACKAGES, "ujfe.servlet.fixtures",
-                UjfeServletSettings.TITLE, "Init Param App"
+            UjfeServletSettings.ROUTE_PACKAGES, "ujfe.servlet.fixtures",
+            UjfeServletSettings.TITLE, "Init Param App"
         );
 
         servlet.init(servletConfig(Map.of(), Map.of(), servletParameters));
         TestResponse response = service(servlet, TestRequest.get("/scanned"));
 
         assertEquals(200, response.status());
-        assertTrue(response.body().contains("<title>Init Param App</title>"));
-        assertTrue(response.body().contains("Scanned servlet page"));
+        assertTrue(response.body()
+            .contains("<title>Init Param App</title>"));
+        assertTrue(response.body()
+            .contains("Scanned servlet page"));
     }
 
     @Test
@@ -442,9 +467,10 @@ final class UjfeServletTest {
             UjfeServlet servlet = new UjfeServlet();
 
             ServletException failure = assertThrows(ServletException.class,
-                    () -> servlet.init(servletConfig(attributes, Map.of(), Map.of())));
+                () -> servlet.init(servletConfig(attributes, Map.of(), Map.of())));
 
-            assertTrue(failure.getMessage().contains(UjfeServlet.ROUTER_ATTRIBUTE));
+            assertTrue(failure.getMessage()
+                .contains(UjfeServlet.ROUTER_ATTRIBUTE));
         }
     }
 
@@ -476,22 +502,27 @@ final class UjfeServletTest {
         assertEquals("Servlet App", liveConfigTitle(liveConfig));
         assertEquals(2048, settings.maxJsonPayloadBytes());
         assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
-        assertEquals("same-origin", liveConfig.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
-        assertEquals("default-src 'self'", liveConfig.securityHeaders().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
+        assertEquals("same-origin", liveConfig.securityHeaders()
+            .get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("default-src 'self'", liveConfig.securityHeaders()
+            .get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
         assertTrue(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(50, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(25, liveConfig.internalEndpointRateLimitRefillTokens());
         assertEquals(Duration.ofSeconds(30), liveConfig.internalEndpointRateLimitRefillPeriod());
         assertEquals(java.util.Set.of("10.0.0.1", "10.0.0.2"), liveConfig.trustedProxyAddresses());
-        assertEquals(java.util.Set.of("ujfe_demo", "theme"), liveConfig.clientStatePolicy().allowedCookies());
-        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy().allowedLocalStorageKeys());
-        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy().allowedSessionStorageKeys());
+        assertEquals(java.util.Set.of("ujfe_demo", "theme"), liveConfig.clientStatePolicy()
+            .allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy()
+            .allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy()
+            .allowedSessionStorageKeys());
     }
 
     @Test
     void servletSettingsReadApplicationYamlModel() {
         UjfeServletSettings settings = UjfeServletSettings
-                .fromYaml("ujfe:\n"
+            .fromYaml("ujfe:\n"
                 + "  routes:\n"
                 + "    packages: app.pages,app.admin\n"
                 + "  errors:\n"
@@ -522,15 +553,19 @@ final class UjfeServletTest {
         assertEquals("YAML App", liveConfigTitle(liveConfig));
         assertEquals(4096, settings.maxJsonPayloadBytes());
         assertTrue(liveConfig.isDevelopmentErrorDetailsEnabled());
-        assertTrue(liveConfig.securityHeaders().isEmpty());
+        assertTrue(liveConfig.securityHeaders()
+            .isEmpty());
         assertFalse(liveConfig.isInternalEndpointRateLimitingEnabled());
         assertEquals(20, liveConfig.internalEndpointRateLimitCapacity());
         assertEquals(10, liveConfig.internalEndpointRateLimitRefillTokens());
         assertEquals(Duration.ofSeconds(15), liveConfig.internalEndpointRateLimitRefillPeriod());
         assertEquals(java.util.Set.of("10.0.0.1"), liveConfig.trustedProxyAddresses());
-        assertEquals(java.util.Set.of("ujfe_demo"), liveConfig.clientStatePolicy().allowedCookies());
-        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy().allowedLocalStorageKeys());
-        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy().allowedSessionStorageKeys());
+        assertEquals(java.util.Set.of("ujfe_demo"), liveConfig.clientStatePolicy()
+            .allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), liveConfig.clientStatePolicy()
+            .allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), liveConfig.clientStatePolicy()
+            .allowedSessionStorageKeys());
     }
 
     @Test
@@ -543,10 +578,10 @@ final class UjfeServletTest {
     @Test
     void pathWithinApplicationFallsBackToServletPathAndPathInfo() {
         HttpServletRequest request = TestRequest.get(null)
-                .contextPath("/app")
-                .servletPath("/docs")
-                .pathInfo("/intro")
-                .toRequest();
+            .contextPath("/app")
+            .servletPath("/docs")
+            .pathInfo("/intro")
+            .toRequest();
 
         assertEquals("/docs/intro", UjfeServlet.pathWithinApplication(request));
     }
@@ -558,54 +593,65 @@ final class UjfeServletTest {
     }
 
     private static String firstEventId(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
         return matcher.group(1);
     }
 
     private static String firstCsrfToken(String html) {
-        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
         return matcher.group(1);
     }
 
     private static void assertError(TestResponse response, int status, String code, String message) {
         assertEquals(status, response.status());
-        assertTrue(response.contentType().startsWith("application/json"));
-        assertTrue(response.body().contains("\"code\":\"" + code + "\""), response.body());
-        assertTrue(response.body().contains("\"message\":\"" + message + "\""), response.body());
-        assertFalse(response.body().contains("Exception"), response.body());
-        assertFalse(response.body().contains("LiveHttpCodec"), response.body());
-        assertFalse(response.body().contains("/Users/"), response.body());
+        assertTrue(response.contentType()
+            .startsWith("application/json"));
+        assertTrue(response.body()
+            .contains("\"code\":\"" + code + "\""), response.body());
+        assertTrue(response.body()
+            .contains("\"message\":\"" + message + "\""), response.body());
+        assertFalse(response.body()
+            .contains("Exception"), response.body());
+        assertFalse(response.body()
+            .contains("LiveHttpCodec"), response.body());
+        assertFalse(response.body()
+            .contains("/Users/"), response.body());
     }
 
     private static void assertStaticAssetNotFound(TestResponse response) {
         assertEquals(404, response.status());
-        assertTrue(response.contentType().startsWith("text/plain"));
+        assertTrue(response.contentType()
+            .startsWith("text/plain"));
         assertEquals("Static asset not found.", response.body());
-        assertFalse(response.body().contains("UJFE_ROUTE_NOT_FOUND"));
-        assertFalse(response.body().contains("No UJFE route registered"));
+        assertFalse(response.body()
+            .contains("UJFE_ROUTE_NOT_FOUND"));
+        assertFalse(response.body()
+            .contains("No UJFE route registered"));
     }
 
     private static String liveConfigTitle(LiveSessionConfig config) {
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
             return session.renderDocument("/", ujfe.core.ClientState.empty())
-                    .replaceFirst("(?s).*<title>", "")
-                    .replaceFirst("</title>.*", "");
+                .replaceFirst("(?s).*<title>", "")
+                .replaceFirst("</title>.*", "");
         }
     }
 
     private static LiveSessionConfig clientStateConfig() {
         return LiveSessionConfig.builder()
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("theme")
-                .build();
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("theme")
+            .build();
     }
 
     private static ServletConfig servletConfig(
-            Map<String, Object> attributes,
-            Map<String, String> contextParameters,
-            Map<String, String> servletParameters
+        Map<String, Object> attributes,
+        Map<String, String> contextParameters,
+        Map<String, String> servletParameters
     ) {
         ServletContext context = proxy(ServletContext.class, (name, args, returnType) -> {
             if ("getAttribute".equals(name)) {
@@ -640,7 +686,7 @@ final class UjfeServletTest {
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type, MethodHandler handler) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, (proxy, method, args) ->
-                handler.invoke(method.getName(), args == null ? new Object[0] : args, method.getReturnType()));
+            handler.invoke(method.getName(), args == null ? new Object[0] : args, method.getReturnType()));
     }
 
     private static Object defaultValue(Class<?> returnType) {
@@ -668,17 +714,19 @@ final class UjfeServletTest {
 
         public Node render() {
             return div()
-                    .child(p("Home"))
-                    .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("ativo")))
-                    .child(p(() -> "Clicks: " + clicks))
-                    .child(button("Click").onClick(() -> clicks++));
+                .child(p("Home"))
+                .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo")
+                    .orElse("ativo")))
+                .child(p(() -> "Clicks: " + clicks))
+                .child(button("Click").onClick(() -> clicks++));
         }
     }
 
     @Page("/")
     public static final class StrictCookiePage {
         public Node render() {
-            return p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("missing"));
+            return p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo")
+                .orElse("missing"));
         }
     }
 
@@ -888,9 +936,9 @@ final class UjfeServletTest {
 
         static CodecLogSilencer attach() {
             return new CodecLogSilencer(
-                    Logger.getLogger(LiveHttpCodec.class.getName()),
-                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
-                    Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
+                Logger.getLogger(LiveHttpCodec.class.getName()),
+                Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
+                Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
             );
         }
 

@@ -28,6 +28,7 @@ public final class UjfeSpringHandlerMapping extends AbstractHandlerMapping {
         if (!"GET".equals(request.getMethod())) {
             return null;
         }
-        return router.resolve(path).isPresent() ? handler : null;
+        return router.resolve(path)
+            .isPresent() ? handler : null;
     }
 }

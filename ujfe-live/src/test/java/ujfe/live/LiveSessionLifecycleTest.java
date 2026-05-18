@@ -49,7 +49,8 @@ final class LiveSessionLifecycleTest {
     void routeSwitchUnmountsOldPageAndMountsNewPage() {
         FirstRoutePage first = new FirstRoutePage();
         SecondRoutePage second = new SecondRoutePage();
-        try (LiveSession session = new LiveSession(new Router().register(first).register(second))) {
+        try (LiveSession session = new LiveSession(new Router().register(first)
+            .register(second))) {
             session.renderDocument("/first", ClientState.empty());
             session.renderDocument("/second", ClientState.empty());
         }
@@ -79,15 +80,17 @@ final class LiveSessionLifecycleTest {
         AtomicInteger errors = new AtomicInteger();
         AtomicReference<RuntimePhase> phase = new AtomicReference<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(context -> {
-                    errors.incrementAndGet();
-                    phase.set(context.phase());
-                })
-                .build();
+            .onError(context -> {
+                errors.incrementAndGet();
+                phase.set(context.phase());
+            })
+            .build();
 
         try (LiveSession session = new LiveSession(
-                new Router().register(new FailingMountPage()),
-                LiveSessionConfig.builder().runtimeActions(actions).build()
+            new Router().register(new FailingMountPage()),
+            LiveSessionConfig.builder()
+                .runtimeActions(actions)
+                .build()
         )) {
             assertThrows(LifecycleException.class, () -> session.renderDocument("/", ClientState.empty()));
         }
@@ -101,12 +104,15 @@ final class LiveSessionLifecycleTest {
         SecondRoutePage stable = new SecondRoutePage();
         AtomicInteger errors = new AtomicInteger();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(context -> errors.incrementAndGet())
-                .build();
+            .onError(context -> errors.incrementAndGet())
+            .build();
 
         try (LiveSession session = new LiveSession(
-                new Router().register(failing).register(stable),
-                LiveSessionConfig.builder().runtimeActions(actions).build()
+            new Router().register(failing)
+                .register(stable),
+            LiveSessionConfig.builder()
+                .runtimeActions(actions)
+                .build()
         )) {
             session.renderDocument("/failing", ClientState.empty());
             assertDoesNotThrow(() -> session.renderDocument("/second", ClientState.empty()));
@@ -123,13 +129,15 @@ final class LiveSessionLifecycleTest {
         EventUnmountFailurePage page = new EventUnmountFailurePage();
         AtomicReference<String> routedEventId = new AtomicReference<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(context -> routedEventId.set(context.eventId()))
-                .build();
+            .onError(context -> routedEventId.set(context.eventId()))
+            .build();
 
         String eventId;
         try (LiveSession session = new LiveSession(
-                new Router().register(page),
-                LiveSessionConfig.builder().runtimeActions(actions).build()
+            new Router().register(page),
+            LiveSessionConfig.builder()
+                .runtimeActions(actions)
+                .build()
         )) {
             String document = session.renderDocument("/", ClientState.empty());
             eventId = extractEventId(document);
@@ -141,7 +149,8 @@ final class LiveSessionLifecycleTest {
     }
 
     private static String extractEventId(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find());
         return matcher.group(1);
     }
@@ -181,8 +190,8 @@ final class LiveSessionLifecycleTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Count: " + count.get()))
-                    .child(button("Increment").onClick(count::incrementAndGet));
+                .child(p(() -> "Count: " + count.get()))
+                .child(button("Increment").onClick(count::incrementAndGet));
         }
 
         int count() {
@@ -253,7 +262,7 @@ final class LiveSessionLifecycleTest {
         @Override
         public Node render() {
             var root = div()
-                    .child(button("Hide child").onClick(() -> showChild.set(false)));
+                .child(button("Hide child").onClick(() -> showChild.set(false)));
 
             if (showChild.get()) {
                 root.child(component(child));

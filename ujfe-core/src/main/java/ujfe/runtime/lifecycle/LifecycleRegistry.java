@@ -33,9 +33,9 @@ public final class LifecycleRegistry {
     }
 
     synchronized List<LifecycleException> reconcile(
-            MountContext mountContext,
-            UnmountContext unmountContext,
-            List<Lifecycle> observed
+        MountContext mountContext,
+        UnmountContext unmountContext,
+        List<Lifecycle> observed
     ) {
         Objects.requireNonNull(mountContext, "mountContext");
         Objects.requireNonNull(unmountContext, "unmountContext");
@@ -71,7 +71,7 @@ public final class LifecycleRegistry {
                 mountedThisCycle.add(lifecycle);
             } catch (Exception exception) {
                 LifecycleException failure = new LifecycleException(
-                        "Lifecycle onMount failed", lifecycle, "onMount", exception, context);
+                    "Lifecycle onMount failed", lifecycle, "onMount", exception, context);
                 rollbackMountedThisCycle(mountedThisCycle, new UnmountContext(context, "mount-failure"), failure);
                 throw failure;
             }
@@ -79,9 +79,9 @@ public final class LifecycleRegistry {
     }
 
     private void unmountRemoved(
-            List<Lifecycle> observed,
-            UnmountContext context,
-            List<LifecycleException> failures
+        List<Lifecycle> observed,
+        UnmountContext context,
+        List<LifecycleException> failures
     ) {
         List<Lifecycle> lifecycles = new ArrayList<>(mountOrder);
         for (int index = lifecycles.size() - 1; index >= 0; index--) {
@@ -93,9 +93,9 @@ public final class LifecycleRegistry {
     }
 
     private void rollbackMountedThisCycle(
-            List<Lifecycle> mountedThisCycle,
-            UnmountContext context,
-            LifecycleException failure
+        List<Lifecycle> mountedThisCycle,
+        UnmountContext context,
+        LifecycleException failure
     ) {
         List<LifecycleException> cleanupFailures = new ArrayList<>();
         for (int index = mountedThisCycle.size() - 1; index >= 0; index--) {
@@ -105,9 +105,9 @@ public final class LifecycleRegistry {
     }
 
     private void unmount(
-            Lifecycle lifecycle,
-            UnmountContext context,
-            List<LifecycleException> failures
+        Lifecycle lifecycle,
+        UnmountContext context,
+        List<LifecycleException> failures
     ) {
         MountedComponent component = mounted.remove(lifecycle);
         removeFromMountOrder(lifecycle);
@@ -119,7 +119,7 @@ public final class LifecycleRegistry {
             lifecycle.onUnmount();
         } catch (Exception exception) {
             failures.add(new LifecycleException(
-                    "Lifecycle onUnmount failed", lifecycle, "onUnmount", exception, context));
+                "Lifecycle onUnmount failed", lifecycle, "onUnmount", exception, context));
         }
     }
 

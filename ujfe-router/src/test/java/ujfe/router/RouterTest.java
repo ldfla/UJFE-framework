@@ -19,8 +19,10 @@ final class RouterTest {
     void registersAnnotatedPageAndRendersIt() {
         Router router = new Router().register(new AboutPage());
 
-        assertTrue(router.resolve("/about").isPresent());
-        Node node = new PageRenderer().render(router.resolve("/about").orElseThrow());
+        assertTrue(router.resolve("/about")
+            .isPresent());
+        Node node = new PageRenderer().render(router.resolve("/about")
+            .orElseThrow());
 
         assertEquals("<div><h1>About</h1></div>", node.render());
     }
@@ -30,16 +32,19 @@ final class RouterTest {
         ReflectionPageScanner scanner = new ReflectionPageScanner(UnannotatedPage.class, AboutPage.class);
         Router router = new Router().register(scanner);
 
-        assertTrue(router.resolve("/about").isPresent());
-        assertFalse(router.resolve("/ignored").isPresent());
+        assertTrue(router.resolve("/about")
+            .isPresent());
+        assertFalse(router.resolve("/ignored")
+            .isPresent());
     }
 
     @Test
     void scannerCanDiscoverPagesFromPackageResources() {
         ReflectionPageScanner scanner = ReflectionPageScanner.forPackages("ujfe.router.fixtures");
-        List<String> paths = scanner.routes().stream()
-                .map(RouteDefinition::path)
-                .collect(Collectors.toList());
+        List<String> paths = scanner.routes()
+            .stream()
+            .map(RouteDefinition::path)
+            .collect(Collectors.toList());
 
         assertEquals(List.of("/alpha", "/beta"), paths);
     }
@@ -47,46 +52,56 @@ final class RouterTest {
     @Test
     void scannerDetectsDuplicateRoutesWithConflictingClasses() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new ReflectionPageScanner(DuplicateA.class, DuplicateB.class).routes());
+            () -> new ReflectionPageScanner(DuplicateA.class, DuplicateB.class).routes());
 
-        assertTrue(failure.getMessage().contains("Duplicate route path '/same'"));
-        assertTrue(failure.getMessage().contains(DuplicateA.class.getName()));
-        assertTrue(failure.getMessage().contains(DuplicateB.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains("Duplicate route path '/same'"));
+        assertTrue(failure.getMessage()
+            .contains(DuplicateA.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains(DuplicateB.class.getName()));
     }
 
     @Test
     void scannerRejectsInvalidRenderMethods() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new ReflectionPageScanner(InvalidRenderPage.class).routes());
+            () -> new ReflectionPageScanner(InvalidRenderPage.class).routes());
 
-        assertTrue(failure.getMessage().contains("render() must return ujfe.core.Node"));
-        assertTrue(failure.getMessage().contains(InvalidRenderPage.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains("render() must return ujfe.core.Node"));
+        assertTrue(failure.getMessage()
+            .contains(InvalidRenderPage.class.getName()));
     }
 
     @Test
     void scannerRejectsAnnotatedClassesWithoutRenderMethod() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new ReflectionPageScanner(NoRenderPage.class).routes());
+            () -> new ReflectionPageScanner(NoRenderPage.class).routes());
 
-        assertTrue(failure.getMessage().contains("public render()"));
-        assertTrue(failure.getMessage().contains(NoRenderPage.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains("public render()"));
+        assertTrue(failure.getMessage()
+            .contains(NoRenderPage.class.getName()));
     }
 
     @Test
     void scannerRejectsAbstractPageClasses() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new ReflectionPageScanner(AbstractPage.class).routes());
+            () -> new ReflectionPageScanner(AbstractPage.class).routes());
 
-        assertTrue(failure.getMessage().contains("abstract"));
-        assertTrue(failure.getMessage().contains(AbstractPage.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains("abstract"));
+        assertTrue(failure.getMessage()
+            .contains(AbstractPage.class.getName()));
     }
 
     @Test
     void scannerIgnoresInterfacesSafely() {
         ReflectionPageScanner scanner = new ReflectionPageScanner(AnnotatedInterfacePage.class, AboutPage.class);
-        List<String> paths = scanner.routes().stream()
-                .map(RouteDefinition::path)
-                .collect(Collectors.toList());
+        List<String> paths = scanner.routes()
+            .stream()
+            .map(RouteDefinition::path)
+            .collect(Collectors.toList());
 
         assertEquals(List.of("/about"), paths);
     }
@@ -94,42 +109,48 @@ final class RouterTest {
     @Test
     void scannerRejectsAnnotatedClassesWithoutNoArgumentConstructor() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new ReflectionPageScanner(ConstructorOnlyPage.class).routes());
+            () -> new ReflectionPageScanner(ConstructorOnlyPage.class).routes());
 
-        assertTrue(failure.getMessage().contains("no-argument constructor"));
-        assertTrue(failure.getMessage().contains(ConstructorOnlyPage.class.getName()));
+        assertTrue(failure.getMessage()
+            .contains("no-argument constructor"));
+        assertTrue(failure.getMessage()
+            .contains(ConstructorOnlyPage.class.getName()));
     }
 
     @Test
     void manualRouteSourceRegistersRoutesWithoutAnnotatedPageClasses() {
         ManualRouteSource source = new ManualRouteSource()
-                .register("/", PlainPage::new)
-                .register("/dashboard", DashboardPage::new);
+            .register("/", PlainPage::new)
+            .register("/dashboard", DashboardPage::new);
         Router router = new Router().register(source);
 
         assertEquals(List.of("/", "/dashboard"), routePaths(router));
-        assertEquals("<div><p>Plain</p></div>", new PageRenderer().render(router.resolve("/").orElseThrow()).render());
+        assertEquals("<div><p>Plain</p></div>", new PageRenderer().render(router.resolve("/")
+                .orElseThrow())
+            .render());
     }
 
     @Test
     void manualRouteSourceAcceptsRouteDefinitionMetadata() {
         RouteDefinition route = new RouteDefinition("/metadata", PlainPage::new, "generated metadata");
         ManualRouteSource source = new ManualRouteSource()
-                .register(route);
+            .register(route);
         Router router = new Router().register(source);
 
-        RouteDefinition resolved = router.resolve("/metadata").orElseThrow();
+        RouteDefinition resolved = router.resolve("/metadata")
+            .orElseThrow();
         assertEquals("generated metadata", resolved.sourceDescription());
-        assertEquals("<div><p>Plain</p></div>", new PageRenderer().render(resolved).render());
+        assertEquals("<div><p>Plain</p></div>", new PageRenderer().render(resolved)
+            .render());
     }
 
     @Test
     void registrationOrderIsPreservedAcrossManualSources() {
         ManualRouteSource first = new ManualRouteSource()
-                .register("/first", PlainPage::new)
-                .register("/second", DashboardPage::new);
+            .register("/first", PlainPage::new)
+            .register("/second", DashboardPage::new);
         ManualRouteSource second = new ManualRouteSource()
-                .register("/third", ComponentPage::new);
+            .register("/third", ComponentPage::new);
 
         Router router = new Router().register(first, second);
 
@@ -139,9 +160,10 @@ final class RouterTest {
     @Test
     void reflectionScanningOrderIsDeterministic() {
         ReflectionPageScanner scanner = new ReflectionPageScanner(ScannedBetaPage.class, ScannedAlphaPage.class);
-        List<String> paths = scanner.routes().stream()
-                .map(RouteDefinition::path)
-                .collect(Collectors.toList());
+        List<String> paths = scanner.routes()
+            .stream()
+            .map(RouteDefinition::path)
+            .collect(Collectors.toList());
 
         assertEquals(List.of("/alpha", "/beta"), paths);
     }
@@ -149,25 +171,27 @@ final class RouterTest {
     @Test
     void duplicateRoutesFailDuringManualSourceRegistration() {
         ManualRouteSource source = new ManualRouteSource()
-                .register("/same", PlainPage::new);
+            .register("/same", PlainPage::new);
 
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> source.register("/same", DashboardPage::new));
+            () -> source.register("/same", DashboardPage::new));
 
-        assertTrue(failure.getMessage().contains("Duplicate route path '/same'"));
+        assertTrue(failure.getMessage()
+            .contains("Duplicate route path '/same'"));
     }
 
     @Test
     void duplicateRoutesFailWhenMergingSourcesIntoRouter() {
         ManualRouteSource first = new ManualRouteSource()
-                .register("/same", PlainPage::new);
+            .register("/same", PlainPage::new);
         ManualRouteSource second = new ManualRouteSource()
-                .register("/same", DashboardPage::new);
+            .register("/same", DashboardPage::new);
 
         IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-                () -> new Router().register(first, second));
+            () -> new Router().register(first, second));
 
-        assertTrue(failure.getMessage().contains("Duplicate route path '/same'"));
+        assertTrue(failure.getMessage()
+            .contains("Duplicate route path '/same'"));
     }
 
     @Test
@@ -184,8 +208,10 @@ final class RouterTest {
     void routerWorksWithEmptyRouteSource() {
         Router router = new Router().register(new ManualRouteSource());
 
-        assertTrue(router.routes().isEmpty());
-        assertFalse(router.resolve("/missing").isPresent());
+        assertTrue(router.routes()
+            .isEmpty());
+        assertFalse(router.resolve("/missing")
+            .isPresent());
     }
 
     @Test
@@ -193,23 +219,27 @@ final class RouterTest {
         RouteDefinition route = RouteDefinition.pageClass("/component", ComponentPage.class);
 
         assertEquals("/component", route.path());
-        assertEquals(ComponentPage.class, route.pageType().orElseThrow());
+        assertEquals(ComponentPage.class, route.pageType()
+            .orElseThrow());
         assertEquals(ComponentPage.class.getName(), route.sourceDescription());
-        assertEquals("<p>Component</p>", new PageRenderer().render(route).render());
+        assertEquals("<p>Component</p>", new PageRenderer().render(route)
+            .render());
     }
 
     @Test
     void routerRejectsInvalidAnnotatedPageInstances() {
         RouteDiscoveryException failure = assertThrows(RouteDiscoveryException.class,
-                () -> new Router().register(new InvalidRenderPage()));
+            () -> new Router().register(new InvalidRenderPage()));
 
-        assertTrue(failure.getMessage().contains("render() must return ujfe.core.Node"));
+        assertTrue(failure.getMessage()
+            .contains("render() must return ujfe.core.Node"));
     }
 
     private static List<String> routePaths(Router router) {
-        return router.routes().stream()
-                .map(RouteDefinition::path)
-                .collect(Collectors.toList());
+        return router.routes()
+            .stream()
+            .map(RouteDefinition::path)
+            .collect(Collectors.toList());
     }
 
     @Page("/about")

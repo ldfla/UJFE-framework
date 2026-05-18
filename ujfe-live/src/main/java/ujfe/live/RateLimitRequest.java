@@ -19,7 +19,8 @@ public final class RateLimitRequest {
     }
 
     public Optional<String> sessionId() {
-        return Optional.ofNullable(sessionId).filter(value -> !value.isBlank());
+        return Optional.ofNullable(sessionId)
+            .filter(value -> !value.isBlank());
     }
 
     public LiveHttpRequestMetadata metadata() {

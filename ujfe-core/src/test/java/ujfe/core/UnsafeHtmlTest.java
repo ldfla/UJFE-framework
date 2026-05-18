@@ -19,7 +19,8 @@ final class UnsafeHtmlTest {
     @Test
     void unsafeHtmlRendersTrustedRawHtmlWithoutEscaping() {
         assertEquals("<strong>x</strong>", unsafeHtml("<strong>x</strong>").render());
-        assertEquals("<p>Trusted HTML</p>", UnsafeHtml.of("<p>Trusted HTML</p>").render());
+        assertEquals("<p>Trusted HTML</p>", UnsafeHtml.of("<p>Trusted HTML</p>")
+            .render());
     }
 
     @Test
@@ -31,7 +32,11 @@ final class UnsafeHtmlTest {
     void publicApiNameContainsUnsafe() throws Exception {
         Method helper = UI.class.getMethod("unsafeHtml", String.class);
 
-        assertTrue(helper.getName().toLowerCase(Locale.ROOT).contains("unsafe"));
-        assertTrue(UnsafeHtml.class.getSimpleName().toLowerCase(Locale.ROOT).contains("unsafe"));
+        assertTrue(helper.getName()
+            .toLowerCase(Locale.ROOT)
+            .contains("unsafe"));
+        assertTrue(UnsafeHtml.class.getSimpleName()
+            .toLowerCase(Locale.ROOT)
+            .contains("unsafe"));
     }
 }

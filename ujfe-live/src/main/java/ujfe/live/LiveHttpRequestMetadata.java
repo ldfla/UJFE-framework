@@ -22,15 +22,15 @@ public final class LiveHttpRequestMetadata {
     }
 
     public LiveHttpRequestMetadata(
-            String csrfToken,
-            String origin,
-            String referer,
-            String host,
-            String scheme,
-            String remoteAddress,
-            String forwarded,
-            String xForwardedFor,
-            String xRealIp
+        String csrfToken,
+        String origin,
+        String referer,
+        String host,
+        String scheme,
+        String remoteAddress,
+        String forwarded,
+        String xForwardedFor,
+        String xRealIp
     ) {
         this.csrfToken = csrfToken; // nullable
         this.origin = origin; // nullable

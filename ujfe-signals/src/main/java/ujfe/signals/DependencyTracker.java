@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 final class DependencyTracker {
     private static final ThreadLocal<ArrayDeque<DependencyCollector>> COLLECTORS =
-            ThreadLocal.withInitial(ArrayDeque::new);
+        ThreadLocal.withInitial(ArrayDeque::new);
 
     private DependencyTracker() {
     }
@@ -14,7 +14,8 @@ final class DependencyTracker {
         Objects.requireNonNull(dependency, "dependency");
         ArrayDeque<DependencyCollector> collectors = COLLECTORS.get();
         if (!collectors.isEmpty()) {
-            collectors.peek().add(dependency);
+            collectors.peek()
+                .add(dependency);
         }
     }
 

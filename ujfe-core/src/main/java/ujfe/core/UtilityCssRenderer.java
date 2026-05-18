@@ -22,15 +22,15 @@ public final class UtilityCssRenderer {
 
         StringBuilder css = new StringBuilder();
         css.append(theme.renderVariables())
-                .append("*,*::before,*::after{box-sizing:border-box;}")
-                .append("body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;}")
-                .append("h1,h2,h3,p,pre,ul,ol{margin:0;}")
-                .append("a{color:inherit;text-decoration:none;}")
-                .append("code,kbd,pre,samp{font-family:inherit;}")
-                .append("pre code{font-family:inherit;}")
-                .append("button,input,select,textarea{font:inherit;}")
-                .append("button{cursor:pointer;border:0;}")
-                .append("@media(max-width:860px){.app-shell,.demo-grid,.docs-grid,.catalog-grid{grid-template-columns:1fr;}}");
+            .append("*,*::before,*::after{box-sizing:border-box;}")
+            .append("body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;}")
+            .append("h1,h2,h3,p,pre,ul,ol{margin:0;}")
+            .append("a{color:inherit;text-decoration:none;}")
+            .append("code,kbd,pre,samp{font-family:inherit;}")
+            .append("pre code{font-family:inherit;}")
+            .append("button,input,select,textarea{font:inherit;}")
+            .append("button{cursor:pointer;border:0;}")
+            .append("@media(max-width:860px){.app-shell,.demo-grid,.docs-grid,.catalog-grid{grid-template-columns:1fr;}}");
 
         for (String className : classes) {
             String rule = renderRule(className);
@@ -381,9 +381,9 @@ public final class UtilityCssRenderer {
 
     private static String spacingPrefix(String token) {
         String[] prefixes = {
-                "gap-x", "gap-y", "gap",
-                "px", "py", "pt", "pr", "pb", "pl", "p",
-                "mx", "my", "mt", "mr", "mb", "ml", "m"
+            "gap-x", "gap-y", "gap",
+            "px", "py", "pt", "pr", "pb", "pl", "p",
+            "mx", "my", "mt", "mr", "mb", "ml", "m"
         };
         for (String prefix : prefixes) {
             if (token.startsWith(prefix + "-") && token.length() > prefix.length() + 1) {
@@ -472,7 +472,9 @@ public final class UtilityCssRenderer {
             if (Character.isLetterOrDigit(current) || current == '_' || current == '-') {
                 escaped.append(current);
             } else {
-                escaped.append('\\').append(Integer.toHexString(current)).append(' ');
+                escaped.append('\\')
+                    .append(Integer.toHexString(current))
+                    .append(' ');
             }
         }
         return escaped.toString();

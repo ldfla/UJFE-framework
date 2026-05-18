@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 
 public final class Computed<T> implements Signal<T>, SignalDependency {
     private static final ThreadLocal<ArrayDeque<Computed<?>>> EVALUATION_STACK =
-            ThreadLocal.withInitial(ArrayDeque::new);
+        ThreadLocal.withInitial(ArrayDeque::new);
 
     private final Supplier<T> supplier;
     private final Object lock = new Object();

@@ -14,19 +14,24 @@ public final class ClientIpResolver {
         Objects.requireNonNull(metadata, "metadata");
         Objects.requireNonNull(config, "config");
 
-        String remoteAddress = normalizeIp(metadata.remoteAddress().orElse(UNKNOWN));
-        if (config.trustedProxyAddresses().contains(remoteAddress)) {
-            Optional<String> forwarded = firstForwardedFor(metadata.forwarded().orElse(null));
+        String remoteAddress = normalizeIp(metadata.remoteAddress()
+            .orElse(UNKNOWN));
+        if (config.trustedProxyAddresses()
+            .contains(remoteAddress)) {
+            Optional<String> forwarded = firstForwardedFor(metadata.forwarded()
+                .orElse(null));
             if (forwarded.isPresent()) {
                 return forwarded.get();
             }
 
-            Optional<String> xForwardedFor = firstHeaderIp(metadata.xForwardedFor().orElse(null));
+            Optional<String> xForwardedFor = firstHeaderIp(metadata.xForwardedFor()
+                .orElse(null));
             if (xForwardedFor.isPresent()) {
                 return xForwardedFor.get();
             }
 
-            Optional<String> realIp = firstHeaderIp(metadata.xRealIp().orElse(null));
+            Optional<String> realIp = firstHeaderIp(metadata.xRealIp()
+                .orElse(null));
             if (realIp.isPresent()) {
                 return realIp.get();
             }
@@ -44,11 +49,14 @@ public final class ClientIpResolver {
             if (separator <= 0) {
                 continue;
             }
-            String name = trimmed.substring(0, separator).trim().toLowerCase(Locale.ROOT);
+            String name = trimmed.substring(0, separator)
+                .trim()
+                .toLowerCase(Locale.ROOT);
             if (!"for".equals(name)) {
                 continue;
             }
-            String value = unquote(trimmed.substring(separator + 1).trim());
+            String value = unquote(trimmed.substring(separator + 1)
+                .trim());
             if (!value.isBlank() && !"unknown".equalsIgnoreCase(value)) {
                 return Optional.of(normalizeIp(value));
             }
@@ -80,7 +88,8 @@ public final class ClientIpResolver {
             return end > 0 ? normalized.substring(1, end) : UNKNOWN;
         }
         int colon = normalized.lastIndexOf(':');
-        if (colon > 0 && normalized.indexOf(':') == colon && normalized.substring(colon + 1).matches("\\d+")) {
+        if (colon > 0 && normalized.indexOf(':') == colon && normalized.substring(colon + 1)
+            .matches("\\d+")) {
             normalized = normalized.substring(0, colon);
         }
         if (normalized.startsWith("/")) {

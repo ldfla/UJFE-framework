@@ -22,20 +22,21 @@ public final class ErrorResponseRenderer {
     }
 
     public UjfeErrorResponse render(
-            UjfeErrorCode code,
-            int httpStatus,
-            Throwable exception,
-            ErrorResponseContext context
+        UjfeErrorCode code,
+        int httpStatus,
+        Throwable exception,
+        ErrorResponseContext context
     ) {
         Objects.requireNonNull(code, "code");
-        ErrorResponseContext safeContext = context == null ? ErrorResponseContext.builder().build() : context;
+        ErrorResponseContext safeContext = context == null ? ErrorResponseContext.builder()
+                                                             .build() : context;
         UjfeErrorResponse response = new UjfeErrorResponse(
-                httpStatus,
-                code,
-                code.safeMessage(),
-                safeContext.requestId(),
-                details(exception),
-                retryAfterSeconds(exception)
+            httpStatus,
+            code,
+            code.safeMessage(),
+            safeContext.requestId(),
+            details(exception),
+            retryAfterSeconds(exception)
         );
         log(response, exception, safeContext);
         return response;
@@ -43,7 +44,8 @@ public final class ErrorResponseRenderer {
 
     public UjfeErrorResponse render(Throwable exception, ErrorResponseContext context) {
         Objects.requireNonNull(exception, "exception");
-        ErrorResponseContext safeContext = context == null ? ErrorResponseContext.builder().build() : context;
+        ErrorResponseContext safeContext = context == null ? ErrorResponseContext.builder()
+                                                             .build() : context;
         Mapping mapping = map(exception, safeContext);
         return render(mapping.code, mapping.status, exception, safeContext);
     }
@@ -101,16 +103,17 @@ public final class ErrorResponseRenderer {
     private static long retryAfterSeconds(Throwable exception) {
         if (exception instanceof LiveRateLimitException) {
             LiveRateLimitException rateLimitException = (LiveRateLimitException) exception;
-            return rateLimitException.retryAfterSeconds().orElse(-1L);
+            return rateLimitException.retryAfterSeconds()
+                .orElse(-1L);
         }
         return -1L;
     }
 
     private static String sanitizeDevelopmentDetail(String message) {
         String sanitized = message
-                .replace('\r', ' ')
-                .replace('\n', ' ')
-                .replaceAll("(?i)(authorization|cookie|csrf|token|password|secret|session)\\s*[:=]\\s*[^\\s,;]+", "$1=<redacted>");
+            .replace('\r', ' ')
+            .replace('\n', ' ')
+            .replaceAll("(?i)(authorization|cookie|csrf|token|password|secret|session)\\s*[:=]\\s*[^\\s,;]+", "$1=<redacted>");
         if (sanitized.length() > 300) {
             return sanitized.substring(0, 300) + "...";
         }
@@ -122,14 +125,18 @@ public final class ErrorResponseRenderer {
             return;
         }
         String message = "event=ujfe.http_error"
-                + " code=" + response.code().name()
-                + " httpStatus=" + response.httpStatus()
-                + " adapter=" + safeLogValue(context.adapter(), "unknown")
-                + " method=" + safeLogValue(context.method(), "unknown")
-                + " path=" + safeLogValue(context.path(), "unknown")
-                + " phase=" + context.phase().name().toLowerCase()
-                + " requestId=" + safeLogValue(context.requestId(), "unavailable")
-                + " exceptionType=" + exception.getClass().getName();
+            + " code=" + response.code()
+            .name()
+            + " httpStatus=" + response.httpStatus()
+            + " adapter=" + safeLogValue(context.adapter(), "unknown")
+            + " method=" + safeLogValue(context.method(), "unknown")
+            + " path=" + safeLogValue(context.path(), "unknown")
+            + " phase=" + context.phase()
+            .name()
+            .toLowerCase()
+            + " requestId=" + safeLogValue(context.requestId(), "unavailable")
+            + " exceptionType=" + exception.getClass()
+            .getName();
         LOGGER.log(Level.SEVERE, message, exception);
     }
 

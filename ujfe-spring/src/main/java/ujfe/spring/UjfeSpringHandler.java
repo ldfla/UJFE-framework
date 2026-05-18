@@ -5,22 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NonNull;
 import org.springframework.web.HttpRequestHandler;
 import ujfe.core.ClientState;
-import ujfe.live.ErrorResponseContext;
-import ujfe.live.ErrorResponseRenderer;
-import ujfe.live.LiveClientScript;
-import ujfe.live.LiveDevToolsScript;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveHttpCodecException;
-import ujfe.live.LiveHttpEventPayload;
-import ujfe.live.LiveHttpPaths;
-import ujfe.live.LiveHttpSecurity;
-import ujfe.live.LiveRenderResult;
-import ujfe.live.LiveSession;
-import ujfe.live.LiveCsrfException;
-import ujfe.live.LiveHttpRequestMetadata;
-import ujfe.live.LiveRateLimitException;
-import ujfe.live.StaticAssetHandler;
-import ujfe.live.UjfeErrorResponse;
+import ujfe.live.*;
 import ujfe.runtime.action.RuntimePhase;
 
 import java.io.BufferedReader;
@@ -61,7 +46,7 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             if ("GET".equals(method) && LiveHttpPaths.CSS.equals(path)) {
                 String classes = request.getParameter("classes");
                 write(response, HttpServletResponse.SC_OK, "text/css; charset=utf-8",
-                        liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
+                    liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
                 return;
             }
 
@@ -74,14 +59,14 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                 LiveHttpRequestMetadata metadata = createMetadata(request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
-                        readBody(request),
-                        maxJsonPayloadBytes
+                    readBody(request),
+                    maxJsonPayloadBytes
                 );
                 LiveRenderResult result = liveSession.handleEvent(
-                        payload.eventId(),
-                        payload.value(),
-                        payload.clientState(),
-                        metadata
+                    payload.eventId(),
+                    payload.value(),
+                    payload.clientState(),
+                    metadata
                 );
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
@@ -91,8 +76,8 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                 LiveHttpRequestMetadata metadata = createMetadata(request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveRenderResult result = liveSession.updateClientState(
-                        LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
-                        metadata
+                    LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
+                    metadata
                 );
                 write(response, HttpServletResponse.SC_OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
                 return;
@@ -142,15 +127,15 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
 
     private static LiveHttpRequestMetadata createMetadata(HttpServletRequest request) {
         return new LiveHttpRequestMetadata(
-                request.getHeader("X-UJFE-CSRF"),
-                request.getHeader("Origin"),
-                request.getHeader("Referer"),
-                request.getHeader("Host"),
-                request.getScheme(),
-                request.getRemoteAddr(),
-                request.getHeader("Forwarded"),
-                request.getHeader("X-Forwarded-For"),
-                request.getHeader("X-Real-IP")
+            request.getHeader("X-UJFE-CSRF"),
+            request.getHeader("Origin"),
+            request.getHeader("Referer"),
+            request.getHeader("Host"),
+            request.getScheme(),
+            request.getRemoteAddr(),
+            request.getHeader("Forwarded"),
+            request.getHeader("X-Forwarded-For"),
+            request.getHeader("X-Real-IP")
         );
     }
 
@@ -160,23 +145,23 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
 
     private ErrorResponseContext errorContext(HttpServletRequest request, String path) {
         return ErrorResponseContext.builder()
-                .adapter("spring")
-                .method(request.getMethod())
-                .path(path)
-                .requestId(correlationId(request))
-                .phase(phaseFor(request.getMethod(), path))
-                .build();
+            .adapter("spring")
+            .method(request.getMethod())
+            .path(path)
+            .requestId(correlationId(request))
+            .phase(phaseFor(request.getMethod(), path))
+            .build();
     }
 
     private void reportHttpError(LiveHttpCodecException exception, HttpServletRequest request, String path) {
         liveSession.reportHttpError(
-                exception,
-                phaseFor(request.getMethod(), path),
-                path,
-                null,
-                correlationId(request),
-                Map.of("adapter", "spring", "method", request.getMethod(), "path", path),
-                Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
+            exception,
+            phaseFor(request.getMethod(), path),
+            path,
+            null,
+            correlationId(request),
+            Map.of("adapter", "spring", "method", request.getMethod(), "path", path),
+            Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
         );
     }
 
@@ -198,11 +183,13 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
         applySecurityHeaders(response);
-        response.getWriter().write(content);
+        response.getWriter()
+            .write(content);
     }
 
     private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
-        error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
+        error.retryAfterSeconds()
+            .ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
         write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
     }
 
@@ -210,19 +197,20 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
         if (StaticAssetHandler.isUnsafePath(path)) {
             StaticAssetHandler.logRejected("spring", path);
             write(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
+                "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
             return;
         }
         StaticAssetHandler.logNotFound("spring", path);
         write(response, HttpServletResponse.SC_NOT_FOUND,
-                "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
+            "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
     }
 
     private void applySecurityHeaders(HttpServletResponse response) {
-        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig()).forEach((name, value) -> {
-            if (!response.containsHeader(name)) {
-                response.setHeader(name, value);
-            }
-        });
+        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig())
+            .forEach((name, value) -> {
+                if (!response.containsHeader(name)) {
+                    response.setHeader(name, value);
+                }
+            });
     }
 }

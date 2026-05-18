@@ -6,9 +6,9 @@ public final class LiveCsrfException extends RuntimeException {
     private final boolean csrfHeaderPresent;
 
     public LiveCsrfException(
-            LiveHttpFailureCategory category,
-            String safeMessage,
-            boolean csrfHeaderPresent
+        LiveHttpFailureCategory category,
+        String safeMessage,
+        boolean csrfHeaderPresent
     ) {
         super(safeMessage);
         this.category = category;

@@ -23,24 +23,24 @@ public final class LiveEventContext {
     private final Map<String, Object> runtimeMetadata;
 
     public LiveEventContext(
-            String eventId,
-            ClientState clientState,
-            String traceId,
-            Map<String, Object> metadata
+        String eventId,
+        ClientState clientState,
+        String traceId,
+        Map<String, Object> metadata
     ) {
         this(eventId, "", null, Map.of(), clientState, null, Map.of(), traceId, metadata);
     }
 
     public LiveEventContext(
-            String eventId,
-            String eventType,
-            Object session,
-            Map<String, Object> requestMetadata,
-            ClientState clientState,
-            Object target,
-            Map<String, String> submittedValues,
-            String traceId,
-            Map<String, Object> runtimeMetadata
+        String eventId,
+        String eventType,
+        Object session,
+        Map<String, Object> requestMetadata,
+        ClientState clientState,
+        Object target,
+        Map<String, String> submittedValues,
+        String traceId,
+        Map<String, Object> runtimeMetadata
     ) {
         this.eventId = Objects.requireNonNull(eventId, "eventId");
         this.eventType = eventType == null ? "" : eventType;

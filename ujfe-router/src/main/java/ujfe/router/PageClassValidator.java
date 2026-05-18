@@ -65,7 +65,7 @@ public final class PageClassValidator {
             render = pageType.getMethod("render");
         } catch (NoSuchMethodException exception) {
             throw new RouteDiscoveryException(
-                    "Page must implement Component or expose public render(): " + pageType.getName(), exception);
+                "Page must implement Component or expose public render(): " + pageType.getName(), exception);
         }
 
         if (render.getParameterCount() != 0) {
@@ -73,7 +73,7 @@ public final class PageClassValidator {
         }
         if (!Node.class.isAssignableFrom(render.getReturnType())) {
             throw new RouteDiscoveryException(
-                    "render() must return ujfe.core.Node on " + pageType.getName());
+                "render() must return ujfe.core.Node on " + pageType.getName());
         }
     }
 
@@ -82,9 +82,9 @@ public final class PageClassValidator {
             pageType.getDeclaredConstructor();
         } catch (NoSuchMethodException exception) {
             throw new RouteDiscoveryException(
-                    "Page must expose a no-argument constructor for reflective route discovery: "
-                            + pageType.getName(),
-                    exception);
+                "Page must expose a no-argument constructor for reflective route discovery: "
+                    + pageType.getName(),
+                exception);
         }
     }
 }

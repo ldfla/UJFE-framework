@@ -58,12 +58,12 @@ public final class CssTheme {
     private static void appendVariables(StringBuilder css, String palette, Map<Integer, String> scale) {
         for (Integer step : STEPS) {
             css.append("--ujfe-")
-                    .append(palette)
-                    .append('-')
-                    .append(step)
-                    .append(':')
-                    .append(scale.get(step))
-                    .append(';');
+                .append(palette)
+                .append('-')
+                .append(step)
+                .append(':')
+                .append(scale.get(step))
+                .append(';');
         }
     }
 
@@ -93,9 +93,9 @@ public final class CssTheme {
 
         if (normalized.length() == 3) {
             normalized = ""
-                    + normalized.charAt(0) + normalized.charAt(0)
-                    + normalized.charAt(1) + normalized.charAt(1)
-                    + normalized.charAt(2) + normalized.charAt(2);
+                + normalized.charAt(0) + normalized.charAt(0)
+                + normalized.charAt(1) + normalized.charAt(1)
+                + normalized.charAt(2) + normalized.charAt(2);
         }
 
         if (!normalized.matches("[0-9a-fA-F]{6}")) {
@@ -103,9 +103,9 @@ public final class CssTheme {
         }
 
         return new int[]{
-                Integer.parseInt(normalized.substring(0, 2), 16),
-                Integer.parseInt(normalized.substring(2, 4), 16),
-                Integer.parseInt(normalized.substring(4, 6), 16)
+            Integer.parseInt(normalized.substring(0, 2), 16),
+            Integer.parseInt(normalized.substring(2, 4), 16),
+            Integer.parseInt(normalized.substring(4, 6), 16)
         };
     }
 

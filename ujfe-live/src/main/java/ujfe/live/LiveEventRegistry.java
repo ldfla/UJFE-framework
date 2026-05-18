@@ -1,12 +1,6 @@
 package ujfe.live;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -32,13 +26,14 @@ public final class LiveEventRegistry {
             return;
         }
 
-        eventIdsByRenderKey.entrySet().removeIf(entry -> {
-            boolean removed = !activeRenderKeys.contains(entry.getKey());
-            if (removed) {
-                handlers.remove(entry.getValue());
-            }
-            return removed;
-        });
+        eventIdsByRenderKey.entrySet()
+            .removeIf(entry -> {
+                boolean removed = !activeRenderKeys.contains(entry.getKey());
+                if (removed) {
+                    handlers.remove(entry.getValue());
+                }
+                return removed;
+            });
         clearRenderState();
     }
 
@@ -72,7 +67,7 @@ public final class LiveEventRegistry {
 
     public void handle(String eventId, String value) {
         LiveEventHandler handler = find(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown UJFE event: " + eventId));
+            .orElseThrow(() -> new IllegalArgumentException("Unknown UJFE event: " + eventId));
         handler.handle(value == null ? "" : value);
     }
 

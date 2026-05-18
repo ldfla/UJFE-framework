@@ -11,8 +11,10 @@ public final class Router {
     public Router register(Object pageInstance) {
         Objects.requireNonNull(pageInstance, "pageInstance");
         PageClassValidator.validateAnnotatedPageInstanceClass(pageInstance.getClass());
-        Page page = pageInstance.getClass().getAnnotation(Page.class);
-        return register(new RouteDefinition(page.value(), () -> pageInstance, pageInstance.getClass().getName()));
+        Page page = pageInstance.getClass()
+            .getAnnotation(Page.class);
+        return register(new RouteDefinition(page.value(), () -> pageInstance, pageInstance.getClass()
+            .getName()));
     }
 
     public Router register(Class<?> pageType) {
@@ -31,8 +33,8 @@ public final class Router {
         RouteDefinition previous = routes.get(route.path());
         if (previous != null) {
             throw new IllegalArgumentException("Duplicate route path '" + route.path()
-                    + "' for " + previous.sourceDescription()
-                    + " and " + route.sourceDescription());
+                + "' for " + previous.sourceDescription()
+                + " and " + route.sourceDescription());
         }
         routes.put(route.path(), route);
         return this;
