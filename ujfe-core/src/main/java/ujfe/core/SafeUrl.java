@@ -20,13 +20,13 @@ import java.util.Set;
 public final class SafeUrl {
     private static final Set<String> BLOCKED_SCHEMES = Set.of("javascript", "vbscript");
     private static final Set<String> ALLOWED_DATA_IMAGE_PREFIXES = Set.of(
-            "data:image/gif;",
-            "data:image/png;",
-            "data:image/jpeg;",
-            "data:image/webp;",
-            "data:image/svg+xml;",
-            "data:image/avif;",
-            "data:image/bmp;"
+        "data:image/gif;",
+        "data:image/png;",
+        "data:image/jpeg;",
+        "data:image/webp;",
+        "data:image/svg+xml;",
+        "data:image/avif;",
+        "data:image/bmp;"
     );
 
     private SafeUrl() {
@@ -54,10 +54,10 @@ public final class SafeUrl {
 
         // Empty, relative, and fragment-only references are always safe.
         if (trimmed.isEmpty()
-                || trimmed.startsWith("/")
-                || trimmed.startsWith("./")
-                || trimmed.startsWith("../")
-                || trimmed.startsWith("#")) {
+            || trimmed.startsWith("/")
+            || trimmed.startsWith("./")
+            || trimmed.startsWith("../")
+            || trimmed.startsWith("#")) {
             return trimmed;
         }
 
@@ -81,23 +81,25 @@ public final class SafeUrl {
         if ("data".equals(scheme)) {
             if (!policy.allowDataImageUrls()) {
                 throw new IllegalArgumentException(
-                        "data: URLs are blocked by the current URL policy");
+                    "data: URLs are blocked by the current URL policy");
             }
-            boolean allowed = ALLOWED_DATA_IMAGE_PREFIXES.stream().anyMatch(lower::startsWith);
+            boolean allowed = ALLOWED_DATA_IMAGE_PREFIXES.stream()
+                .anyMatch(lower::startsWith);
             if (!allowed) {
                 throw new IllegalArgumentException(
-                        "Only image data URLs are allowed (data:image/*). "
-                                + "Note: MIME prefix validation does not prove that "
-                                + "decoded bytes are a valid image.");
+                    "Only image data URLs are allowed (data:image/*). "
+                        + "Note: MIME prefix validation does not prove that "
+                        + "decoded bytes are a valid image.");
             }
             return trimmed;
         }
 
         // Check if the scheme is allowed by the active policy.
-        if (!policy.allowedSchemes().contains(scheme)) {
+        if (!policy.allowedSchemes()
+            .contains(scheme)) {
             throw new IllegalArgumentException(
-                    "URL scheme not allowed by the current policy: " + scheme
-                            + ". Allowed schemes: " + policy.allowedSchemes());
+                "URL scheme not allowed by the current policy: " + scheme
+                    + ". Allowed schemes: " + policy.allowedSchemes());
         }
 
         // Validate URI syntax for non-data URLs.

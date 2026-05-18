@@ -17,8 +17,8 @@ public final class ManualRouteSource implements RouteSource {
         RouteDefinition previous = routes.get(route.path());
         if (previous != null) {
             throw new IllegalArgumentException("Duplicate route path '" + route.path()
-                    + "' for " + previous.sourceDescription()
-                    + " and " + route.sourceDescription());
+                + "' for " + previous.sourceDescription()
+                + " and " + route.sourceDescription());
         }
         routes.put(route.path(), route);
         return this;

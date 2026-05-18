@@ -62,8 +62,8 @@ public final class RuntimeActionRegistry {
                 action.execute(context);
             } catch (Exception exception) {
                 executeOnError(new RuntimeErrorContext(
-                        exception, RuntimePhase.RENDER,
-                        context.path(), null, context.traceId(), null));
+                    exception, RuntimePhase.RENDER,
+                    context.path(), null, context.traceId(), null));
                 throw propagate(exception);
             }
         }
@@ -80,8 +80,8 @@ public final class RuntimeActionRegistry {
                 action.execute(result);
             } catch (Exception exception) {
                 executeOnError(new RuntimeErrorContext(
-                        exception, RuntimePhase.RENDER,
-                        result.path(), null, result.traceId(), null));
+                    exception, RuntimePhase.RENDER,
+                    result.path(), null, result.traceId(), null));
                 throw propagate(exception);
             }
         }
@@ -98,8 +98,8 @@ public final class RuntimeActionRegistry {
                 action.execute(context);
             } catch (Exception exception) {
                 executeOnError(new RuntimeErrorContext(
-                        exception, RuntimePhase.EVENT,
-                        null, context.eventId(), context.traceId(), null));
+                    exception, RuntimePhase.EVENT,
+                    null, context.eventId(), context.traceId(), null));
                 throw propagate(exception);
             }
         }
@@ -116,8 +116,8 @@ public final class RuntimeActionRegistry {
                 action.execute(result);
             } catch (Exception exception) {
                 executeOnError(new RuntimeErrorContext(
-                        exception, RuntimePhase.EVENT,
-                        null, result.eventId(), result.traceId(), null));
+                    exception, RuntimePhase.EVENT,
+                    null, result.eventId(), result.traceId(), null));
                 throw propagate(exception);
             }
         }
@@ -158,8 +158,8 @@ public final class RuntimeActionRegistry {
                 action.execute(context);
             } catch (Exception exception) {
                 executeOnError(new RuntimeErrorContext(
-                        exception, RuntimePhase.HEAD_CONTRIBUTION,
-                        null, null, "", null));
+                    exception, RuntimePhase.HEAD_CONTRIBUTION,
+                    null, null, "", null));
                 throw propagate(exception);
             }
         }
@@ -171,11 +171,11 @@ public final class RuntimeActionRegistry {
      */
     public boolean isEmpty() {
         return beforeRender.isEmpty()
-                && afterRender.isEmpty()
-                && beforeEvent.isEmpty()
-                && afterEvent.isEmpty()
-                && onError.isEmpty()
-                && contributeHead.isEmpty();
+            && afterRender.isEmpty()
+            && beforeEvent.isEmpty()
+            && afterEvent.isEmpty()
+            && onError.isEmpty()
+            && contributeHead.isEmpty();
     }
 
     private static RuntimeException propagate(Exception exception) {

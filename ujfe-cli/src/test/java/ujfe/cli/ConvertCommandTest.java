@@ -20,11 +20,11 @@ final class ConvertCommandTest {
         Files.writeString(input, "<div class=\"p-4\"><h1>Hello</h1><button>Salvar</button></div>", StandardCharsets.UTF_8);
 
         int exitCode = new ConvertCommand().run(new String[]{
-                input.toString(),
-                "--out",
-                output.toString(),
-                "--type",
-                "html"
+            input.toString(),
+            "--out",
+            output.toString(),
+            "--type",
+            "html"
         });
 
         String java = Files.readString(output, StandardCharsets.UTF_8);
@@ -39,9 +39,10 @@ final class ConvertCommandTest {
     @Test
     void rejectsReactForNow() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                new ConvertCommand().run(new String[]{"page.jsx", "--out", "Page.java", "--type", "react"})
+            new ConvertCommand().run(new String[]{"page.jsx", "--out", "Page.java", "--type", "react"})
         );
 
-        assertTrue(exception.getMessage().contains("Unsupported convert type"));
+        assertTrue(exception.getMessage()
+            .contains("Unsupported convert type"));
     }
 }

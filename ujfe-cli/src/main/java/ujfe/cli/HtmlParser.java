@@ -38,21 +38,24 @@ final class HtmlParser {
                 break;
             }
 
-            String rawTag = html.substring(tagStart + 1, tagEnd).trim();
+            String rawTag = html.substring(tagStart + 1, tagEnd)
+                .trim();
             if (rawTag.isEmpty()) {
                 index = tagEnd + 1;
                 continue;
             }
 
             if (rawTag.startsWith("/")) {
-                closeTag(rawTag.substring(1).trim(), stack, warnings);
+                closeTag(rawTag.substring(1)
+                    .trim(), stack, warnings);
                 index = tagEnd + 1;
                 continue;
             }
 
             boolean selfClosing = rawTag.endsWith("/");
             if (selfClosing) {
-                rawTag = rawTag.substring(0, rawTag.length() - 1).trim();
+                rawTag = rawTag.substring(0, rawTag.length() - 1)
+                    .trim();
             }
 
             ParsedTag parsedTag = parseTag(rawTag);
@@ -67,7 +70,8 @@ final class HtmlParser {
         }
 
         while (!stack.isEmpty()) {
-            warnings.add("Unclosed tag: <" + stack.pop().tagName() + ">");
+            warnings.add("Unclosed tag: <" + stack.pop()
+                .tagName() + ">");
         }
 
         return new HtmlParseResult(roots, warnings);
@@ -75,7 +79,8 @@ final class HtmlParser {
 
     private static void appendText(String rawText, Deque<HtmlNode> stack, List<HtmlNode> roots) {
         String text = decodeEntities(rawText);
-        if (text.trim().isEmpty()) {
+        if (text.trim()
+            .isEmpty()) {
             return;
         }
         appendNode(HtmlNode.text(text.trim()), stack, roots);
@@ -85,7 +90,8 @@ final class HtmlParser {
         if (stack.isEmpty()) {
             roots.add(node);
         } else {
-            stack.peek().addChild(node);
+            stack.peek()
+                .addChild(node);
         }
     }
 
@@ -93,7 +99,8 @@ final class HtmlParser {
         String name = tagName(rawName);
         while (!stack.isEmpty()) {
             HtmlNode current = stack.pop();
-            if (current.tagName().equals(name)) {
+            if (current.tagName()
+                .equals(name)) {
                 return;
             }
             warnings.add("Auto-closing <" + current.tagName() + "> before </" + name + ">");
@@ -202,18 +209,19 @@ final class HtmlParser {
     }
 
     private static String tagName(String rawName) {
-        return rawName.trim().toLowerCase(Locale.ROOT);
+        return rawName.trim()
+            .toLowerCase(Locale.ROOT);
     }
 
     private static String decodeEntities(String value) {
         return value
-                .replace("&nbsp;", " ")
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&quot;", "\"")
-                .replace("&#39;", "'")
-                .replace("&apos;", "'")
-                .replace("&amp;", "&");
+            .replace("&nbsp;", " ")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&apos;", "'")
+            .replace("&amp;", "&");
     }
 
     private static final class ParsedTag {

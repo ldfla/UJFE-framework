@@ -14,10 +14,10 @@ public final class UjfeSpringClientStateProperties {
 
     ClientStatePolicy toClientStatePolicy() {
         return ClientStatePolicy.builder()
-                .allowCookies(cookies)
-                .allowLocalStorageKeys(localStorageKeys)
-                .allowSessionStorageKeys(sessionStorageKeys)
-                .build();
+            .allowCookies(cookies)
+            .allowLocalStorageKeys(localStorageKeys)
+            .allowSessionStorageKeys(sessionStorageKeys)
+            .build();
     }
 
     public List<String> getCookies() {

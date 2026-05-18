@@ -40,7 +40,8 @@ public final class UI {
 
     public static Element html(Node... children) {
         Element html = element("html");
-        Arrays.stream(children).forEach(html::child);
+        Arrays.stream(children)
+            .forEach(html::child);
         return html;
     }
 
@@ -439,7 +440,8 @@ public final class UI {
 
     public static Element form(Node... children) {
         Element form = form();
-        Arrays.stream(children).forEach(form::child);
+        Arrays.stream(children)
+            .forEach(form::child);
         return form;
     }
 

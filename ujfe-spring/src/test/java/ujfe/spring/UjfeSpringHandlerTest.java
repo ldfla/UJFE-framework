@@ -41,11 +41,11 @@ final class UjfeSpringHandlerTest {
         properties.setEnabled(true);
 
         LiveSessionConfig config = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(
-                        properties,
-                        new UjfeSpringSecurityHeadersProperties(),
-                        new UjfeSpringClientStateProperties()
-                );
+            .ujfeLiveSessionConfig(
+                properties,
+                new UjfeSpringSecurityHeadersProperties(),
+                new UjfeSpringClientStateProperties()
+            );
 
         assertTrue(config.isDevelopmentErrorDetailsEnabled());
     }
@@ -61,11 +61,11 @@ final class UjfeSpringHandlerTest {
         custom.setPermissionsPolicy("geolocation=()");
 
         LiveSessionConfig customConfig = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(
-                        new UjfeSpringProperties(),
-                        custom,
-                        new UjfeSpringClientStateProperties()
-                );
+            .ujfeLiveSessionConfig(
+                new UjfeSpringProperties(),
+                custom,
+                new UjfeSpringClientStateProperties()
+            );
 
         assertTrue(custom.getEnabled());
         assertEquals("nosniff", custom.getXContentTypeOptions());
@@ -73,20 +73,24 @@ final class UjfeSpringHandlerTest {
         assertEquals("same-origin", custom.getReferrerPolicy());
         assertEquals("default-src 'self'", custom.getContentSecurityPolicy());
         assertEquals("geolocation=()", custom.getPermissionsPolicy());
-        assertEquals("same-origin", customConfig.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
-        assertEquals("default-src 'self'", customConfig.securityHeaders().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
+        assertEquals("same-origin", customConfig.securityHeaders()
+            .get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("default-src 'self'", customConfig.securityHeaders()
+            .get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY));
 
         UjfeSpringSecurityHeadersProperties disabled = new UjfeSpringSecurityHeadersProperties();
         disabled.setEnabled(false);
         LiveSessionConfig disabledConfig = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(
-                        new UjfeSpringProperties(),
-                        disabled,
-                        new UjfeSpringClientStateProperties()
-                );
+            .ujfeLiveSessionConfig(
+                new UjfeSpringProperties(),
+                disabled,
+                new UjfeSpringClientStateProperties()
+            );
 
-        assertFalse(disabledConfig.securityHeadersConfig().isEnabled());
-        assertTrue(disabledConfig.securityHeaders().isEmpty());
+        assertFalse(disabledConfig.securityHeadersConfig()
+            .isEnabled());
+        assertTrue(disabledConfig.securityHeaders()
+            .isEmpty());
     }
 
     @Test
@@ -97,15 +101,18 @@ final class UjfeSpringHandlerTest {
         clientState.setSessionStorageKeys(java.util.List.of("ujfe.tab"));
 
         LiveSessionConfig config = new UjfeSpringAutoConfiguration()
-                .ujfeLiveSessionConfig(
-                        new UjfeSpringProperties(),
-                        new UjfeSpringSecurityHeadersProperties(),
-                        clientState
-                );
+            .ujfeLiveSessionConfig(
+                new UjfeSpringProperties(),
+                new UjfeSpringSecurityHeadersProperties(),
+                clientState
+            );
 
-        assertEquals(java.util.Set.of("ujfe_demo"), config.clientStatePolicy().allowedCookies());
-        assertEquals(java.util.Set.of("ujfe.theme"), config.clientStatePolicy().allowedLocalStorageKeys());
-        assertEquals(java.util.Set.of("ujfe.tab"), config.clientStatePolicy().allowedSessionStorageKeys());
+        assertEquals(java.util.Set.of("ujfe_demo"), config.clientStatePolicy()
+            .allowedCookies());
+        assertEquals(java.util.Set.of("ujfe.theme"), config.clientStatePolicy()
+            .allowedLocalStorageKeys());
+        assertEquals(java.util.Set.of("ujfe.tab"), config.clientStatePolicy()
+            .allowedSessionStorageKeys());
         assertEquals(java.util.List.of("ujfe_demo"), clientState.getCookies());
         assertEquals(java.util.List.of("ujfe.theme"), clientState.getLocalStorageKeys());
         assertEquals(java.util.List.of("ujfe.tab"), clientState.getSessionStorageKeys());
@@ -122,12 +129,16 @@ final class UjfeSpringHandlerTest {
             handler.handleRequest(request, response);
 
             assertEquals(200, response.getStatus());
-            assertTrue(response.getContentType().startsWith("text/html"));
-            assertTrue(response.getContentAsString().contains("Home"));
-            assertTrue(response.getContentAsString().contains("Cookie: ativo"));
+            assertTrue(response.getContentType()
+                .startsWith("text/html"));
+            assertTrue(response.getContentAsString()
+                .contains("Home"));
+            assertTrue(response.getContentAsString()
+                .contains("Cookie: ativo"));
             assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
             assertEquals("strict-origin-when-cross-origin", response.getHeader("Referrer-Policy"));
-            assertTrue(response.getHeader("Content-Security-Policy").contains("default-src 'self'"));
+            assertTrue(response.getHeader("Content-Security-Policy")
+                .contains("default-src 'self'"));
         }
     }
 
@@ -142,7 +153,8 @@ final class UjfeSpringHandlerTest {
             handler.handleRequest(request, response);
 
             assertEquals(200, response.getStatus());
-            assertTrue(response.getContentAsString().contains("Cookie: missing"));
+            assertTrue(response.getContentAsString()
+                .contains("Cookie: missing"));
         }
     }
 
@@ -172,8 +184,10 @@ final class UjfeSpringHandlerTest {
             handler.handleRequest(new MockHttpServletRequest("GET", "/_ujfe/client.js"), response);
 
             assertEquals(200, response.getStatus());
-            assertTrue(response.getContentType().startsWith("application/javascript"));
-            assertTrue(response.getContentAsString().contains("/_ujfe/event"));
+            assertTrue(response.getContentType()
+                .startsWith("application/javascript"));
+            assertTrue(response.getContentAsString()
+                .contains("/_ujfe/event"));
         }
     }
 
@@ -188,16 +202,18 @@ final class UjfeSpringHandlerTest {
 
             MockHttpServletResponse event = new MockHttpServletResponse();
             MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
-                            + "\"localStorage\":{\"theme\":\"dark\"}}}");
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"cookies\":\"ujfe_demo=ativo\","
+                    + "\"localStorage\":{\"theme\":\"dark\"}}}");
             request.addHeader("X-UJFE-CSRF", csrfToken);
             request.addHeader("Origin", "http://localhost");
             request.addHeader("Host", "localhost");
             handler.handleRequest(request, event);
 
             assertEquals(200, event.getStatus());
-            assertTrue(event.getContentType().startsWith("application/json"));
-            assertTrue(event.getContentAsString().contains("\"html\""));
+            assertTrue(event.getContentType()
+                .startsWith("application/json"));
+            assertTrue(event.getContentAsString()
+                .contains("\"html\""));
         }
     }
 
@@ -210,7 +226,7 @@ final class UjfeSpringHandlerTest {
             String eventId = firstEventId(page.getContentAsString());
 
             MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
             request.addHeader("Origin", "http://localhost");
             request.addHeader("Host", "localhost");
             MockHttpServletResponse response = new MockHttpServletResponse();
@@ -233,7 +249,7 @@ final class UjfeSpringHandlerTest {
             String eventId = firstEventId(page.getContentAsString());
 
             MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
             request.addHeader("X-UJFE-CSRF", "invalid-token");
             request.addHeader("Origin", "http://localhost");
             request.addHeader("Host", "localhost");
@@ -258,7 +274,7 @@ final class UjfeSpringHandlerTest {
             String csrfToken = firstCsrfToken(page.getContentAsString());
 
             MockHttpServletRequest request = postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}");
             request.addHeader("X-UJFE-CSRF", csrfToken);
             request.addHeader("Origin", "http://evil.test");
             request.addHeader("Host", "localhost");
@@ -276,7 +292,9 @@ final class UjfeSpringHandlerTest {
     @Test
     void developmentOverrideAllowsMissingCsrfToken() throws Exception {
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()),
-                ujfe.live.LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build())) {
+            ujfe.live.LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .build())) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             MockHttpServletResponse page = new MockHttpServletResponse();
             handler.handleRequest(new MockHttpServletRequest("GET", "/"), page);
@@ -284,11 +302,13 @@ final class UjfeSpringHandlerTest {
 
             MockHttpServletResponse response = new MockHttpServletResponse();
             handler.handleRequest(postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), response);
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), response);
 
             assertEquals(200, response.getStatus());
-            assertTrue(response.getContentAsString().contains("\"html\""));
-            assertFalse(page.getContentAsString().contains("ujfe-csrf-token"));
+            assertTrue(response.getContentAsString()
+                .contains("\"html\""));
+            assertFalse(page.getContentAsString()
+                .contains("ujfe-csrf-token"));
         }
     }
 
@@ -314,7 +334,7 @@ final class UjfeSpringHandlerTest {
 
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 handler.handleRequest(postJson(LiveHttpPaths.EVENT,
-                        "{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"), response);
+                    "{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}"), response);
             }
 
             assertError(response, 413, "UJFE_BAD_REQUEST", "The request is invalid.");
@@ -324,9 +344,9 @@ final class UjfeSpringHandlerTest {
     @Test
     void rateLimitsLiveEventEndpoint() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             MockHttpServletResponse page = new MockHttpServletResponse();
@@ -335,12 +355,12 @@ final class UjfeSpringHandlerTest {
 
             MockHttpServletResponse first = new MockHttpServletResponse();
             handler.handleRequest(postJson(LiveHttpPaths.EVENT,
-                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), first);
+                "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), first);
 
             MockHttpServletResponse second = new MockHttpServletResponse();
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 handler.handleRequest(postJson(LiveHttpPaths.EVENT,
-                        "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), second);
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), second);
             }
 
             assertEquals(200, first.getStatus());
@@ -352,21 +372,21 @@ final class UjfeSpringHandlerTest {
     @Test
     void rateLimitsStateEndpoint() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             handler.handleRequest(new MockHttpServletRequest("GET", "/"), new MockHttpServletResponse());
 
             MockHttpServletResponse first = new MockHttpServletResponse();
             handler.handleRequest(postJson(LiveHttpPaths.STATE,
-                    "{\"clientState\":{\"localStorage\":{}}}"), first);
+                "{\"clientState\":{\"localStorage\":{}}}"), first);
 
             MockHttpServletResponse second = new MockHttpServletResponse();
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 handler.handleRequest(postJson(LiveHttpPaths.STATE,
-                        "{\"clientState\":{\"localStorage\":{}}}"), second);
+                    "{\"clientState\":{\"localStorage\":{}}}"), second);
             }
 
             assertEquals(200, first.getStatus());
@@ -387,17 +407,20 @@ final class UjfeSpringHandlerTest {
             }
 
             assertError(response, 500, "UJFE_RENDER_ERROR", "An error occurred while rendering the page.");
-            assertTrue(response.getContentAsString().contains("\"requestId\":\"req-render-1\""));
-            assertFalse(response.getContentAsString().contains("render-secret"));
-            assertFalse(response.getContentAsString().contains("FailingRenderPage"));
+            assertTrue(response.getContentAsString()
+                .contains("\"requestId\":\"req-render-1\""));
+            assertFalse(response.getContentAsString()
+                .contains("render-secret"));
+            assertFalse(response.getContentAsString()
+                .contains("FailingRenderPage"));
         }
     }
 
     @Test
     void eventFailureReturnsSafeJsonErrorResponse() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .disableCsrfProtectionForDevelopmentUnsafe()
-                .build();
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new FailingEventPage()), config)) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             MockHttpServletResponse page = new MockHttpServletResponse();
@@ -407,12 +430,14 @@ final class UjfeSpringHandlerTest {
 
             try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
                 handler.handleRequest(postJson(LiveHttpPaths.EVENT,
-                        "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), response);
+                    "{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"), response);
             }
 
             assertError(response, 500, "UJFE_EVENT_HANDLER_ERROR", "An error occurred while handling the live event.");
-            assertFalse(response.getContentAsString().contains("event-secret"));
-            assertFalse(response.getContentAsString().contains("FailingEventPage"));
+            assertFalse(response.getContentAsString()
+                .contains("event-secret"));
+            assertFalse(response.getContentAsString()
+                .contains("FailingEventPage"));
         }
     }
 
@@ -427,7 +452,8 @@ final class UjfeSpringHandlerTest {
             }
 
             assertError(response, 404, "UJFE_ROUTE_NOT_FOUND", "The requested route was not found.");
-            assertFalse(response.getContentAsString().contains("No UJFE route registered"));
+            assertFalse(response.getContentAsString()
+                .contains("No UJFE route registered"));
         }
     }
 
@@ -453,7 +479,8 @@ final class UjfeSpringHandlerTest {
             }
 
             assertEquals(400, response.getStatus());
-            assertTrue(response.getContentType().startsWith("text/plain"));
+            assertTrue(response.getContentType()
+                .startsWith("text/plain"));
             assertEquals("Invalid static asset path.", response.getContentAsString());
         }
     }
@@ -461,8 +488,8 @@ final class UjfeSpringHandlerTest {
     @Test
     void publicPageRouteIsNotRateLimited() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
-                .build();
+            .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()), config)) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             MockHttpServletResponse first = new MockHttpServletResponse();
@@ -484,7 +511,7 @@ final class UjfeSpringHandlerTest {
     }
 
     private static MockHttpServletResponse handle(UjfeSpringHandler handler, MockHttpServletRequest request)
-            throws Exception {
+        throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();
         handler.handleRequest(request, response);
         return response;
@@ -492,27 +519,30 @@ final class UjfeSpringHandlerTest {
 
     private static LiveSessionConfig clientStateConfig() {
         return LiveSessionConfig.builder()
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("theme")
-                .build();
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("theme")
+            .build();
     }
 
     private static String firstEventId(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
         return matcher.group(1);
     }
 
     private static String firstCsrfToken(String html) {
-        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("meta name=\"ujfe-csrf-token\" content=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a csrf token");
         return matcher.group(1);
     }
 
     private static void assertError(MockHttpServletResponse response, int status, String code, String message)
-            throws Exception {
+        throws Exception {
         assertEquals(status, response.getStatus());
-        assertTrue(response.getContentType().startsWith("application/json"));
+        assertTrue(response.getContentType()
+            .startsWith("application/json"));
         String body = response.getContentAsString();
         assertTrue(body.contains("\"code\":\"" + code + "\""), body);
         assertTrue(body.contains("\"message\":\"" + message + "\""), body);
@@ -523,20 +553,24 @@ final class UjfeSpringHandlerTest {
 
     private static void assertStaticAssetNotFound(MockHttpServletResponse response) throws Exception {
         assertEquals(404, response.getStatus());
-        assertTrue(response.getContentType().startsWith("text/plain"));
+        assertTrue(response.getContentType()
+            .startsWith("text/plain"));
         assertEquals("Static asset not found.", response.getContentAsString());
-        assertFalse(response.getContentAsString().contains("UJFE_ROUTE_NOT_FOUND"));
-        assertFalse(response.getContentAsString().contains("No UJFE route registered"));
+        assertFalse(response.getContentAsString()
+            .contains("UJFE_ROUTE_NOT_FOUND"));
+        assertFalse(response.getContentAsString()
+            .contains("No UJFE route registered"));
     }
 
     @Page("/")
     public static final class HomePage {
         public Node render() {
             return div()
-                    .child(p("Home"))
-                    .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo").orElse("missing")))
-                    .child(button("Click").onClick(() -> {
-                    }));
+                .child(p("Home"))
+                .child(p(() -> "Cookie: " + ujfe.core.Ujfe.cookie("ujfe_demo")
+                    .orElse("missing")))
+                .child(button("Click").onClick(() -> {
+                }));
         }
     }
 
@@ -585,9 +619,9 @@ final class UjfeSpringHandlerTest {
 
         static CodecLogSilencer attach() {
             return new CodecLogSilencer(
-                    Logger.getLogger(ujfe.live.LiveHttpCodec.class.getName()),
-                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
-                    Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
+                Logger.getLogger(ujfe.live.LiveHttpCodec.class.getName()),
+                Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
+                Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
             );
         }
 

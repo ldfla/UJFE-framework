@@ -16,12 +16,12 @@ public final class UjfeErrorResponse {
     private final long retryAfterSeconds;
 
     UjfeErrorResponse(
-            int httpStatus,
-            UjfeErrorCode code,
-            String message,
-            String requestId,
-            String details,
-            long retryAfterSeconds
+        int httpStatus,
+        UjfeErrorCode code,
+        String message,
+        String requestId,
+        String details,
+        long retryAfterSeconds
     ) {
         this.httpStatus = httpStatus;
         this.code = code;
@@ -58,19 +58,19 @@ public final class UjfeErrorResponse {
     public String body() {
         StringBuilder json = new StringBuilder();
         json.append("{\"error\":{\"code\":\"")
-                .append(code.name())
-                .append("\",\"message\":\"")
-                .append(jsonEscape(message))
-                .append("\"");
+            .append(code.name())
+            .append("\",\"message\":\"")
+            .append(jsonEscape(message))
+            .append("\"");
         if (requestId != null && !requestId.isBlank()) {
             json.append(",\"requestId\":\"")
-                    .append(jsonEscape(requestId))
-                    .append("\"");
+                .append(jsonEscape(requestId))
+                .append("\"");
         }
         if (details != null && !details.isBlank()) {
             json.append(",\"details\":\"")
-                    .append(jsonEscape(details))
-                    .append("\"");
+                .append(jsonEscape(details))
+                .append("\"");
         }
         json.append("}}");
         return json.toString();

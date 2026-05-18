@@ -21,24 +21,24 @@ public final class LiveEventResult {
     private final Map<String, Object> runtimeMetadata;
 
     public LiveEventResult(
-            String html,
-            String eventId,
-            Duration eventDuration,
-            String traceId,
-            Map<String, Object> metadata
+        String html,
+        String eventId,
+        Duration eventDuration,
+        String traceId,
+        Map<String, Object> metadata
     ) {
         this(html, eventId, eventDuration, traceId, metadata, Map.of(), Map.of(), Map.of());
     }
 
     public LiveEventResult(
-            String html,
-            String eventId,
-            Duration eventDuration,
-            String traceId,
-            Map<String, Object> eventMetadata,
-            Map<String, Object> reRenderMetadata,
-            Map<String, Object> clientStateMetadata,
-            Map<String, Object> runtimeMetadata
+        String html,
+        String eventId,
+        Duration eventDuration,
+        String traceId,
+        Map<String, Object> eventMetadata,
+        Map<String, Object> reRenderMetadata,
+        Map<String, Object> clientStateMetadata,
+        Map<String, Object> runtimeMetadata
     ) {
         this.html = Objects.requireNonNull(html, "html");
         this.eventId = Objects.requireNonNull(eventId, "eventId");

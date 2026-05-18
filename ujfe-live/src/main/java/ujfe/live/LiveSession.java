@@ -1,7 +1,6 @@
 package ujfe.live;
 
 import ujfe.core.*;
-import ujfe.core.CssTheme;
 import ujfe.router.PageRenderer;
 import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
@@ -11,9 +10,9 @@ import ujfe.runtime.lifecycle.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 import static ujfe.core.UI.link;
 
@@ -41,15 +40,15 @@ public final class LiveSession implements AutoCloseable {
 
     public LiveSession(Router router, Supplier<CssTheme> themeSupplier) {
         this(router, LiveSessionConfig.builder()
-                .themeSupplier(themeSupplier)
-                .build());
+            .themeSupplier(themeSupplier)
+            .build());
     }
 
     public LiveSession(Router router, Supplier<CssTheme> themeSupplier, boolean devToolsEnabled) {
         this(router, LiveSessionConfig.builder()
-                .themeSupplier(themeSupplier)
-                .devToolsEnabled(devToolsEnabled)
-                .build());
+            .themeSupplier(themeSupplier)
+            .devToolsEnabled(devToolsEnabled)
+            .build());
     }
 
     public LiveSession(Router router, LiveSessionConfig config) {
@@ -61,34 +60,34 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public LiveSession(
-            Router router,
-            PageRenderer pageRenderer,
-            LiveEventRegistry eventRegistry,
-            Supplier<CssTheme> themeSupplier
+        Router router,
+        PageRenderer pageRenderer,
+        LiveEventRegistry eventRegistry,
+        Supplier<CssTheme> themeSupplier
     ) {
         this(router, pageRenderer, eventRegistry, LiveSessionConfig.builder()
-                .themeSupplier(themeSupplier)
-                .build());
+            .themeSupplier(themeSupplier)
+            .build());
     }
 
     public LiveSession(
-            Router router,
-            PageRenderer pageRenderer,
-            LiveEventRegistry eventRegistry,
-            Supplier<CssTheme> themeSupplier,
-            boolean devToolsEnabled
+        Router router,
+        PageRenderer pageRenderer,
+        LiveEventRegistry eventRegistry,
+        Supplier<CssTheme> themeSupplier,
+        boolean devToolsEnabled
     ) {
         this(router, pageRenderer, eventRegistry, LiveSessionConfig.builder()
-                .themeSupplier(themeSupplier)
-                .devToolsEnabled(devToolsEnabled)
-                .build());
+            .themeSupplier(themeSupplier)
+            .devToolsEnabled(devToolsEnabled)
+            .build());
     }
 
     public LiveSession(
-            Router router,
-            PageRenderer pageRenderer,
-            LiveEventRegistry eventRegistry,
-            LiveSessionConfig config
+        Router router,
+        PageRenderer pageRenderer,
+        LiveEventRegistry eventRegistry,
+        LiveSessionConfig config
     ) {
         this.router = Objects.requireNonNull(router, "router");
         this.pageRenderer = Objects.requireNonNull(pageRenderer, "pageRenderer");
@@ -97,13 +96,14 @@ public final class LiveSession implements AutoCloseable {
         this.runtimeActions = config.runtimeActions();
         this.lifecycleRuntime = LifecycleRuntime.create();
         this.componentRenderer = new LiveComponentRenderer(
-                eventRegistry,
-                ElementIdGenerator.sequential(),
-                config.themeSupplier(),
-                config.cssMode()
+            eventRegistry,
+            ElementIdGenerator.sequential(),
+            config.themeSupplier(),
+            config.cssMode()
         );
         this.csrfToken = LiveHttpSecurity.generateCsrfToken();
-        this.sessionId = UUID.randomUUID().toString();
+        this.sessionId = UUID.randomUUID()
+            .toString();
         this.rateLimiter = new TokenBucketRateLimiter(config);
     }
 
@@ -135,18 +135,19 @@ public final class LiveSession implements AutoCloseable {
         RateLimitDecision decision = rateLimiter.allow(new RateLimitRequest(endpointPath, sessionId, metadata));
         if (!decision.allowed()) {
             LiveRateLimitException exception = new LiveRateLimitException(
-                    endpointPath,
-                    decision.keyType(),
-                    decision.retryAfter().orElse(null)
+                endpointPath,
+                decision.keyType(),
+                decision.retryAfter()
+                    .orElse(null)
             );
             reportHttpError(
-                    exception,
-                    RuntimePhase.INTERNAL,
-                    endpointPath,
-                    null,
-                    nextTraceId(),
-                    Map.of("path", endpointPath),
-                    errorMetadata(UjfeErrorCode.UJFE_RATE_LIMITED, 429, "rate_limit")
+                exception,
+                RuntimePhase.INTERNAL,
+                endpointPath,
+                null,
+                nextTraceId(),
+                Map.of("path", endpointPath),
+                errorMetadata(UjfeErrorCode.UJFE_RATE_LIMITED, 429, "rate_limit")
             );
             throw exception;
         }
@@ -164,7 +165,8 @@ public final class LiveSession implements AutoCloseable {
     public boolean hasRoute(String path) {
         readLock.lock();
         try {
-            return router.resolve(path).isPresent();
+            return router.resolve(path)
+                .isPresent();
         } finally {
             readLock.unlock();
         }
@@ -178,22 +180,22 @@ public final class LiveSession implements AutoCloseable {
 
         try {
             route = router.resolve(path)
-                    .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
+                .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
             page = pageFor(route);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    exception, RuntimePhase.ROUTING, path, null, traceId,
-                    errorMetadata(UjfeErrorCode.UJFE_ROUTE_NOT_FOUND, 404, "routing")));
+                exception, RuntimePhase.ROUTING, path, null, traceId,
+                errorMetadata(UjfeErrorCode.UJFE_ROUTE_NOT_FOUND, 404, "routing")));
             throw exception;
         }
 
         RenderContext renderContext = new RenderContext(
-                route.path(), page, this, Map.of(), clientState, start, traceId, Map.of());
+            route.path(), page, this, Map.of(), clientState, start, traceId, Map.of());
         runtimeActions.executeBeforeRender(renderContext);
 
         LiveRenderResult result;
         LifecycleTracker lifecycleTracker = lifecycleRuntime.beginRender(new LifecycleContext(
-                route.path(), this, traceId, Map.of()));
+            route.path(), this, traceId, Map.of()));
         try {
             result = componentRenderer.render(() -> pageRenderer.render(page), clientState, lifecycleTracker, route.path());
             routeLifecycleFailures(lifecycleTracker.complete(), route.path(), eventId, traceId);
@@ -207,8 +209,8 @@ public final class LiveSession implements AutoCloseable {
 
         Duration duration = Duration.between(start, Instant.now());
         RenderResult renderResult = new RenderResult(
-                result.html(), result.css(), currentPath, duration, traceId,
-                config.headNodes(), Map.of(), Map.of(), Map.of());
+            result.html(), result.css(), currentPath, duration, traceId,
+            config.headNodes(), Map.of(), Map.of(), Map.of());
         runtimeActions.executeAfterRender(renderResult);
 
         return result;
@@ -223,10 +225,10 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public LiveRenderResult handleEvent(
-            String eventId,
-            String eventValue,
-            ClientState nextClientState,
-            LiveHttpRequestMetadata metadata
+        String eventId,
+        String eventValue,
+        ClientState nextClientState,
+        LiveHttpRequestMetadata metadata
     ) {
         writeLock.lock();
         try {
@@ -237,18 +239,18 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private LiveRenderResult handleEventLocked(
-            String eventId,
-            String eventValue,
-            ClientState nextClientState,
-            LiveHttpRequestMetadata metadata
+        String eventId,
+        String eventValue,
+        ClientState nextClientState,
+        LiveHttpRequestMetadata metadata
     ) {
         String traceId = nextTraceId();
         try {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
         } catch (RuntimeException exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
-                    errorMetadata(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED, 403, "csrf")));
+                exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
+                errorMetadata(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED, 403, "csrf")));
             throw exception;
         }
 
@@ -257,7 +259,7 @@ public final class LiveSession implements AutoCloseable {
         ClientState eventClientState = clientState.mergeCookiesAndReplaceLocalStorage(filterClientState(nextClientState));
 
         LiveEventContext eventContext = new LiveEventContext(
-                eventId, "live", this, Map.of(), eventClientState, null, Map.of(), traceId, Map.of());
+            eventId, "live", this, Map.of(), eventClientState, null, Map.of(), traceId, Map.of());
         runtimeActions.executeBeforeEvent(eventContext);
 
         LiveRenderResult result;
@@ -267,15 +269,15 @@ public final class LiveSession implements AutoCloseable {
             result = renderPathLocked(currentPath, eventId);
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
-                    errorMetadata(UjfeErrorCode.UJFE_EVENT_HANDLER_ERROR, 500, "event")));
+                exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
+                errorMetadata(UjfeErrorCode.UJFE_EVENT_HANDLER_ERROR, 500, "event")));
             throw exception;
         }
 
         Duration duration = Duration.between(start, Instant.now());
         LiveEventResult eventResult = new LiveEventResult(
-                result.html(), eventId, duration, traceId,
-                Map.of("eventType", "live"), Map.of("path", currentPath), clientStateMetadata(), Map.of());
+            result.html(), eventId, duration, traceId,
+            Map.of("eventType", "live"), Map.of("path", currentPath), clientStateMetadata(), Map.of());
         runtimeActions.executeAfterEvent(eventResult);
 
         return result;
@@ -300,8 +302,8 @@ public final class LiveSession implements AutoCloseable {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
         } catch (RuntimeException exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    exception, RuntimePhase.STATE, currentPath, null, traceId,
-                    errorMetadata(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED, 403, "csrf")));
+                exception, RuntimePhase.STATE, currentPath, null, traceId,
+                errorMetadata(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED, 403, "csrf")));
             throw exception;
         }
         mergeClientState(nextClientState);
@@ -309,25 +311,25 @@ public final class LiveSession implements AutoCloseable {
     }
 
     public void reportHttpError(
-            Throwable exception,
-            RuntimePhase phase,
-            String path,
-            String eventId,
-            String traceId,
-            Map<String, Object> requestMetadata,
-            Map<String, Object> runtimeMetadata
+        Throwable exception,
+        RuntimePhase phase,
+        String path,
+        String eventId,
+        String traceId,
+        Map<String, Object> requestMetadata,
+        Map<String, Object> runtimeMetadata
     ) {
         runtimeActions.executeOnError(new RuntimeErrorContext(
-                exception,
-                phase,
-                path,
-                eventId,
-                traceId == null || traceId.isBlank() ? nextTraceId() : traceId,
-                Map.of(),
-                Map.of(),
-                requestMetadata,
-                Map.of("sessionReference", Integer.toHexString(sessionId.hashCode())),
-                runtimeMetadata
+            exception,
+            phase,
+            path,
+            eventId,
+            traceId == null || traceId.isBlank() ? nextTraceId() : traceId,
+            Map.of(),
+            Map.of(),
+            requestMetadata,
+            Map.of("sessionReference", Integer.toHexString(sessionId.hashCode())),
+            runtimeMetadata
         ));
     }
 
@@ -337,23 +339,23 @@ public final class LiveSession implements AutoCloseable {
             mergeClientState(initialClientState);
             LiveRenderResult result = renderPathLocked(path, null);
             return "<!doctype html>"
-                    + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
-                    + "<head>"
-                    + "<meta charset=\"utf-8\">"
-                    + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-                    + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
-                    + renderHeadNodes()
-                    + renderExternalStylesheets()
-                    + renderActionHeadContributions()
-                    + renderInternalCss(result.css())
-                    + renderCsrfMetaTag()
-                    + "</head>"
-                    + "<body>"
-                    + "<div" + renderRootAttributes() + ">" + result.html() + "</div>"
-                    + "<script src=\"/_ujfe/client.js\"></script>"
-                    + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
-                    + "</body>"
-                    + "</html>";
+                + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
+                + "<head>"
+                + "<meta charset=\"utf-8\">"
+                + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+                + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
+                + renderHeadNodes()
+                + renderExternalStylesheets()
+                + renderActionHeadContributions()
+                + renderInternalCss(result.css())
+                + renderCsrfMetaTag()
+                + "</head>"
+                + "<body>"
+                + "<div" + renderRootAttributes() + ">" + result.html() + "</div>"
+                + "<script src=\"/_ujfe/client.js\"></script>"
+                + (config.devToolsEnabled() ? "<script src=\"/_ujfe/dev.js\"></script>" : "")
+                + "</body>"
+                + "</html>";
         } finally {
             writeLock.unlock();
         }
@@ -374,7 +376,7 @@ public final class LiveSession implements AutoCloseable {
         try {
             String traceId = nextTraceId();
             List<LifecycleException> failures = lifecycleRuntime.cleanup(
-                    new UnmountContext(currentPath, this, traceId, Map.of(), "session-close"));
+                new UnmountContext(currentPath, this, traceId, Map.of(), "session-close"));
             routeLifecycleFailures(failures, currentPath, null, traceId);
             eventRegistry.clear();
             currentPage = null;
@@ -388,26 +390,28 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private ClientState filterClientState(ClientState nextClientState) {
-        return config.clientStatePolicy().filter(nextClientState);
+        return config.clientStatePolicy()
+            .filter(nextClientState);
     }
 
     private Object pageFor(RouteDefinition route) {
-        if (currentPage != null && route.path().equals(currentPath)) {
+        if (currentPage != null && route.path()
+            .equals(currentPath)) {
             return currentPage;
         }
         return route.createPage();
     }
 
     private void routeLifecycleFailures(
-            List<LifecycleException> failures,
-            String path,
-            String eventId,
-            String traceId
+        List<LifecycleException> failures,
+        String path,
+        String eventId,
+        String traceId
     ) {
         for (LifecycleException failure : failures) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    failure, RuntimePhase.LIFECYCLE, path, eventId, traceId,
-                    Map.of("callback", failure.callback())));
+                failure, RuntimePhase.LIFECYCLE, path, eventId, traceId,
+                Map.of("callback", failure.callback())));
         }
     }
 
@@ -415,25 +419,26 @@ public final class LiveSession implements AutoCloseable {
         if (exception instanceof LifecycleException) {
             LifecycleException lifecycleException = (LifecycleException) exception;
             runtimeActions.executeOnError(new RuntimeErrorContext(
-                    lifecycleException, RuntimePhase.LIFECYCLE, path, eventId, traceId,
-                    Map.of("callback", lifecycleException.callback())));
+                lifecycleException, RuntimePhase.LIFECYCLE, path, eventId, traceId,
+                Map.of("callback", lifecycleException.callback())));
             return;
         }
         runtimeActions.executeOnError(new RuntimeErrorContext(
-                exception, RuntimePhase.RENDER, path, eventId, traceId,
-                errorMetadata(UjfeErrorCode.UJFE_RENDER_ERROR, 500, "render")));
+            exception, RuntimePhase.RENDER, path, eventId, traceId,
+            errorMetadata(UjfeErrorCode.UJFE_RENDER_ERROR, 500, "render")));
     }
 
     static Map<String, Object> errorMetadata(UjfeErrorCode code, int httpStatus, String reason) {
         return Map.of(
-                "errorCode", code.name(),
-                "httpStatus", httpStatus,
-                "reason", reason
+            "errorCode", code.name(),
+            "httpStatus", httpStatus,
+            "reason", reason
         );
     }
 
     private String renderHeadNodes() {
-        if (config.headNodes().isEmpty()) {
+        if (config.headNodes()
+            .isEmpty()) {
             return "";
         }
 
@@ -466,13 +471,16 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private String renderExternalStylesheets() {
-        if (config.cssMode() != CssMode.EXTERNAL || config.externalStylesheets().isEmpty()) {
+        if (config.cssMode() != CssMode.EXTERNAL || config.externalStylesheets()
+            .isEmpty()) {
             return "";
         }
         UjfeContext context = UjfeContext.create();
         StringBuilder html = new StringBuilder();
         for (String href : config.externalStylesheets()) {
-            html.append(link().attr("rel", "stylesheet").attr("href", href).render(context));
+            html.append(link().attr("rel", "stylesheet")
+                .attr("href", href)
+                .render(context));
         }
         return html.toString();
     }
@@ -486,9 +494,12 @@ public final class LiveSession implements AutoCloseable {
 
     private String renderRootAttributes() {
         return " id=\"ujfe-root\""
-                + clientStatePolicyAttribute("data-ujfe-client-state-cookies", config.clientStatePolicy().allowedCookies())
-                + clientStatePolicyAttribute("data-ujfe-local-storage-keys", config.clientStatePolicy().allowedLocalStorageKeys())
-                + clientStatePolicyAttribute("data-ujfe-session-storage-keys", config.clientStatePolicy().allowedSessionStorageKeys());
+            + clientStatePolicyAttribute("data-ujfe-client-state-cookies", config.clientStatePolicy()
+            .allowedCookies())
+            + clientStatePolicyAttribute("data-ujfe-local-storage-keys", config.clientStatePolicy()
+            .allowedLocalStorageKeys())
+            + clientStatePolicyAttribute("data-ujfe-session-storage-keys", config.clientStatePolicy()
+            .allowedSessionStorageKeys());
     }
 
     private static String clientStatePolicyAttribute(String name, Collection<String> values) {
@@ -502,10 +513,13 @@ public final class LiveSession implements AutoCloseable {
             if (!first) {
                 json.append(',');
             }
-            json.append('"').append(jsonEscape(value)).append('"');
+            json.append('"')
+                .append(jsonEscape(value))
+                .append('"');
             first = false;
         }
-        return json.append(']').toString();
+        return json.append(']')
+            .toString();
     }
 
     private static String jsonEscape(String value) {
@@ -538,13 +552,14 @@ public final class LiveSession implements AutoCloseable {
 
     private Map<String, Object> clientStateMetadata() {
         return Map.of(
-                "cookies", clientState.cookies(),
-                "localStorage", clientState.localStorage(),
-                "sessionStorage", clientState.sessionStorage()
+            "cookies", clientState.cookies(),
+            "localStorage", clientState.localStorage(),
+            "sessionStorage", clientState.sessionStorage()
         );
     }
 
     private static String nextTraceId() {
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID()
+            .toString();
     }
 }

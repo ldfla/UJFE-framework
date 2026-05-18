@@ -19,60 +19,75 @@ final class LiveHttpCodecTest {
     @Test
     void parsesValidEventPayload() {
         LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload("{"
-                + "\"eventId\":\"evt-42\","
-                + "\"value\":\"Said Adla\","
-                + "\"clientState\":{"
-                + "\"cookies\":\"ujfe_demo=ativo; theme=dark\","
-                + "\"localStorage\":{\"ujfe.theme\":\"dark\",\"escaped\":\"A\\nB\"},"
-                + "\"sessionStorage\":{\"ujfe.tab\":\"docs\"}"
-                + "}"
-                + "}");
+            + "\"eventId\":\"evt-42\","
+            + "\"value\":\"Said Adla\","
+            + "\"clientState\":{"
+            + "\"cookies\":\"ujfe_demo=ativo; theme=dark\","
+            + "\"localStorage\":{\"ujfe.theme\":\"dark\",\"escaped\":\"A\\nB\"},"
+            + "\"sessionStorage\":{\"ujfe.tab\":\"docs\"}"
+            + "}"
+            + "}");
 
         assertEquals("evt-42", payload.eventId());
         assertEquals("Said Adla", payload.value());
-        assertEquals("ativo", payload.clientState().cookie("ujfe_demo").orElseThrow());
-        assertEquals("dark", payload.clientState().localStorage("ujfe.theme").orElseThrow());
-        assertEquals("A\nB", payload.clientState().localStorage("escaped").orElseThrow());
-        assertEquals("docs", payload.clientState().sessionStorage("ujfe.tab").orElseThrow());
+        assertEquals("ativo", payload.clientState()
+            .cookie("ujfe_demo")
+            .orElseThrow());
+        assertEquals("dark", payload.clientState()
+            .localStorage("ujfe.theme")
+            .orElseThrow());
+        assertEquals("A\nB", payload.clientState()
+            .localStorage("escaped")
+            .orElseThrow());
+        assertEquals("docs", payload.clientState()
+            .sessionStorage("ujfe.tab")
+            .orElseThrow());
     }
 
     @Test
     void eventPayloadDefaultsMissingOrNullValueToEmptyString() {
-        assertEquals("", LiveHttpCodec.parseEventPayload("{\"eventId\":\"evt-42\"}").value());
-        assertEquals("", LiveHttpCodec.parseEventPayload("{\"eventId\":\"evt-42\",\"value\":null}").value());
+        assertEquals("", LiveHttpCodec.parseEventPayload("{\"eventId\":\"evt-42\"}")
+            .value());
+        assertEquals("", LiveHttpCodec.parseEventPayload("{\"eventId\":\"evt-42\",\"value\":null}")
+            .value());
     }
 
     @Test
     void parsesStatePayload() {
         ClientState state = LiveHttpCodec.parseStatePayload("{"
-                + "\"clientState\":{"
-                + "\"cookies\":\"ujfe_demo=novo\","
-                + "\"localStorage\":{\"theme\":\"light\"},"
-                + "\"sessionStorage\":{\"tab\":\"settings\"}"
-                + "}"
-                + "}");
+            + "\"clientState\":{"
+            + "\"cookies\":\"ujfe_demo=novo\","
+            + "\"localStorage\":{\"theme\":\"light\"},"
+            + "\"sessionStorage\":{\"tab\":\"settings\"}"
+            + "}"
+            + "}");
 
-        assertEquals("novo", state.cookie("ujfe_demo").orElseThrow());
-        assertEquals("light", state.localStorage("theme").orElseThrow());
-        assertEquals("settings", state.sessionStorage("tab").orElseThrow());
+        assertEquals("novo", state.cookie("ujfe_demo")
+            .orElseThrow());
+        assertEquals("light", state.localStorage("theme")
+            .orElseThrow());
+        assertEquals("settings", state.sessionStorage("tab")
+            .orElseThrow());
     }
 
     @Test
     void rejectsInvalidJsonWithSafeError() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload("{\"eventId\":}"));
+            () -> LiveHttpCodec.parseEventPayload("{\"eventId\":}"));
 
         assertEquals(LiveHttpFailureCategory.INVALID_JSON, failure.category());
         assertEquals(400, failure.httpStatus());
         assertEquals("Invalid live JSON payload.", failure.safeMessage());
-        assertFalse(failure.safeMessage().contains("StringIndexOutOfBounds"));
-        assertFalse(failure.safeMessage().contains("LiveHttpCodec"));
+        assertFalse(failure.safeMessage()
+            .contains("StringIndexOutOfBounds"));
+        assertFalse(failure.safeMessage()
+            .contains("LiveHttpCodec"));
     }
 
     @Test
     void invalidJsonKeepsConfiguredPayloadLimitForLoggingMetadata() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload("{\"eventId\":}", 32));
+            () -> LiveHttpCodec.parseEventPayload("{\"eventId\":}", 32));
 
         assertEquals(LiveHttpFailureCategory.INVALID_JSON, failure.category());
         assertEquals(32, failure.payloadLimitBytes());
@@ -88,7 +103,7 @@ final class LiveHttpCodecTest {
     @Test
     void rejectsEmptyRequestBodyWithSafeError() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload("  "));
+            () -> LiveHttpCodec.parseEventPayload("  "));
 
         assertEquals(LiveHttpFailureCategory.EMPTY_PAYLOAD, failure.category());
         assertEquals(400, failure.httpStatus());
@@ -98,7 +113,7 @@ final class LiveHttpCodecTest {
     @Test
     void rejectsEmptyJsonObjectWithSafeError() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload("{ }"));
+            () -> LiveHttpCodec.parseEventPayload("{ }"));
 
         assertEquals(LiveHttpFailureCategory.EMPTY_JSON, failure.category());
         assertEquals(400, failure.httpStatus());
@@ -108,7 +123,7 @@ final class LiveHttpCodecTest {
     @Test
     void rejectsEventPayloadWithoutEventId() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload("{\"clientState\":{\"localStorage\":{}}}"));
+            () -> LiveHttpCodec.parseEventPayload("{\"clientState\":{\"localStorage\":{}}}"));
 
         assertEquals(LiveHttpFailureCategory.MISSING_EVENT_ID, failure.category());
         assertEquals(400, failure.httpStatus());
@@ -118,7 +133,7 @@ final class LiveHttpCodecTest {
     @Test
     void rejectsStatePayloadWithoutClientState() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseStatePayload("{\"eventId\":\"evt-42\"}"));
+            () -> LiveHttpCodec.parseStatePayload("{\"eventId\":\"evt-42\"}"));
 
         assertEquals(LiveHttpFailureCategory.MISSING_CLIENT_STATE, failure.category());
         assertEquals(400, failure.httpStatus());
@@ -128,7 +143,7 @@ final class LiveHttpCodecTest {
     @Test
     void statePayloadRequiresRealClientStateObjectField() {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseStatePayload("{\"note\":\"\\\"clientState\\\":{}\"}"));
+            () -> LiveHttpCodec.parseStatePayload("{\"note\":\"\\\"clientState\\\":{}\"}"));
 
         assertEquals(LiveHttpFailureCategory.MISSING_CLIENT_STATE, failure.category());
         assertEquals("Live state payload is missing clientState.", failure.safeMessage());
@@ -139,7 +154,7 @@ final class LiveHttpCodecTest {
         String payload = "{\"eventId\":\"" + "x".repeat(LiveHttpCodec.DEFAULT_MAX_JSON_PAYLOAD_BYTES) + "\"}";
 
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload(payload));
+            () -> LiveHttpCodec.parseEventPayload(payload));
 
         assertEquals(LiveHttpFailureCategory.PAYLOAD_TOO_LARGE, failure.category());
         assertEquals(413, failure.httpStatus());
@@ -153,7 +168,7 @@ final class LiveHttpCodecTest {
         String payload = "{\"eventId\":\"evt-42\",\"clientState\":{\"localStorage\":{}}}";
 
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload(payload, 32));
+            () -> LiveHttpCodec.parseEventPayload(payload, 32));
 
         assertEquals(LiveHttpFailureCategory.PAYLOAD_TOO_LARGE, failure.category());
         assertEquals(413, failure.httpStatus());
@@ -167,8 +182,12 @@ final class LiveHttpCodecTest {
         LiveHttpEventPayload parsed = LiveHttpCodec.parseEventPayload(payload, 128);
 
         assertEquals("evt-42", parsed.eventId());
-        assertTrue(parsed.clientState().cookies().isEmpty());
-        assertTrue(parsed.clientState().localStorage().isEmpty());
+        assertTrue(parsed.clientState()
+            .cookies()
+            .isEmpty());
+        assertTrue(parsed.clientState()
+            .localStorage()
+            .isEmpty());
     }
 
     @Test
@@ -185,7 +204,7 @@ final class LiveHttpCodecTest {
         String payload = "{\"eventId\":\"evt-42\"}";
 
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.readPayload(new StringReader(payload), 8));
+            () -> LiveHttpCodec.readPayload(new StringReader(payload), 8));
 
         assertEquals(LiveHttpFailureCategory.PAYLOAD_TOO_LARGE, failure.category());
         assertEquals(8, failure.payloadLimitBytes());
@@ -201,9 +220,9 @@ final class LiveHttpCodecTest {
     @Test
     void parsesCookieHeaderAndCssClasses() {
         assertEquals(Map.of("ujfe_demo", "ativo", "theme", "dark"),
-                LiveHttpCodec.parseCookies("ujfe_demo=ativo; theme=dark"));
+            LiveHttpCodec.parseCookies("ujfe_demo=ativo; theme=dark"));
         assertEquals(Set.of("p-10", "gap-10", "bg-primary-200"),
-                LiveHttpCodec.parseCssClasses("p-10   gap-10 bg-primary-200"));
+            LiveHttpCodec.parseCssClasses("p-10   gap-10 bg-primary-200"));
     }
 
     @Test
@@ -211,17 +230,19 @@ final class LiveHttpCodecTest {
         assertEquals("evt-42", LiveHttpCodec.extractEventId("{\"eventId\":\"evt-42\"}"));
         assertEquals("dark", LiveHttpCodec.extractClientState("{"
                 + "\"clientState\":{\"localStorage\":{\"theme\":\"dark\"}}"
-                + "}").localStorage("theme").orElseThrow());
+                + "}")
+            .localStorage("theme")
+            .orElseThrow());
     }
 
     @Test
     void logsRejectedPayloadWithSafeMetadataOnly() {
         LiveHttpCodecException failure = new LiveHttpCodecException(
-                LiveHttpFailureCategory.PAYLOAD_TOO_LARGE,
-                "Live JSON payload exceeds maximum size.",
-                413,
-                16,
-                128
+            LiveHttpFailureCategory.PAYLOAD_TOO_LARGE,
+            "Live JSON payload exceeds maximum size.",
+            413,
+            16,
+            128
         );
 
         try (LogCapture logs = LogCapture.attach()) {
@@ -285,7 +306,7 @@ final class LiveHttpCodecTest {
 
     private static void assertInvalidJson(String json) {
         LiveHttpCodecException failure = assertThrows(LiveHttpCodecException.class,
-                () -> LiveHttpCodec.parseEventPayload(json));
+            () -> LiveHttpCodec.parseEventPayload(json));
 
         assertEquals(LiveHttpFailureCategory.INVALID_JSON, failure.category());
         assertEquals("Invalid live JSON payload.", failure.safeMessage());

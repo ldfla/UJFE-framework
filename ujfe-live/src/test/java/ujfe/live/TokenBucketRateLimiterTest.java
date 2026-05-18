@@ -19,16 +19,22 @@ final class TokenBucketRateLimiterTest {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(rateLimitConfig(2), clock);
         LiveHttpRequestMetadata metadata = metadata("10.0.0.10");
 
-        assertTrue(limiter.allow(request("session-a", metadata)).allowed());
-        assertTrue(limiter.allow(request("session-a", metadata)).allowed());
+        assertTrue(limiter.allow(request("session-a", metadata))
+            .allowed());
+        assertTrue(limiter.allow(request("session-a", metadata))
+            .allowed());
         RateLimitDecision rejected = limiter.allow(request("session-a", metadata));
 
         assertFalse(rejected.allowed());
         assertEquals(RateLimitKeyType.SESSION, rejected.keyType());
-        assertEquals(Duration.ofSeconds(10), rejected.retryAfter().orElseThrow());
-        assertEquals(2, limiter.metrics().allowedRequests());
-        assertEquals(1, limiter.metrics().rejectedRequests(LiveHttpPaths.EVENT));
-        assertEquals(1, limiter.metrics().rejectedRequests(RateLimitKeyType.SESSION));
+        assertEquals(Duration.ofSeconds(10), rejected.retryAfter()
+            .orElseThrow());
+        assertEquals(2, limiter.metrics()
+            .allowedRequests());
+        assertEquals(1, limiter.metrics()
+            .rejectedRequests(LiveHttpPaths.EVENT));
+        assertEquals(1, limiter.metrics()
+            .rejectedRequests(RateLimitKeyType.SESSION));
     }
 
     @Test
@@ -37,12 +43,15 @@ final class TokenBucketRateLimiterTest {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(rateLimitConfig(1), clock);
         LiveHttpRequestMetadata metadata = metadata("10.0.0.10");
 
-        assertTrue(limiter.allow(request("session-a", metadata)).allowed());
-        assertFalse(limiter.allow(request("session-a", metadata)).allowed());
+        assertTrue(limiter.allow(request("session-a", metadata))
+            .allowed());
+        assertFalse(limiter.allow(request("session-a", metadata))
+            .allowed());
 
         clock.advance(Duration.ofSeconds(10));
 
-        assertTrue(limiter.allow(request("session-a", metadata)).allowed());
+        assertTrue(limiter.allow(request("session-a", metadata))
+            .allowed());
     }
 
     @Test
@@ -50,29 +59,36 @@ final class TokenBucketRateLimiterTest {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(rateLimitConfig(1), new MutableNanoTime());
         LiveHttpRequestMetadata metadata = metadata("10.0.0.10");
 
-        assertTrue(limiter.allow(request("session-a", metadata)).allowed());
-        assertTrue(limiter.allow(request("session-b", metadata)).allowed());
-        assertFalse(limiter.allow(request("session-a", metadata)).allowed());
+        assertTrue(limiter.allow(request("session-a", metadata))
+            .allowed());
+        assertTrue(limiter.allow(request("session-b", metadata))
+            .allowed());
+        assertFalse(limiter.allow(request("session-a", metadata))
+            .allowed());
     }
 
     @Test
     void fallbackLimitAppliesByRemoteAddressWhenSessionIsMissing() {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(rateLimitConfig(1), new MutableNanoTime());
 
-        assertTrue(limiter.allow(request(null, metadata("10.0.0.10"))).allowed());
+        assertTrue(limiter.allow(request(null, metadata("10.0.0.10")))
+            .allowed());
         RateLimitDecision rejected = limiter.allow(request(null, metadata("10.0.0.10")));
-        assertTrue(limiter.allow(request(null, metadata("10.0.0.11"))).allowed());
+        assertTrue(limiter.allow(request(null, metadata("10.0.0.11")))
+            .allowed());
 
         assertFalse(rejected.allowed());
         assertEquals(RateLimitKeyType.IP, rejected.keyType());
-        assertEquals(1, limiter.metrics().rejectedRequests(RateLimitKeyType.IP));
+        assertEquals(1, limiter.metrics()
+            .rejectedRequests(RateLimitKeyType.IP));
     }
 
     @Test
     void forwardedHeadersAreNotTrustedByDefault() {
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(rateLimitConfig(1), new MutableNanoTime());
 
-        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10"))).allowed());
+        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10")))
+            .allowed());
         RateLimitDecision rejected = limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.11")));
 
         assertFalse(rejected.allowed());
@@ -82,14 +98,17 @@ final class TokenBucketRateLimiterTest {
     @Test
     void trustedProxyConfigurationUsesForwardedClientAddress() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .internalEndpointRateLimit(1, 1, Duration.ofSeconds(10))
-                .trustedProxy("10.0.0.1")
-                .build();
+            .internalEndpointRateLimit(1, 1, Duration.ofSeconds(10))
+            .trustedProxy("10.0.0.1")
+            .build();
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(config, new MutableNanoTime());
 
-        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10"))).allowed());
-        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.11"))).allowed());
-        assertFalse(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10"))).allowed());
+        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10")))
+            .allowed());
+        assertTrue(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.11")))
+            .allowed());
+        assertFalse(limiter.allow(request(null, metadata("10.0.0.1", "203.0.113.10")))
+            .allowed());
 
         assertEquals(java.util.Set.of("10.0.0.1"), config.trustedProxyAddresses());
     }
@@ -97,35 +116,42 @@ final class TokenBucketRateLimiterTest {
     @Test
     void disabledRateLimitingAllowsRequestsAndStillRecordsAllowedMetrics() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .internalEndpointRateLimitingEnabled(false)
-                .internalEndpointRateLimit(1, 1, Duration.ofSeconds(10))
-                .build();
+            .internalEndpointRateLimitingEnabled(false)
+            .internalEndpointRateLimit(1, 1, Duration.ofSeconds(10))
+            .build();
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(config, new MutableNanoTime());
 
-        assertTrue(limiter.allow(request("session-a", metadata("10.0.0.10"))).allowed());
-        assertTrue(limiter.allow(request("session-a", metadata("10.0.0.10"))).allowed());
+        assertTrue(limiter.allow(request("session-a", metadata("10.0.0.10")))
+            .allowed());
+        assertTrue(limiter.allow(request("session-a", metadata("10.0.0.10")))
+            .allowed());
 
         assertFalse(config.isInternalEndpointRateLimitingEnabled());
-        assertEquals(2, limiter.metrics().allowedRequests(LiveHttpPaths.EVENT));
-        assertEquals(0, limiter.metrics().rejectedRequests());
+        assertEquals(2, limiter.metrics()
+            .allowedRequests(LiveHttpPaths.EVENT));
+        assertEquals(0, limiter.metrics()
+            .rejectedRequests());
     }
 
     @Test
     void configurationRejectsInvalidRateLimitValues() {
         assertThrows(IllegalArgumentException.class,
-                () -> LiveSessionConfig.builder().internalEndpointRateLimit(0, 1, Duration.ofSeconds(1)));
+            () -> LiveSessionConfig.builder()
+                .internalEndpointRateLimit(0, 1, Duration.ofSeconds(1)));
         assertThrows(IllegalArgumentException.class,
-                () -> LiveSessionConfig.builder().internalEndpointRateLimit(1, 0, Duration.ofSeconds(1)));
+            () -> LiveSessionConfig.builder()
+                .internalEndpointRateLimit(1, 0, Duration.ofSeconds(1)));
         assertThrows(IllegalArgumentException.class,
-                () -> LiveSessionConfig.builder().internalEndpointRateLimit(1, 1, Duration.ZERO));
+            () -> LiveSessionConfig.builder()
+                .internalEndpointRateLimit(1, 1, Duration.ZERO));
     }
 
     @Test
     void logsRateLimitRejectionWithSafeMetadataOnly() {
         LiveRateLimitException failure = new LiveRateLimitException(
-                LiveHttpPaths.EVENT,
-                RateLimitKeyType.SESSION,
-                Duration.ofSeconds(5)
+            LiveHttpPaths.EVENT,
+            RateLimitKeyType.SESSION,
+            Duration.ofSeconds(5)
         );
 
         try (LogCapture logs = LogCapture.attach()) {
@@ -147,8 +173,8 @@ final class TokenBucketRateLimiterTest {
 
     private static LiveSessionConfig rateLimitConfig(int capacity) {
         return LiveSessionConfig.builder()
-                .internalEndpointRateLimit(capacity, 1, Duration.ofSeconds(10))
-                .build();
+            .internalEndpointRateLimit(capacity, 1, Duration.ofSeconds(10))
+            .build();
     }
 
     private static RateLimitRequest request(String sessionId, LiveHttpRequestMetadata metadata) {
@@ -161,7 +187,7 @@ final class TokenBucketRateLimiterTest {
 
     private static LiveHttpRequestMetadata metadata(String remoteAddress, String xForwardedFor) {
         return new LiveHttpRequestMetadata(null, null, null, "localhost", "http",
-                remoteAddress, null, xForwardedFor, null);
+            remoteAddress, null, xForwardedFor, null);
     }
 
     private static final class MutableNanoTime implements LongSupplier {

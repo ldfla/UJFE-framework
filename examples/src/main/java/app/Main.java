@@ -47,7 +47,8 @@ public final class Main {
             liveSession
         );
 
-        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
+        Runtime.getRuntime()
+            .addShutdownHook(new Thread(server::stop));
         server.start();
         System.out.println("UJFE example running at http://localhost:8080");
         server.blockUntilShutdown();

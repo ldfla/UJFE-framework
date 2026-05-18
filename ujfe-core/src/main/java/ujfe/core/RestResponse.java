@@ -31,10 +31,13 @@ public final class RestResponse {
 
     public Optional<String> firstHeader(String name) {
         Objects.requireNonNull(name, "name");
-        return headers.entrySet().stream()
-                .filter(entry -> entry.getKey().equalsIgnoreCase(name))
-                .flatMap(entry -> entry.getValue().stream())
-                .findFirst();
+        return headers.entrySet()
+            .stream()
+            .filter(entry -> entry.getKey()
+                .equalsIgnoreCase(name))
+            .flatMap(entry -> entry.getValue()
+                .stream())
+            .findFirst();
     }
 
     public RestResponse requireSuccessful() {
@@ -48,8 +51,8 @@ public final class RestResponse {
         Objects.requireNonNull(headers, "headers");
         Map<String, List<String>> copy = new LinkedHashMap<>();
         headers.forEach((name, values) -> copy.put(
-                name,
-                Collections.unmodifiableList(new ArrayList<>(values))
+            name,
+            Collections.unmodifiableList(new ArrayList<>(values))
         ));
         return Collections.unmodifiableMap(copy);
     }

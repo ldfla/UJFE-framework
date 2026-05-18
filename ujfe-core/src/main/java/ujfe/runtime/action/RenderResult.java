@@ -21,26 +21,26 @@ public final class RenderResult {
     private final Map<String, Object> runtimeMetadata;
 
     public RenderResult(
-            String html,
-            String css,
-            String path,
-            Duration renderDuration,
-            String traceId,
-            Map<String, Object> metadata
+        String html,
+        String css,
+        String path,
+        Duration renderDuration,
+        String traceId,
+        Map<String, Object> metadata
     ) {
         this(html, css, path, renderDuration, traceId, List.of(), Map.of(), Map.of(), metadata);
     }
 
     public RenderResult(
-            String html,
-            String css,
-            String path,
-            Duration renderDuration,
-            String traceId,
-            List<Node> headNodes,
-            Map<String, Object> routeMetadata,
-            Map<String, Object> cssMetadata,
-            Map<String, Object> runtimeMetadata
+        String html,
+        String css,
+        String path,
+        Duration renderDuration,
+        String traceId,
+        List<Node> headNodes,
+        Map<String, Object> routeMetadata,
+        Map<String, Object> cssMetadata,
+        Map<String, Object> runtimeMetadata
     ) {
         this.html = Objects.requireNonNull(html, "html");
         this.css = Objects.requireNonNull(css, "css");

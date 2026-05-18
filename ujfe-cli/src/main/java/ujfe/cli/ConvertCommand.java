@@ -20,14 +20,16 @@ final class ConvertCommand {
             HtmlParseResult parseResult = new HtmlParser().parse(html);
             String java = new UjfeJavaGenerator().generate(parseResult, options.output());
 
-            Path parent = options.output().getParent();
+            Path parent = options.output()
+                .getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
             Files.writeString(options.output(), java, StandardCharsets.UTF_8);
 
             System.out.println("Converted " + options.input() + " -> " + options.output());
-            parseResult.warnings().forEach(warning -> System.out.println("Warning: " + warning));
+            parseResult.warnings()
+                .forEach(warning -> System.out.println("Warning: " + warning));
             return 0;
         } catch (IOException exception) {
             throw new IllegalStateException("Could not convert HTML", exception);

@@ -4,34 +4,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.*;
 import ujfe.core.ClientState;
-import ujfe.live.LiveClientScript;
-import ujfe.live.LiveDevToolsScript;
-import ujfe.live.ErrorResponseContext;
-import ujfe.live.ErrorResponseRenderer;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveHttpCodecException;
-import ujfe.live.LiveHttpEventPayload;
-import ujfe.live.LiveHttpPaths;
-import ujfe.live.LiveHttpSecurity;
-import ujfe.live.LiveRenderResult;
-import ujfe.live.LiveSession;
-import ujfe.live.LiveCsrfException;
-import ujfe.live.LiveHttpRequestMetadata;
-import ujfe.live.LiveRateLimitException;
-import ujfe.live.SecurityHeadersConfig;
-import ujfe.live.StaticAssetHandler;
-import ujfe.live.UjfeErrorResponse;
+import ujfe.live.*;
 import ujfe.runtime.action.RuntimePhase;
 
 import java.net.InetSocketAddress;
@@ -61,13 +36,15 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         FullHttpResponse response = route(context, request);
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (keepAlive) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+            response.headers()
+                .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
 
         if (keepAlive) {
             context.writeAndFlush(response);
         } else {
-            context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+            context.writeAndFlush(response)
+                .addListener(ChannelFutureListener.CLOSE);
         }
     }
 
@@ -76,54 +53,62 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         String path = decoder.path();
 
         try {
-            if (request.method().equals(HttpMethod.GET) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
+            if (request.method()
+                .equals(HttpMethod.GET) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
                 return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", LiveClientScript.script());
             }
 
-            if (request.method().equals(HttpMethod.GET) && LiveHttpPaths.DEV_SCRIPT.equals(path)) {
+            if (request.method()
+                .equals(HttpMethod.GET) && LiveHttpPaths.DEV_SCRIPT.equals(path)) {
                 return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", LiveDevToolsScript.script());
             }
 
-            if (request.method().equals(HttpMethod.GET) && LiveHttpPaths.CSS.equals(path)) {
+            if (request.method()
+                .equals(HttpMethod.GET) && LiveHttpPaths.CSS.equals(path)) {
                 String classes = firstQueryValue(decoder, "classes").orElse("");
                 return response(HttpResponseStatus.OK, "text/css; charset=utf-8", liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
             }
 
-            if (request.method().equals(HttpMethod.GET) && StaticAssetHandler.isStaticAssetPath(path)) {
+            if (request.method()
+                .equals(HttpMethod.GET) && StaticAssetHandler.isStaticAssetPath(path)) {
                 return staticAssetResponse(path);
             }
 
-            if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.EVENT.equals(path)) {
+            if (request.method()
+                .equals(HttpMethod.POST) && LiveHttpPaths.EVENT.equals(path)) {
                 LiveHttpRequestMetadata metadata = createMetadata(context, request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
-                        readJsonPayload(request),
-                        maxJsonPayloadBytes
+                    readJsonPayload(request),
+                    maxJsonPayloadBytes
                 );
                 LiveRenderResult result = liveSession.handleEvent(
-                        payload.eventId(),
-                        payload.value(),
-                        payload.clientState(),
-                        metadata
+                    payload.eventId(),
+                    payload.value(),
+                    payload.clientState(),
+                    metadata
                 );
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
 
-            if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.STATE.equals(path)) {
+            if (request.method()
+                .equals(HttpMethod.POST) && LiveHttpPaths.STATE.equals(path)) {
                 LiveHttpRequestMetadata metadata = createMetadata(context, request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
                 LiveRenderResult result = liveSession.updateClientState(
-                        LiveHttpCodec.parseStatePayload(readJsonPayload(request), maxJsonPayloadBytes),
-                        metadata
+                    LiveHttpCodec.parseStatePayload(readJsonPayload(request), maxJsonPayloadBytes),
+                    metadata
                 );
                 return response(HttpResponseStatus.OK, "application/json; charset=utf-8", LiveHttpCodec.livePayload(result));
             }
 
-            if (request.method().equals(HttpMethod.GET)) {
+            if (request.method()
+                .equals(HttpMethod.GET)) {
                 if (!liveSession.hasRoute(path)) {
                     return errorResponse(errorRenderer().routeNotFound(errorContext(request, path)));
                 }
-                String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
+                String cookieHeader = request.headers()
+                    .get(HttpHeaderNames.COOKIE);
                 String document = liveSession.renderDocument(path, ClientState.of(LiveHttpCodec.parseCookies(cookieHeader), Map.of()));
                 return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
             }
@@ -145,7 +130,8 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
     }
 
     private static Optional<String> firstQueryValue(QueryStringDecoder decoder, String name) {
-        List<String> values = decoder.parameters().get(name);
+        List<String> values = decoder.parameters()
+            .get(name);
         if (values == null || values.isEmpty()) {
             return Optional.empty();
         }
@@ -153,17 +139,21 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
     }
 
     private String readJsonPayload(FullHttpRequest request) {
-        int readableBytes = request.content().readableBytes();
+        int readableBytes = request.content()
+            .readableBytes();
         LiveHttpCodec.requirePayloadSize(readableBytes, maxJsonPayloadBytes);
-        return request.content().toString(StandardCharsets.UTF_8);
+        return request.content()
+            .toString(StandardCharsets.UTF_8);
     }
 
     private static String correlationId(FullHttpRequest request) {
-        String requestId = request.headers().get("X-Request-Id");
+        String requestId = request.headers()
+            .get("X-Request-Id");
         if (requestId != null && !requestId.isBlank()) {
             return requestId;
         }
-        return request.headers().get("X-Correlation-Id");
+        return request.headers()
+            .get("X-Correlation-Id");
     }
 
     private ErrorResponseRenderer errorRenderer() {
@@ -172,28 +162,30 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     private ErrorResponseContext errorContext(FullHttpRequest request, String path) {
         return ErrorResponseContext.builder()
-                .adapter("netty")
-                .method(request.method().name())
-                .path(path)
-                .requestId(correlationId(request))
-                .phase(phaseFor(request.method(), path))
-                .build();
+            .adapter("netty")
+            .method(request.method()
+                .name())
+            .path(path)
+            .requestId(correlationId(request))
+            .phase(phaseFor(request.method(), path))
+            .build();
     }
 
     private void reportHttpError(Throwable exception, FullHttpRequest request, String path) {
         liveSession.reportHttpError(
-                exception,
-                phaseFor(request.method(), path),
-                path,
-                null,
-                correlationId(request),
-                Map.of("adapter", "netty", "method", request.method().name(), "path", path),
-                Map.of(
-                        "errorCode", "UJFE_BAD_REQUEST",
-                        "httpStatus", exception instanceof LiveHttpCodecException
-                                ? ((LiveHttpCodecException) exception).httpStatus()
-                                : 500
-                )
+            exception,
+            phaseFor(request.method(), path),
+            path,
+            null,
+            correlationId(request),
+            Map.of("adapter", "netty", "method", request.method()
+                .name(), "path", path),
+            Map.of(
+                "errorCode", "UJFE_BAD_REQUEST",
+                "httpStatus", exception instanceof LiveHttpCodecException
+                    ? ((LiveHttpCodecException) exception).httpStatus()
+                    : 500
+            )
         );
     }
 
@@ -212,24 +204,33 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     private static LiveHttpRequestMetadata createMetadata(ChannelHandlerContext context, FullHttpRequest request) {
         return new LiveHttpRequestMetadata(
-                request.headers().get("X-UJFE-CSRF"),
-                request.headers().get(HttpHeaderNames.ORIGIN),
-                request.headers().get(HttpHeaderNames.REFERER),
-                request.headers().get(HttpHeaderNames.HOST),
-                "http",
-                remoteAddress(context),
-                request.headers().get("Forwarded"),
-                request.headers().get("X-Forwarded-For"),
-                request.headers().get("X-Real-IP")
+            request.headers()
+                .get("X-UJFE-CSRF"),
+            request.headers()
+                .get(HttpHeaderNames.ORIGIN),
+            request.headers()
+                .get(HttpHeaderNames.REFERER),
+            request.headers()
+                .get(HttpHeaderNames.HOST),
+            "http",
+            remoteAddress(context),
+            request.headers()
+                .get("Forwarded"),
+            request.headers()
+                .get("X-Forwarded-For"),
+            request.headers()
+                .get("X-Real-IP")
         );
     }
 
     private static String remoteAddress(ChannelHandlerContext context) {
-        SocketAddress address = context.channel().remoteAddress();
+        SocketAddress address = context.channel()
+            .remoteAddress();
         if (address instanceof InetSocketAddress) {
             InetSocketAddress inet = (InetSocketAddress) address;
             if (inet.getAddress() != null) {
-                return inet.getAddress().getHostAddress();
+                return inet.getAddress()
+                    .getHostAddress();
             }
             return inet.getHostString();
         }
@@ -239,23 +240,27 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
     private FullHttpResponse response(HttpResponseStatus status, String contentType, String content) {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
         FullHttpResponse response = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1,
-                status,
-                Unpooled.wrappedBuffer(bytes)
+            HttpVersion.HTTP_1_1,
+            status,
+            Unpooled.wrappedBuffer(bytes)
         );
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
-        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
+        response.headers()
+            .set(HttpHeaderNames.CONTENT_TYPE, contentType);
+        response.headers()
+            .setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
         applySecurityHeaders(response, liveSession.securityHeadersConfig());
         return response;
     }
 
     private FullHttpResponse errorResponse(UjfeErrorResponse error) {
         FullHttpResponse response = response(
-                HttpResponseStatus.valueOf(error.httpStatus()),
-                UjfeErrorResponse.CONTENT_TYPE,
-                error.body()
+            HttpResponseStatus.valueOf(error.httpStatus()),
+            UjfeErrorResponse.CONTENT_TYPE,
+            error.body()
         );
-        error.retryAfterSeconds().ifPresent(seconds -> response.headers().set("Retry-After", Long.toString(seconds)));
+        error.retryAfterSeconds()
+            .ifPresent(seconds -> response.headers()
+                .set("Retry-After", Long.toString(seconds)));
         return response;
     }
 
@@ -273,6 +278,8 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
     }
 
     static void applySecurityHeaders(FullHttpResponse response, SecurityHeadersConfig config) {
-        LiveHttpSecurity.securityHeaders(config).forEach((name, value) -> response.headers().set(name, value));
+        LiveHttpSecurity.securityHeaders(config)
+            .forEach((name, value) -> response.headers()
+                .set(name, value));
     }
 }

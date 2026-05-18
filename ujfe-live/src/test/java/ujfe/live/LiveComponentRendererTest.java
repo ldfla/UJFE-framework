@@ -2,8 +2,8 @@ package ujfe.live;
 
 import org.junit.jupiter.api.Test;
 import ujfe.core.ClientState;
-import ujfe.core.ElementIdGenerator;
 import ujfe.core.CssTheme;
+import ujfe.core.ElementIdGenerator;
 
 import java.util.List;
 
@@ -25,25 +25,26 @@ final class LiveComponentRendererTest {
     @Test
     void constructorWithElementIdGeneratorUsesProvidedGenerator() {
         LiveComponentRenderer renderer = new LiveComponentRenderer(
-                new LiveEventRegistry(),
-                prefix -> "custom-" + prefix
+            new LiveEventRegistry(),
+            prefix -> "custom-" + prefix
         );
 
         LiveRenderResult result = renderer.render(
-                () -> button("Go").onClick(() -> {
-                }),
-                ClientState.empty()
+            () -> button("Go").onClick(() -> {
+            }),
+            ClientState.empty()
         );
 
-        assertTrue(result.html().contains("id=\"custom-ujfe\""));
+        assertTrue(result.html()
+            .contains("id=\"custom-ujfe\""));
     }
 
     @Test
     void constructorWithThemeSupplierUsesProvidedTheme() {
         LiveComponentRenderer renderer = new LiveComponentRenderer(
-                new LiveEventRegistry(),
-                ElementIdGenerator.sequential(),
-                () -> CssTheme.of("#ff0000", "#00ff00")
+            new LiveEventRegistry(),
+            ElementIdGenerator.sequential(),
+            () -> CssTheme.of("#ff0000", "#00ff00")
         );
 
         String css = renderer.renderCss(List.of("bg-primary"));
@@ -55,16 +56,16 @@ final class LiveComponentRendererTest {
     @Test
     void externalAndNoneCssModesDoNotGenerateInternalCss() {
         LiveComponentRenderer external = new LiveComponentRenderer(
-                new LiveEventRegistry(),
-                ElementIdGenerator.sequential(),
-                CssTheme::defaultTheme,
-                CssMode.EXTERNAL
+            new LiveEventRegistry(),
+            ElementIdGenerator.sequential(),
+            CssTheme::defaultTheme,
+            CssMode.EXTERNAL
         );
         LiveComponentRenderer none = new LiveComponentRenderer(
-                new LiveEventRegistry(),
-                ElementIdGenerator.sequential(),
-                CssTheme::defaultTheme,
-                CssMode.NONE
+            new LiveEventRegistry(),
+            ElementIdGenerator.sequential(),
+            CssTheme::defaultTheme,
+            CssMode.NONE
         );
 
         assertEquals("", external.renderCss(List.of("bg-primary")));

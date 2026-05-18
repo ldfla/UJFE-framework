@@ -7,23 +7,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import ujfe.core.ClientState;
-import ujfe.live.ErrorResponseContext;
-import ujfe.live.ErrorResponseRenderer;
-import ujfe.live.LiveClientScript;
-import ujfe.live.LiveDevToolsScript;
-import ujfe.live.LiveHttpCodec;
-import ujfe.live.LiveHttpCodecException;
-import ujfe.live.LiveHttpEventPayload;
-import ujfe.live.LiveHttpPaths;
-import ujfe.live.LiveHttpSecurity;
-import ujfe.live.LiveRenderResult;
-import ujfe.live.LiveSession;
-import ujfe.live.LiveSessionConfig;
-import ujfe.live.LiveCsrfException;
-import ujfe.live.LiveHttpRequestMetadata;
-import ujfe.live.LiveRateLimitException;
-import ujfe.live.StaticAssetHandler;
-import ujfe.live.UjfeErrorResponse;
+import ujfe.live.*;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
 import ujfe.runtime.action.RuntimePhase;
@@ -90,7 +74,7 @@ public final class UjfeServlet extends HttpServlet {
                 router = (Router) configuredRouter;
             } else {
                 throw new ServletException("ServletContext attribute " + ROUTER_ATTRIBUTE
-                        + " is required when " + LIVE_SESSION_ATTRIBUTE + " is provided");
+                    + " is required when " + LIVE_SESSION_ATTRIBUTE + " is provided");
             }
             ownsLiveSession = false;
             return;
@@ -108,7 +92,8 @@ public final class UjfeServlet extends HttpServlet {
         if (LiveHttpPaths.isInternalPath(normalizedPath)) {
             return true;
         }
-        return "GET".equals(method) && router != null && router.resolve(normalizedPath).isPresent();
+        return "GET".equals(method) && router != null && router.resolve(normalizedPath)
+            .isPresent();
     }
 
     @Override
@@ -128,7 +113,8 @@ public final class UjfeServlet extends HttpServlet {
                 return;
             }
 
-            if (router.resolve(path).isEmpty()) {
+            if (router.resolve(path)
+                .isEmpty()) {
                 writeError(response, errorRenderer().routeNotFound(errorContext(request, path)));
                 return;
             }
@@ -167,10 +153,10 @@ public final class UjfeServlet extends HttpServlet {
     }
 
     private void handleInternalEndpoint(
-            String method,
-            String path,
-            HttpServletRequest request,
-            HttpServletResponse response
+        String method,
+        String path,
+        HttpServletRequest request,
+        HttpServletResponse response
     ) throws IOException {
         if ("GET".equals(method) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
             write(response, HttpServletResponse.SC_OK, "application/javascript; charset=utf-8", LiveClientScript.script());
@@ -185,8 +171,8 @@ public final class UjfeServlet extends HttpServlet {
         if ("GET".equals(method) && LiveHttpPaths.CSS.equals(path)) {
             String classes = request.getParameter("classes");
             write(response, HttpServletResponse.SC_OK,
-                    "text/css; charset=utf-8",
-                    liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
+                "text/css; charset=utf-8",
+                liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
             return;
         }
 
@@ -194,18 +180,18 @@ public final class UjfeServlet extends HttpServlet {
             LiveHttpRequestMetadata metadata = createMetadata(request);
             liveSession.checkInternalEndpointRateLimit(path, metadata);
             LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload(
-                    readBody(request),
-                    maxJsonPayloadBytes
+                readBody(request),
+                maxJsonPayloadBytes
             );
             LiveRenderResult result = liveSession.handleEvent(
-                    payload.eventId(),
-                    payload.value(),
-                    payload.clientState(),
-                    metadata
+                payload.eventId(),
+                payload.value(),
+                payload.clientState(),
+                metadata
             );
             write(response, HttpServletResponse.SC_OK,
-                    "application/json; charset=utf-8",
-                    LiveHttpCodec.livePayload(result));
+                "application/json; charset=utf-8",
+                LiveHttpCodec.livePayload(result));
             return;
         }
 
@@ -213,12 +199,12 @@ public final class UjfeServlet extends HttpServlet {
             LiveHttpRequestMetadata metadata = createMetadata(request);
             liveSession.checkInternalEndpointRateLimit(path, metadata);
             LiveRenderResult result = liveSession.updateClientState(
-                    LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
-                    metadata
+                LiveHttpCodec.parseStatePayload(readBody(request), maxJsonPayloadBytes),
+                metadata
             );
             write(response, HttpServletResponse.SC_OK,
-                    "application/json; charset=utf-8",
-                    LiveHttpCodec.livePayload(result));
+                "application/json; charset=utf-8",
+                LiveHttpCodec.livePayload(result));
             return;
         }
 
@@ -226,13 +212,15 @@ public final class UjfeServlet extends HttpServlet {
     }
 
     private Router routerFromSettings(UjfeServletSettings settings) throws ServletException {
-        if (settings.routePackages().isEmpty()) {
+        if (settings.routePackages()
+            .isEmpty()) {
             throw new ServletException("No UJFE router configured. Provide ServletContext attribute "
-                    + ROUTER_ATTRIBUTE
-                    + " or configure ujfe.routes.packages in application.properties/application.yml.");
+                + ROUTER_ATTRIBUTE
+                + " or configure ujfe.routes.packages in application.properties/application.yml.");
         }
         return new Router().register(ReflectionPageScanner.forPackages(
-                settings.routePackages().toArray(new String[0])));
+            settings.routePackages()
+                .toArray(new String[0])));
     }
 
     private void ensureInitialized() {
@@ -249,16 +237,19 @@ public final class UjfeServlet extends HttpServlet {
     }
 
     private void write(HttpServletResponse response, int status, String contentType, String content)
-            throws IOException {
+        throws IOException {
         response.setStatus(status);
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
-        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig()).forEach(response::setHeader);
-        response.getWriter().write(content);
+        LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig())
+            .forEach(response::setHeader);
+        response.getWriter()
+            .write(content);
     }
 
     private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
-        error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
+        error.retryAfterSeconds()
+            .ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
         write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
     }
 
@@ -266,12 +257,12 @@ public final class UjfeServlet extends HttpServlet {
         if (StaticAssetHandler.isUnsafePath(path)) {
             StaticAssetHandler.logRejected("servlet", path);
             write(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
+                "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
             return;
         }
         StaticAssetHandler.logNotFound("servlet", path);
         write(response, HttpServletResponse.SC_NOT_FOUND,
-                "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
+            "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
     }
 
     private ErrorResponseRenderer errorRenderer() {
@@ -280,23 +271,23 @@ public final class UjfeServlet extends HttpServlet {
 
     private ErrorResponseContext errorContext(HttpServletRequest request, String path) {
         return ErrorResponseContext.builder()
-                .adapter("servlet")
-                .method(request.getMethod())
-                .path(path)
-                .requestId(correlationId(request))
-                .phase(phaseFor(request.getMethod(), path))
-                .build();
+            .adapter("servlet")
+            .method(request.getMethod())
+            .path(path)
+            .requestId(correlationId(request))
+            .phase(phaseFor(request.getMethod(), path))
+            .build();
     }
 
     private void reportHttpError(LiveHttpCodecException exception, HttpServletRequest request, String path) {
         liveSession.reportHttpError(
-                exception,
-                phaseFor(request.getMethod(), path),
-                path,
-                null,
-                correlationId(request),
-                Map.of("adapter", "servlet", "method", request.getMethod(), "path", path),
-                Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
+            exception,
+            phaseFor(request.getMethod(), path),
+            path,
+            null,
+            correlationId(request),
+            Map.of("adapter", "servlet", "method", request.getMethod(), "path", path),
+            Map.of("errorCode", "UJFE_BAD_REQUEST", "httpStatus", exception.httpStatus())
         );
     }
 
@@ -315,15 +306,15 @@ public final class UjfeServlet extends HttpServlet {
 
     private static LiveHttpRequestMetadata createMetadata(HttpServletRequest request) {
         return new LiveHttpRequestMetadata(
-                request.getHeader("X-UJFE-CSRF"),
-                request.getHeader("Origin"),
-                request.getHeader("Referer"),
-                request.getHeader("Host"),
-                request.getScheme(),
-                request.getRemoteAddr(),
-                request.getHeader("Forwarded"),
-                request.getHeader("X-Forwarded-For"),
-                request.getHeader("X-Real-IP")
+            request.getHeader("X-UJFE-CSRF"),
+            request.getHeader("Origin"),
+            request.getHeader("Referer"),
+            request.getHeader("Host"),
+            request.getScheme(),
+            request.getRemoteAddr(),
+            request.getHeader("Forwarded"),
+            request.getHeader("X-Forwarded-For"),
+            request.getHeader("X-Real-IP")
         );
     }
 

@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 final class HtmlHelperCoverageTest {
     private static final List<String> VOID_HELPERS = List.of(
-            "area", "base", "br", "col", "embed", "hr", "img",
-            "input", "link", "meta", "param", "source", "track"
+        "area", "base", "br", "col", "embed", "hr", "img",
+        "input", "link", "meta", "param", "source", "track"
     );
 
     private static final Map<String, String> REQUIRED_HELPERS = requiredHelpers();
@@ -24,7 +24,8 @@ final class HtmlHelperCoverageTest {
             Element element = invokeHelper(entry.getKey());
 
             assertEquals(entry.getValue(), element.tagName());
-            assertEquals(Element.of(entry.getValue()).tagName(), element.tagName());
+            assertEquals(Element.of(entry.getValue())
+                .tagName(), element.tagName());
         }
     }
 
@@ -63,9 +64,13 @@ final class HtmlHelperCoverageTest {
 
     @Test
     void helpersRenderNestedNodes() {
-        assertEquals("<section><p>Nested</p></section>", UI.section().child(UI.p("Nested")).render());
-        assertEquals("<html><head></head><body></body></html>", UI.html(UI.head(), UI.body()).render());
-        assertEquals("<form><label>Name</label><input></form>", UI.form(UI.label("Name"), UI.input()).render());
+        assertEquals("<section><p>Nested</p></section>", UI.section()
+            .child(UI.p("Nested"))
+            .render());
+        assertEquals("<html><head></head><body></body></html>", UI.html(UI.head(), UI.body())
+            .render());
+        assertEquals("<form><label>Name</label><input></form>", UI.form(UI.label("Name"), UI.input())
+            .render());
     }
 
     private static Element invokeHelper(String methodName) throws Exception {
@@ -92,15 +97,15 @@ final class HtmlHelperCoverageTest {
         helperGroup(helpers, "html", "head", "body", "title", "meta", "link", "style", "script", "base");
         helperGroup(helpers, "main", "section", "article", "aside", "header", "footer", "nav", "address");
         helperGroup(helpers, "h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "strong", "em", "small", "mark",
-                "abbr", "cite", "code", "pre", "blockquote", "q", "br", "hr");
+            "abbr", "cite", "code", "pre", "blockquote", "q", "br", "hr");
         helperGroup(helpers, "div", "figure", "figcaption", "details", "summary", "dialog");
         helperGroup(helpers, "ul", "ol", "li", "dl", "dt", "dd");
         helperGroup(helpers, "a");
         helperGroup(helpers, "img", "picture", "source", "audio", "video", "track", "canvas", "svg", "map", "area",
-                "iframe", "embed", "object", "param");
+            "iframe", "embed", "object", "param");
         helperGroup(helpers, "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col");
         helperGroup(helpers, "form", "input", "textarea", "button", "select", "option", "optgroup", "label",
-                "fieldset", "legend", "datalist", "output", "progress", "meter");
+            "fieldset", "legend", "datalist", "output", "progress", "meter");
         helperGroup(helpers, "template", "slot");
         assertFalse(helpers.isEmpty());
         return helpers;
@@ -109,8 +114,8 @@ final class HtmlHelperCoverageTest {
     private static Map<String, String> textHelpers() {
         var helpers = new LinkedHashMap<String, String>();
         helperGroup(helpers, "title", "figcaption", "summary", "address", "h1", "h2", "h3", "h4", "h5", "h6",
-                "em", "strong", "small", "mark", "abbr", "cite", "p", "code", "blockquote", "q", "td", "th",
-                "caption", "label", "button", "a", "option", "textarea", "legend", "output", "dt", "dd", "span");
+            "em", "strong", "small", "mark", "abbr", "cite", "p", "code", "blockquote", "q", "td", "th",
+            "caption", "label", "button", "a", "option", "textarea", "legend", "output", "dt", "dd", "span");
         assertTrue(helpers.size() > 20);
         return helpers;
     }

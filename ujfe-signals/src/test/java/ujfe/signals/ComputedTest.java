@@ -206,11 +206,15 @@ final class ComputedTest {
         AtomicReference<Computed<Integer>> first = new AtomicReference<>();
         AtomicReference<Computed<Integer>> second = new AtomicReference<>();
 
-        first.set(Signals.computed(() -> second.get().get() + 1));
-        second.set(Signals.computed(() -> first.get().get() + 1));
+        first.set(Signals.computed(() -> second.get()
+            .get() + 1));
+        second.set(Signals.computed(() -> first.get()
+            .get() + 1));
 
-        ComputedCycleException failure = assertThrows(ComputedCycleException.class, () -> first.get().get());
-        assertTrue(failure.getMessage().contains("Circular computed dependency"));
+        ComputedCycleException failure = assertThrows(ComputedCycleException.class, () -> first.get()
+            .get());
+        assertTrue(failure.getMessage()
+            .contains("Circular computed dependency"));
     }
 
     @Test
@@ -218,9 +222,9 @@ final class ComputedTest {
         Signal<Integer> computed = Signals.computed(() -> 1);
 
         UnsupportedOperationException setFailure =
-                assertThrows(UnsupportedOperationException.class, () -> computed.set(2));
+            assertThrows(UnsupportedOperationException.class, () -> computed.set(2));
         UnsupportedOperationException updateFailure =
-                assertThrows(UnsupportedOperationException.class, () -> computed.update(value -> value + 1));
+            assertThrows(UnsupportedOperationException.class, () -> computed.update(value -> value + 1));
 
         assertEquals("Computed signals are read-only", setFailure.getMessage());
         assertEquals("Computed signals are read-only", updateFailure.getMessage());
@@ -297,7 +301,8 @@ final class ComputedTest {
         try {
             latch.await();
         } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                .interrupt();
             throw new IllegalStateException(exception);
         }
     }
@@ -306,7 +311,8 @@ final class ComputedTest {
         try {
             TimeUnit.MILLISECONDS.sleep(20);
         } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                .interrupt();
             throw new IllegalStateException(exception);
         }
     }

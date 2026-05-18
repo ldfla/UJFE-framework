@@ -61,20 +61,34 @@ public final class DocumentationPage implements Component {
                     .css("text-sm text-slate-700 leading-relaxed"))
                 .child(ul()
                     .css("flex flex-col gap-2 text-sm text-slate-700")
-                    .child(le().child(strong("Theme")).child(" with dynamic primary/secondary palettes"))
-                    .child(le().child(strong("Modern Java")).child(" with Java 11 classes, var, lambdas, and streams"))
-                    .child(le().child(strong("Elements")).child(" with API usage examples"))
-                    .child(le().child(strong("Forms")).child(" with inputs and events"))
-                    .child(le().child(strong("CSS")).child(" with utilities and color scales"))
-                    .child(le().child(strong("Spring MVC")).child(" on the same Tomcat port"))
-                    .child(le().child(strong("Security")).child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
-                    .child(le().child(strong("Signals")).child(" with lazy computed values, cache invalidation, and subscribers"))
-                    .child(le().child(strong("Router")).child(" with route sources, deterministic discovery, and AOT metadata direction"))
-                    .child(le().child(strong("Runtime Actions")).child(" with server-side extension points for rendering, events, errors, and head contributions"))
-                    .child(le().child(strong("Lifecycle")).child(" with deterministic mount, unmount, and cleanup"))
-                    .child(le().child(strong("REST")).child(" with a select populated from BrasilAPI"))
-                    .child(le().child(strong("CLI")).child(" with HTML-to-UJFE conversion"))
-                    .child(le().child(strong("Dev Preview")).child(" with a visual inspector"))));
+                    .child(le().child(strong("Theme"))
+                        .child(" with dynamic primary/secondary palettes"))
+                    .child(le().child(strong("Modern Java"))
+                        .child(" with Java 11 classes, var, lambdas, and streams"))
+                    .child(le().child(strong("Elements"))
+                        .child(" with API usage examples"))
+                    .child(le().child(strong("Forms"))
+                        .child(" with inputs and events"))
+                    .child(le().child(strong("CSS"))
+                        .child(" with utilities and color scales"))
+                    .child(le().child(strong("Spring MVC"))
+                        .child(" on the same Tomcat port"))
+                    .child(le().child(strong("Security"))
+                        .child(" with escaping, safe URLs, attribute validation, URL policy, raw HTML boundaries, and headers"))
+                    .child(le().child(strong("Signals"))
+                        .child(" with lazy computed values, cache invalidation, and subscribers"))
+                    .child(le().child(strong("Router"))
+                        .child(" with route sources, deterministic discovery, and AOT metadata direction"))
+                    .child(le().child(strong("Runtime Actions"))
+                        .child(" with server-side extension points for rendering, events, errors, and head contributions"))
+                    .child(le().child(strong("Lifecycle"))
+                        .child(" with deterministic mount, unmount, and cleanup"))
+                    .child(le().child(strong("REST"))
+                        .child(" with a select populated from BrasilAPI"))
+                    .child(le().child(strong("CLI"))
+                        .child(" with HTML-to-UJFE conversion"))
+                    .child(le().child(strong("Dev Preview"))
+                        .child(" with a visual inspector"))));
     }
 
     private Node introSection() {
@@ -200,20 +214,47 @@ public final class DocumentationPage implements Component {
                     .css("grid grid-cols-2 gap-3")
                     .onSubmit(() -> {
                     })
-                    .child(label("Text").forId("doc-text").css("text-sm font-semibold text-slate-700"))
-                    .child(inputText().id("doc-text").name("text").placeholder("inputText()").css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Number").forId("doc-number").css("text-sm font-semibold text-slate-700"))
-                    .child(inputNumber().id("doc-number").name("number").min("0").max("99").css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Password").forId("doc-password").css("text-sm font-semibold text-slate-700"))
-                    .child(inputPassword().id("doc-password").name("password").placeholder("inputPassword()").css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Select").forId("doc-select").css("text-sm font-semibold text-slate-700"))
-                    .child(select().id("doc-select").name("select").css("w-full rounded border border-slate-200 bg-white p-2 text-sm")
+                    .child(label("Text").forId("doc-text")
+                        .css("text-sm font-semibold text-slate-700"))
+                    .child(inputText().id("doc-text")
+                        .name("text")
+                        .placeholder("inputText()")
+                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
+                    .child(label("Number").forId("doc-number")
+                        .css("text-sm font-semibold text-slate-700"))
+                    .child(inputNumber().id("doc-number")
+                        .name("number")
+                        .min("0")
+                        .max("99")
+                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
+                    .child(label("Password").forId("doc-password")
+                        .css("text-sm font-semibold text-slate-700"))
+                    .child(inputPassword().id("doc-password")
+                        .name("password")
+                        .placeholder("inputPassword()")
+                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
+                    .child(label("Select").forId("doc-select")
+                        .css("text-sm font-semibold text-slate-700"))
+                    .child(select().id("doc-select")
+                        .name("select")
+                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm")
                         .child(option("Java").value("java"))
-                        .child(option("UJFE").value("ujfe").selected(true)))
-                    .child(label().css("flex items-center gap-2 text-sm text-slate-700").child(checkbox().name("check").checked(true)).child("checkbox()"))
-                    .child(label().css("flex items-center gap-2 text-sm text-slate-700").child(radio().name("radio").value("a").checked(true)).child("radio()"))
-                    .child(textarea("textarea()").name("message").rows(3).css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(button("Submit live").type("submit").css("px-4 py-2 rounded bg-secondary-700 text-white font-semibold"))
+                        .child(option("UJFE").value("ujfe")
+                            .selected(true)))
+                    .child(label().css("flex items-center gap-2 text-sm text-slate-700")
+                        .child(checkbox().name("check")
+                            .checked(true))
+                        .child("checkbox()"))
+                    .child(label().css("flex items-center gap-2 text-sm text-slate-700")
+                        .child(radio().name("radio")
+                            .value("a")
+                            .checked(true))
+                        .child("radio()"))
+                    .child(textarea("textarea()").name("message")
+                        .rows(3)
+                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
+                    .child(button("Submit live").type("submit")
+                        .css("px-4 py-2 rounded bg-secondary-700 text-white font-semibold"))
             )
             .child(codeBlock(formCode()));
     }
@@ -435,7 +476,8 @@ public final class DocumentationPage implements Component {
             .css("rounded-lg border border-slate-200 bg-white p-5 shadow-sm flex flex-col gap-3")
             .child(h3(title).css("text-xl font-bold text-primary-700"))
             .child(p(description).css("text-sm text-slate-700 leading-relaxed"))
-            .child(div().css("rounded-md border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2").child(preview))
+            .child(div().css("rounded-md border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2")
+                .child(preview))
             .child(codeBlock(code));
     }
 
@@ -458,21 +500,46 @@ public final class DocumentationPage implements Component {
             .child(h1("h1").css("text-3xl font-bold text-primary-700"))
             .child(h2("h2").css("text-2xl font-semibold"))
             .child(h3("h3").css("text-lg font-semibold text-secondary-700"))
-            .child(p("p() with ").child(strong("strong")).child(", ").child(em("em")).child(", and ").child(u("u")))
-            .child(pre().css("rounded bg-zinc-950 text-zinc-50 p-2 text-xs font-mono").child(code("pre().child(code(...))").css("font-mono")));
+            .child(p("p() with ").child(strong("strong"))
+                .child(", ")
+                .child(em("em"))
+                .child(", and ")
+                .child(u("u")))
+            .child(pre().css("rounded bg-zinc-950 text-zinc-50 p-2 text-xs font-mono")
+                .child(code("pre().child(code(...))").css("font-mono")));
     }
 
     private Node listAndMediaPreview() {
         return div()
             .css("flex flex-col gap-2")
-            .child(a("Home link").href("/").title("Back to home").css("text-primary-700 font-semibold"))
-            .child(ul().css("flex flex-col gap-1 text-sm").child(le().child("ul + le/li")).child(le().child("item two")))
-            .child(ol().css("flex flex-col gap-1 text-sm").child(le().child("ol + le/li")).child(le().child("item two")))
-            .child(dl().css("text-sm").child(dt().child(strong("dt()"))).child(dd("inside dl()")))
-            .child(canvas().width(240).height(72).ariaLabel("Empty canvas").css("border border-slate-200 rounded bg-white"))
-            .child(video().src("/demo.mp4").poster("/poster.png").controls(true).preload("metadata").css("w-full rounded border border-slate-200"))
-            .child(audio().controls(true).preload("metadata").child(source().src("/audio.mp3").type("audio/mpeg")))
-            .child(img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==").alt("pixel").css("border border-slate-200 rounded"));
+            .child(a("Home link").href("/")
+                .title("Back to home")
+                .css("text-primary-700 font-semibold"))
+            .child(ul().css("flex flex-col gap-1 text-sm")
+                .child(le().child("ul + le/li"))
+                .child(le().child("item two")))
+            .child(ol().css("flex flex-col gap-1 text-sm")
+                .child(le().child("ol + le/li"))
+                .child(le().child("item two")))
+            .child(dl().css("text-sm")
+                .child(dt().child(strong("dt()")))
+                .child(dd("inside dl()")))
+            .child(canvas().width(240)
+                .height(72)
+                .ariaLabel("Empty canvas")
+                .css("border border-slate-200 rounded bg-white"))
+            .child(video().src("/demo.mp4")
+                .poster("/poster.png")
+                .controls(true)
+                .preload("metadata")
+                .css("w-full rounded border border-slate-200"))
+            .child(audio().controls(true)
+                .preload("metadata")
+                .child(source().src("/audio.mp3")
+                    .type("audio/mpeg")))
+            .child(img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==")
+                .alt("pixel")
+                .css("border border-slate-200 rounded"));
     }
 
     private Node modernHtmlPreview() {
@@ -484,12 +551,19 @@ public final class DocumentationPage implements Component {
                 .child(p("Expanded content without JavaScript.")))
             .child(tagTablePreview())
             .child(template().child(slot().attr("name", "actions")))
-            .child(Element.of("future-html-element").attr("data-ready", true).child("Future tag through Element.of"))
-            .child(Element.of("my-card").attr("data-kind", "component").child("Custom element with a hyphen"))
+            .child(Element.of("future-html-element")
+                .attr("data-ready", true)
+                .child("Future tag through Element.of"))
+            .child(Element.of("my-card")
+                .attr("data-kind", "component")
+                .child("Custom element with a hyphen"))
             .child(Element.of("math")
-                .child(Element.mathMl("mi").child("x"))
-                .child(Element.mathMl("mo").child("="))
-                .child(Element.mathMl("mn").child("1")));
+                .child(Element.mathMl("mi")
+                    .child("x"))
+                .child(Element.mathMl("mo")
+                    .child("="))
+                .child(Element.mathMl("mn")
+                    .child("1")));
     }
 
     private Node tagTablePreview() {
@@ -501,29 +575,40 @@ public final class DocumentationPage implements Component {
         };
         var body = tbody();
         for (var row : rows) {
-            body.child(tr().child(td(row[0])).child(td(row[1])));
+            body.child(tr().child(td(row[0]))
+                .child(td(row[1])));
         }
 
         return table()
             .css("w-full text-sm border border-slate-200")
             .child(caption("Real table generated with a Java loop").css("text-left font-semibold"))
-            .child(colgroup().child(col().attr("span", "1")).child(col().attr("span", "1")))
-            .child(thead().child(tr().child(th("Tag")).child(th("Use"))))
+            .child(colgroup().child(col().attr("span", "1"))
+                .child(col().attr("span", "1")))
+            .child(thead().child(tr().child(th("Tag"))
+                .child(th("Use"))))
             .child(body)
-            .child(tfoot().child(tr().child(td().attr("colspan", "2").child("Rows generated in Java"))));
+            .child(tfoot().child(tr().child(td().attr("colspan", "2")
+                .child("Rows generated in Java"))));
     }
 
     private Node liveEventPreview() {
         return div()
             .css("flex flex-col gap-2")
-            .child(button("onClick").css("px-3 py-2 rounded bg-primary-700 text-white font-semibold").onClick(() -> {
-            }))
-            .child(inputText().placeholder("onInput").css("w-full rounded border border-slate-200 p-2 text-sm").onInput(() -> {
-            }))
-            .child(select().css("w-full rounded border border-slate-200 p-2 text-sm").onChange(() -> {
-            }).child(option("onChange").value("change")))
+            .child(button("onClick").css("px-3 py-2 rounded bg-primary-700 text-white font-semibold")
+                .onClick(() -> {
+                }))
+            .child(inputText().placeholder("onInput")
+                .css("w-full rounded border border-slate-200 p-2 text-sm")
+                .onInput(() -> {
+                }))
+            .child(select().css("w-full rounded border border-slate-200 p-2 text-sm")
+                .onChange(() -> {
+                })
+                .child(option("onChange").value("change")))
             .child(form().onSubmit(() -> {
-            }).child(button("onSubmit").type("submit").css("px-3 py-2 rounded bg-secondary-700 text-white font-semibold")));
+                })
+                .child(button("onSubmit").type("submit")
+                    .css("px-3 py-2 rounded bg-secondary-700 text-white font-semibold")));
     }
 
     private String factoryIndex() {

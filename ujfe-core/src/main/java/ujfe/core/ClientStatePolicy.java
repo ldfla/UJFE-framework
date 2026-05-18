@@ -50,9 +50,9 @@ public final class ClientStatePolicy {
     public ClientState filter(ClientState state) {
         Objects.requireNonNull(state, "state");
         return ClientState.of(
-                filterMap(state.cookies(), allowedCookies),
-                filterMap(state.localStorage(), allowedLocalStorageKeys),
-                filterMap(state.sessionStorage(), allowedSessionStorageKeys)
+            filterMap(state.cookies(), allowedCookies),
+            filterMap(state.localStorage(), allowedLocalStorageKeys),
+            filterMap(state.sessionStorage(), allowedSessionStorageKeys)
         );
     }
 

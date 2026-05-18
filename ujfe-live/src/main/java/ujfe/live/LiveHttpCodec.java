@@ -5,12 +5,7 @@ import ujfe.core.ClientState;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 public final class LiveHttpCodec {
@@ -44,10 +39,10 @@ public final class LiveHttpCodec {
         try {
             String payload = validateJsonObjectPayload(json, maxPayloadBytes);
             JsonField stateField = requireObjectField(
-                    payload,
-                    "clientState",
-                    "Live state payload is missing clientState.",
-                    maxPayloadBytes
+                payload,
+                "clientState",
+                "Live state payload is missing clientState.",
+                maxPayloadBytes
             );
             return extractClientStateFromObject(payload.substring(stateField.valueStart(), stateField.valueEnd()));
         } catch (LiveHttpCodecException exception) {
@@ -62,11 +57,13 @@ public final class LiveHttpCodec {
 
     public static Set<String> parseCssClasses(String classes) {
         Set<String> parsedClasses = new LinkedHashSet<>();
-        if (classes == null || classes.trim().isEmpty()) {
+        if (classes == null || classes.trim()
+            .isEmpty()) {
             return parsedClasses;
         }
 
-        for (String className : classes.trim().split("\\s+")) {
+        for (String className : classes.trim()
+            .split("\\s+")) {
             if (!className.isBlank()) {
                 parsedClasses.add(className);
             }
@@ -93,11 +90,11 @@ public final class LiveHttpCodec {
         validateMaxPayloadBytes(maxPayloadBytes);
         if (payloadSizeBytes >= 0 && payloadSizeBytes > maxPayloadBytes) {
             throw new LiveHttpCodecException(
-                    LiveHttpFailureCategory.PAYLOAD_TOO_LARGE,
-                    "Live JSON payload exceeds maximum size.",
-                    413,
-                    maxPayloadBytes,
-                    payloadSizeBytes
+                LiveHttpFailureCategory.PAYLOAD_TOO_LARGE,
+                "Live JSON payload exceeds maximum size.",
+                413,
+                maxPayloadBytes,
+                payloadSizeBytes
             );
         }
     }
@@ -119,55 +116,59 @@ public final class LiveHttpCodec {
     }
 
     public static void logRejectedPayload(
-            LiveHttpCodecException exception,
-            String runtimeAdapter,
-            String traceId
+        LiveHttpCodecException exception,
+        String runtimeAdapter,
+        String traceId
     ) {
         Objects.requireNonNull(exception, "exception");
         String adapter = safeLogValue(runtimeAdapter, "unknown");
         String trace = safeLogValue(traceId, "unavailable");
         LOGGER.warning(() -> "event=ujfe.live_http_payload_rejected"
-                + " category=" + exception.category().logValue()
-                + " adapter=" + adapter
-                + " httpStatus=" + exception.httpStatus()
-                + " payloadLimitBytes=" + exception.payloadLimitBytes()
-                + " payloadSizeBytes=" + exception.payloadSizeBytes()
-                + " traceId=" + trace
-                + " message=\"" + exception.safeMessage() + "\"");
+            + " category=" + exception.category()
+            .logValue()
+            + " adapter=" + adapter
+            + " httpStatus=" + exception.httpStatus()
+            + " payloadLimitBytes=" + exception.payloadLimitBytes()
+            + " payloadSizeBytes=" + exception.payloadSizeBytes()
+            + " traceId=" + trace
+            + " message=\"" + exception.safeMessage() + "\"");
     }
 
     public static void logRejectedCsrf(
-            LiveCsrfException exception,
-            String runtimeAdapter,
-            String traceId
+        LiveCsrfException exception,
+        String runtimeAdapter,
+        String traceId
     ) {
         Objects.requireNonNull(exception, "exception");
         String adapter = safeLogValue(runtimeAdapter, "unknown");
         String trace = safeLogValue(traceId, "unavailable");
         LOGGER.warning(() -> "event=ujfe.live_csrf_rejected"
-                + " category=" + exception.category().logValue()
-                + " adapter=" + adapter
-                + " hasHeader=" + exception.isCsrfHeaderPresent()
-                + " traceId=" + trace
-                + " message=\"" + exception.safeMessage() + "\"");
+            + " category=" + exception.category()
+            .logValue()
+            + " adapter=" + adapter
+            + " hasHeader=" + exception.isCsrfHeaderPresent()
+            + " traceId=" + trace
+            + " message=\"" + exception.safeMessage() + "\"");
     }
 
     public static void logRejectedRateLimit(
-            LiveRateLimitException exception,
-            String runtimeAdapter,
-            String traceId
+        LiveRateLimitException exception,
+        String runtimeAdapter,
+        String traceId
     ) {
         Objects.requireNonNull(exception, "exception");
         String adapter = safeLogValue(runtimeAdapter, "unknown");
         String trace = safeLogValue(traceId, "unavailable");
         LOGGER.warning(() -> "event=ujfe.live_rate_limit_rejected"
-                + " reason=rate_limit_exceeded"
-                + " endpoint=" + safeLogValue(exception.endpointPath(), "unknown")
-                + " keyType=" + exception.keyType().logValue()
-                + " adapter=" + adapter
-                + " retryAfterSeconds=" + exception.retryAfterSeconds().orElse(-1)
-                + " traceId=" + trace
-                + " message=\"" + exception.safeMessage() + "\"");
+            + " reason=rate_limit_exceeded"
+            + " endpoint=" + safeLogValue(exception.endpointPath(), "unknown")
+            + " keyType=" + exception.keyType()
+            .logValue()
+            + " adapter=" + adapter
+            + " retryAfterSeconds=" + exception.retryAfterSeconds()
+            .orElse(-1)
+            + " traceId=" + trace
+            + " message=\"" + exception.safeMessage() + "\"");
     }
 
     static String validateJsonObjectPayload(String json, int maxPayloadBytes) {
@@ -177,11 +178,11 @@ public final class LiveHttpCodec {
         String trimmed = json.trim();
         if (trimmed.isEmpty()) {
             throw new LiveHttpCodecException(
-                    LiveHttpFailureCategory.EMPTY_PAYLOAD,
-                    "Live JSON payload is empty.",
-                    400,
-                    maxPayloadBytes,
-                    0
+                LiveHttpFailureCategory.EMPTY_PAYLOAD,
+                "Live JSON payload is empty.",
+                400,
+                maxPayloadBytes,
+                0
             );
         }
         if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
@@ -189,11 +190,11 @@ public final class LiveHttpCodec {
         }
         if (isEmptyObject(trimmed)) {
             throw new LiveHttpCodecException(
-                    LiveHttpFailureCategory.EMPTY_JSON,
-                    "Live JSON payload must not be empty.",
-                    400,
-                    maxPayloadBytes,
-                    trimmed.getBytes(StandardCharsets.UTF_8).length
+                LiveHttpFailureCategory.EMPTY_JSON,
+                "Live JSON payload must not be empty.",
+                400,
+                maxPayloadBytes,
+                trimmed.getBytes(StandardCharsets.UTF_8).length
             );
         }
         validateJsonStructure(trimmed);
@@ -204,11 +205,11 @@ public final class LiveHttpCodec {
         Optional<JsonField> field = findObjectField(json, "eventId");
         if (field.isEmpty()) {
             throw new LiveHttpCodecException(
-                    LiveHttpFailureCategory.MISSING_EVENT_ID,
-                    "Live event payload is missing eventId.",
-                    400,
-                    maxPayloadBytes,
-                    -1
+                LiveHttpFailureCategory.MISSING_EVENT_ID,
+                "Live event payload is missing eventId.",
+                400,
+                maxPayloadBytes,
+                -1
             );
         }
 
@@ -221,11 +222,11 @@ public final class LiveHttpCodec {
             String eventId = readJsonString(json, eventIdField.valueStart()).value();
             if (eventId.isBlank()) {
                 throw new LiveHttpCodecException(
-                        LiveHttpFailureCategory.MISSING_EVENT_ID,
-                        "Live event payload is missing eventId.",
-                        400,
-                        maxPayloadBytes,
-                        -1
+                    LiveHttpFailureCategory.MISSING_EVENT_ID,
+                    "Live event payload is missing eventId.",
+                    400,
+                    maxPayloadBytes,
+                    -1
                 );
             }
             return eventId;
@@ -260,7 +261,8 @@ public final class LiveHttpCodec {
 
     public static Map<String, String> parseCookies(String cookieHeader) {
         Map<String, String> cookies = new LinkedHashMap<>();
-        if (cookieHeader == null || cookieHeader.trim().isEmpty()) {
+        if (cookieHeader == null || cookieHeader.trim()
+            .isEmpty()) {
             return cookies;
         }
 
@@ -276,8 +278,10 @@ public final class LiveHttpCodec {
                 continue;
             }
 
-            String name = trimmed.substring(0, separator).trim();
-            String value = trimmed.substring(separator + 1).trim();
+            String name = trimmed.substring(0, separator)
+                .trim();
+            String value = trimmed.substring(separator + 1)
+                .trim();
             if (!name.isEmpty()) {
                 cookies.put(name, value);
             }
@@ -291,7 +295,8 @@ public final class LiveHttpCodec {
             return Optional.empty();
         }
 
-        int valueStart = field.get().valueStart();
+        int valueStart = field.get()
+            .valueStart();
         if (json.charAt(valueStart) != '"') {
             throw invalidPayload("Invalid live JSON payload.");
         }
@@ -305,7 +310,8 @@ public final class LiveHttpCodec {
             return Map.of();
         }
 
-        int objectStart = field.get().valueStart();
+        int objectStart = field.get()
+            .valueStart();
         if (json.charAt(objectStart) != '{') {
             throw invalidPayload("Invalid live JSON payload.");
         }
@@ -476,7 +482,7 @@ public final class LiveHttpCodec {
 
     private static boolean startsWith(String value, int offset, String prefix) {
         return offset >= 0 && offset + prefix.length() <= value.length()
-                && value.startsWith(prefix, offset);
+            && value.startsWith(prefix, offset);
     }
 
     private static boolean isEmptyObject(String json) {
@@ -660,11 +666,11 @@ public final class LiveHttpCodec {
         Optional<JsonField> field = findObjectField(json, fieldName);
         if (field.isEmpty()) {
             throw new LiveHttpCodecException(
-                    LiveHttpFailureCategory.MISSING_CLIENT_STATE,
-                    safeMessage,
-                    400,
-                    maxPayloadBytes,
-                    -1
+                LiveHttpFailureCategory.MISSING_CLIENT_STATE,
+                safeMessage,
+                400,
+                maxPayloadBytes,
+                -1
             );
         }
         JsonField objectField = field.get();
@@ -690,28 +696,28 @@ public final class LiveHttpCodec {
 
     private static LiveHttpCodecException invalidPayload(String safeMessage) {
         return new LiveHttpCodecException(
-                LiveHttpFailureCategory.INVALID_JSON,
-                safeMessage,
-                400,
-                DEFAULT_MAX_JSON_PAYLOAD_BYTES,
-                -1
+            LiveHttpFailureCategory.INVALID_JSON,
+            safeMessage,
+            400,
+            DEFAULT_MAX_JSON_PAYLOAD_BYTES,
+            -1
         );
     }
 
     private static LiveHttpCodecException normalizeInvalidPayloadLimit(
-            LiveHttpCodecException exception,
-            int maxPayloadBytes
+        LiveHttpCodecException exception,
+        int maxPayloadBytes
     ) {
         if (exception.category() != LiveHttpFailureCategory.INVALID_JSON
-                || exception.payloadLimitBytes() == maxPayloadBytes) {
+            || exception.payloadLimitBytes() == maxPayloadBytes) {
             return exception;
         }
         return new LiveHttpCodecException(
-                exception.category(),
-                exception.safeMessage(),
-                exception.httpStatus(),
-                maxPayloadBytes,
-                exception.payloadSizeBytes()
+            exception.category(),
+            exception.safeMessage(),
+            exception.httpStatus(),
+            maxPayloadBytes,
+            exception.payloadSizeBytes()
         );
     }
 

@@ -15,11 +15,11 @@ public final class LifecycleException extends RuntimeException {
     }
 
     public LifecycleException(
-            String message,
-            Lifecycle lifecycle,
-            String callback,
-            Throwable cause,
-            LifecycleContext context
+        String message,
+        Lifecycle lifecycle,
+        String callback,
+        Throwable cause,
+        LifecycleContext context
     ) {
         super(message, cause);
         this.lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");

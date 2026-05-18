@@ -17,17 +17,19 @@ final class LiveHttpSecurityTest {
         assertEquals("DENY", headers.get(SecurityHeadersConfig.X_FRAME_OPTIONS));
         assertEquals("strict-origin-when-cross-origin", headers.get(SecurityHeadersConfig.REFERRER_POLICY));
         assertEquals("geolocation=(), microphone=(), camera=()", headers.get(SecurityHeadersConfig.PERMISSIONS_POLICY));
-        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY).contains("default-src 'self'"));
-        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY).contains("script-src 'self'"));
+        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY)
+            .contains("default-src 'self'"));
+        assertTrue(headers.get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY)
+            .contains("script-src 'self'"));
     }
 
     @Test
     void customSecurityHeadersOverrideDefaults() {
         SecurityHeadersConfig config = SecurityHeadersConfig.builder()
-                .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
-                .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'; img-src https:")
-                .remove(SecurityHeadersConfig.X_FRAME_OPTIONS)
-                .build();
+            .header(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+            .header(SecurityHeadersConfig.CONTENT_SECURITY_POLICY, "default-src 'self'; img-src https:")
+            .remove(SecurityHeadersConfig.X_FRAME_OPTIONS)
+            .build();
 
         var headers = LiveHttpSecurity.securityHeaders(config);
 
@@ -40,26 +42,31 @@ final class LiveHttpSecurityTest {
     @Test
     void liveSessionConfigCanOverrideSingleSecurityHeader() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .securityHeader(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
-                .build();
+            .securityHeader(SecurityHeadersConfig.REFERRER_POLICY, "same-origin")
+            .build();
 
-        assertEquals("same-origin", config.securityHeaders().get(SecurityHeadersConfig.REFERRER_POLICY));
-        assertEquals("nosniff", config.securityHeaders().get(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS));
+        assertEquals("same-origin", config.securityHeaders()
+            .get(SecurityHeadersConfig.REFERRER_POLICY));
+        assertEquals("nosniff", config.securityHeaders()
+            .get(SecurityHeadersConfig.X_CONTENT_TYPE_OPTIONS));
     }
 
     @Test
     void securityHeadersCanBeDisabledExplicitly() {
-        assertTrue(LiveHttpSecurity.securityHeaders(SecurityHeadersConfig.disabled()).isEmpty());
+        assertTrue(LiveHttpSecurity.securityHeaders(SecurityHeadersConfig.disabled())
+            .isEmpty());
         assertTrue(LiveSessionConfig.builder()
-                .disableSecurityHeaders()
-                .build()
-                .securityHeaders()
-                .isEmpty());
+            .disableSecurityHeaders()
+            .build()
+            .securityHeaders()
+            .isEmpty());
     }
 
     @Test
     void cspIsCompatibleWithExternalClientScript() {
-        String csp = SecurityHeadersConfig.defaults().headers().get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY);
+        String csp = SecurityHeadersConfig.defaults()
+            .headers()
+            .get(SecurityHeadersConfig.CONTENT_SECURITY_POLICY);
         try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
             String document = session.renderDocument("/", ujfe.core.ClientState.empty());
 
@@ -75,7 +82,7 @@ final class LiveHttpSecurityTest {
         String sessionToken = LiveHttpSecurity.generateCsrfToken();
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(null, null, null, null);
 
-        LiveCsrfException exception = assertThrows(LiveCsrfException.class, 
+        LiveCsrfException exception = assertThrows(LiveCsrfException.class,
             () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, exception.category());
@@ -88,7 +95,7 @@ final class LiveHttpSecurityTest {
         String sessionToken = LiveHttpSecurity.generateCsrfToken();
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata("wrong-token", null, null, null);
 
-        LiveCsrfException exception = assertThrows(LiveCsrfException.class, 
+        LiveCsrfException exception = assertThrows(LiveCsrfException.class,
             () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.INVALID_CSRF_TOKEN, exception.category());
@@ -101,7 +108,7 @@ final class LiveHttpSecurityTest {
         String sessionToken = LiveHttpSecurity.generateCsrfToken();
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(sessionToken, null, null, "localhost:8080", "http");
 
-        LiveCsrfException exception = assertThrows(LiveCsrfException.class, 
+        LiveCsrfException exception = assertThrows(LiveCsrfException.class,
             () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, exception.category());
@@ -141,7 +148,7 @@ final class LiveHttpSecurityTest {
         String sessionToken = LiveHttpSecurity.generateCsrfToken();
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(sessionToken, "http://evil.com", null, "localhost:8080", "http");
 
-        LiveCsrfException exception = assertThrows(LiveCsrfException.class, 
+        LiveCsrfException exception = assertThrows(LiveCsrfException.class,
             () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, exception.category());
@@ -154,7 +161,7 @@ final class LiveHttpSecurityTest {
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(sessionToken, "https://localhost", null, "localhost", "http");
 
         LiveCsrfException exception = assertThrows(LiveCsrfException.class,
-                () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
+            () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, exception.category());
         assertEquals("Cross-origin scheme mismatch.", exception.safeMessage());
@@ -167,7 +174,7 @@ final class LiveHttpSecurityTest {
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(sessionToken, "http://localhost", null, "localhost:8080", "http");
 
         LiveCsrfException exception = assertThrows(LiveCsrfException.class,
-                () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
+            () -> LiveHttpSecurity.validateCsrf(config, sessionToken, metadata));
 
         assertEquals(LiveHttpFailureCategory.CROSS_ORIGIN_REQUEST, exception.category());
         assertEquals("Cross-origin port mismatch.", exception.safeMessage());
@@ -175,7 +182,9 @@ final class LiveHttpSecurityTest {
 
     @Test
     void testValidateCsrf_DisabledForDevelopment_Succeeds() {
-        LiveSessionConfig config = LiveSessionConfig.builder().disableCsrfProtectionForDevelopmentUnsafe().build();
+        LiveSessionConfig config = LiveSessionConfig.builder()
+            .disableCsrfProtectionForDevelopmentUnsafe()
+            .build();
         String sessionToken = LiveHttpSecurity.generateCsrfToken();
         // Missing token and origin, but disabled
         LiveHttpRequestMetadata metadata = new LiveHttpRequestMetadata(null, null, null, null);

@@ -25,23 +25,25 @@ final class LiveSessionActionTest {
     void beforeRenderIsCalledDuringRenderPath() {
         List<String> log = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .beforeRender(ctx -> log.add("before:" + ctx.path()))
-                .build();
+            .beforeRender(ctx -> log.add("before:" + ctx.path()))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             session.renderPath("/");
         }
 
         assertEquals(1, log.size());
-        assertTrue(log.get(0).startsWith("before:/"));
+        assertTrue(log.get(0)
+            .startsWith("before:/"));
     }
 
     @Test
     void afterRenderReceivesRenderedHtml() {
         List<String> log = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .afterRender(result -> log.add("html:" + (result.html().contains("Hello") ? "yes" : "no")))
-                .build();
+            .afterRender(result -> log.add("html:" + (result.html()
+                .contains("Hello") ? "yes" : "no")))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             session.renderPath("/");
@@ -54,8 +56,8 @@ final class LiveSessionActionTest {
     void afterRenderReceivesRenderDuration() {
         List<Boolean> durations = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .afterRender(result -> durations.add(result.renderDuration() != null))
-                .build();
+            .afterRender(result -> durations.add(result.renderDuration() != null))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             session.renderPath("/");
@@ -70,8 +72,8 @@ final class LiveSessionActionTest {
     void beforeEventIsCalledDuringHandleEvent() {
         List<String> log = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .beforeEvent(ctx -> log.add("beforeEvent:" + ctx.eventId()))
-                .build();
+            .beforeEvent(ctx -> log.add("beforeEvent:" + ctx.eventId()))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             String document = session.renderDocument("/", ClientState.empty());
@@ -81,15 +83,16 @@ final class LiveSessionActionTest {
         }
 
         assertFalse(log.isEmpty());
-        assertTrue(log.get(0).startsWith("beforeEvent:"));
+        assertTrue(log.get(0)
+            .startsWith("beforeEvent:"));
     }
 
     @Test
     void afterEventReceivesResult() {
         List<String> log = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .afterEvent(result -> log.add("afterEvent:" + result.eventId()))
-                .build();
+            .afterEvent(result -> log.add("afterEvent:" + result.eventId()))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             String document = session.renderDocument("/", ClientState.empty());
@@ -99,7 +102,8 @@ final class LiveSessionActionTest {
         }
 
         assertFalse(log.isEmpty());
-        assertTrue(log.get(0).startsWith("afterEvent:"));
+        assertTrue(log.get(0)
+            .startsWith("afterEvent:"));
     }
 
     @Test
@@ -107,12 +111,13 @@ final class LiveSessionActionTest {
         List<String> errors = new ArrayList<>();
         List<String> after = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .beforeEvent(ctx -> {
-                    throw new SecurityException("blocked");
-                })
-                .afterEvent(result -> after.add(result.eventId()))
-                .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.eventId() + ":" + ctx.exception().getMessage()))
-                .build();
+            .beforeEvent(ctx -> {
+                throw new SecurityException("blocked");
+            })
+            .afterEvent(result -> after.add(result.eventId()))
+            .onError(ctx -> errors.add(ctx.phase() + ":" + ctx.eventId() + ":" + ctx.exception()
+                .getMessage()))
+            .build();
 
         String eventId;
         try (LiveSession session = sessionWithActions(actions)) {
@@ -131,32 +136,37 @@ final class LiveSessionActionTest {
     void onErrorIsCalledOnRenderFailure() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(ctx -> errors.add(ctx.phase()
-                        + ":"
-                        + ctx.runtimeMetadata().get("errorCode")
-                        + ":"
-                        + ctx.exception().getMessage()))
-                .build();
+            .onError(ctx -> errors.add(ctx.phase()
+                + ":"
+                + ctx.runtimeMetadata()
+                .get("errorCode")
+                + ":"
+                + ctx.exception()
+                .getMessage()))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             assertThrows(IllegalArgumentException.class, () -> session.renderPath("/nonexistent"));
         }
         assertEquals(1, errors.size());
-        assertTrue(errors.get(0).startsWith("ROUTING:UJFE_ROUTE_NOT_FOUND:"));
+        assertTrue(errors.get(0)
+            .startsWith("ROUTING:UJFE_ROUTE_NOT_FOUND:"));
     }
 
     @Test
     void onErrorIsCalledOnEventFailure() {
         List<String> errors = new ArrayList<>();
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .onError(ctx -> errors.add(ctx.phase().name()))
-                .build();
+            .onError(ctx -> errors.add(ctx.phase()
+                .name()))
+            .build();
 
         try (LiveSession session = sessionWithActions(actions)) {
             assertThrows(IllegalArgumentException.class,
-                    () -> session.handleEvent("nonexistent-event", ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
+                () -> session.handleEvent("nonexistent-event", ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
         }
-        assertTrue(errors.stream().anyMatch(e -> e.contains("EVENT") || e.contains("RENDER")));
+        assertTrue(errors.stream()
+            .anyMatch(e -> e.contains("EVENT") || e.contains("RENDER")));
     }
 
     // --- Head contributions ---
@@ -164,9 +174,10 @@ final class LiveSessionActionTest {
     @Test
     void contributeHeadAppearsInRenderDocument() {
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .contributeHead(ctx -> ctx.add(
-                        meta().attr("name", "robots").attr("content", "index,follow")))
-                .build();
+            .contributeHead(ctx -> ctx.add(
+                meta().attr("name", "robots")
+                    .attr("content", "index,follow")))
+            .build();
 
         String document;
         try (LiveSession session = sessionWithActions(actions)) {
@@ -180,9 +191,9 @@ final class LiveSessionActionTest {
     @Test
     void multipleHeadContributionsPreserveOrder() {
         RuntimeActionRegistry actions = RuntimeActionRegistry.builder()
-                .contributeHead(ctx -> ctx.add(meta().attr("name", "first")))
-                .contributeHead(ctx -> ctx.add(meta().attr("name", "second")))
-                .build();
+            .contributeHead(ctx -> ctx.add(meta().attr("name", "first")))
+            .contributeHead(ctx -> ctx.add(meta().attr("name", "second")))
+            .build();
 
         String document;
         try (LiveSession session = sessionWithActions(actions)) {
@@ -197,8 +208,8 @@ final class LiveSessionActionTest {
     @Test
     void configHeadCollectionOverloadAddsHeadNodes() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .head(List.of(meta().attr("name", "collection-head")))
-                .build();
+            .head(List.of(meta().attr("name", "collection-head")))
+            .build();
         String document;
         try (LiveSession session = new LiveSession(new Router().register(new SimplePage()), config)) {
             document = session.renderDocument("/", ClientState.empty());
@@ -225,25 +236,25 @@ final class LiveSessionActionTest {
 
         try (LiveSession session = new LiveSession(router, ujfe.core.CssTheme::defaultTheme)) {
             assertTrue(session.renderPath("/")
-                    .html()
-                    .contains("Hello"));
+                .html()
+                .contains("Hello"));
         }
         try (LiveSession session = new LiveSession(router, new PageRenderer(), new LiveEventRegistry())) {
             assertTrue(session.renderPath("/")
-                    .html()
-                    .contains("Hello"));
+                .html()
+                .contains("Hello"));
         }
         try (LiveSession session = new LiveSession(
-                router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme)) {
+            router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme)) {
             assertTrue(session.renderPath("/")
-                    .html()
-                    .contains("Hello"));
+                .html()
+                .contains("Hello"));
         }
         try (LiveSession session = new LiveSession(
-                router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme, true)) {
+            router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme, true)) {
             assertTrue(session.renderPath("/")
-                    .html()
-                    .contains("Hello"));
+                .html()
+                .contains("Hello"));
         }
     }
 
@@ -251,13 +262,14 @@ final class LiveSessionActionTest {
 
     private static LiveSession sessionWithActions(RuntimeActionRegistry actions) {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .runtimeActions(actions)
-                .build();
+            .runtimeActions(actions)
+            .build();
         return new LiveSession(new Router().register(new ClickablePage()), config);
     }
 
     private static String extractEventId(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find());
         return matcher.group(1);
     }
@@ -275,9 +287,9 @@ final class LiveSessionActionTest {
         @Override
         public Node render() {
             return div()
-                    .child(p("Hello"))
-                    .child(button("Click").onClick(() -> {
-                    }));
+                .child(p("Hello"))
+                .child(button("Click").onClick(() -> {
+                }));
         }
     }
 }

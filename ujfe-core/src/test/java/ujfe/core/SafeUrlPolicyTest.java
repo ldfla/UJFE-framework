@@ -24,37 +24,43 @@ final class SafeUrlPolicyTest {
 
     @Test
     void allowsRelativePath() {
-        String html = a("Home").href("/home").render();
+        String html = a("Home").href("/home")
+            .render();
         assertTrue(html.contains("href=\"/home\""));
     }
 
     @Test
     void allowsHttpsUrl() {
-        String html = a("Site").href("https://example.com").render();
+        String html = a("Site").href("https://example.com")
+            .render();
         assertTrue(html.contains("href=\"https://example.com\""));
     }
 
     @Test
     void allowsRelativePathWithoutScheme() {
-        String html = a("Page").href("page").render();
+        String html = a("Page").href("page")
+            .render();
         assertTrue(html.contains("href=\"page\""));
     }
 
     @Test
     void allowsCurrentDirectoryRelativePath() {
-        String html = a("Here").href("./page").render();
+        String html = a("Here").href("./page")
+            .render();
         assertTrue(html.contains("href=\"./page\""));
     }
 
     @Test
     void allowsParentDirectoryRelativePath() {
-        String html = a("Settings").href("../settings").render();
+        String html = a("Settings").href("../settings")
+            .render();
         assertTrue(html.contains("href=\"../settings\""));
     }
 
     @Test
     void allowsFragmentOnlyReference() {
-        String html = a("Section").href("#section").render();
+        String html = a("Section").href("#section")
+            .render();
         assertTrue(html.contains("href=\"#section\""));
     }
 
@@ -66,7 +72,8 @@ final class SafeUrlPolicyTest {
     @Test
     void allowsDataImageGif() {
         String gif = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-        String html = img().src(gif).render();
+        String html = img().src(gif)
+            .render();
         assertTrue(html.contains("src=\"" + gif + "\""));
     }
 
@@ -90,66 +97,69 @@ final class SafeUrlPolicyTest {
     @Test
     void blocksJavascriptScheme() {
         IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> a("Bad").href("javascript:alert(1)"));
-        assertTrue(exception.getMessage().contains("javascript"));
+            IllegalArgumentException.class,
+            () -> a("Bad").href("javascript:alert(1)"));
+        assertTrue(exception.getMessage()
+            .contains("javascript"));
     }
 
     @Test
     void blocksJavascriptSchemeCaseInsensitive() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("JavaScript:alert(1)"));
+            () -> a("Bad").href("JavaScript:alert(1)"));
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("JAVASCRIPT:alert(1)"));
+            () -> a("Bad").href("JAVASCRIPT:alert(1)"));
     }
 
     @Test
     void blocksVbscriptScheme() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("vbscript:MsgBox(1)"));
+            () -> a("Bad").href("vbscript:MsgBox(1)"));
     }
 
     @Test
     void blocksDataTextHtml() {
         assertThrows(IllegalArgumentException.class,
-                () -> img().src("data:text/html,<script>alert(1)</script>"));
+            () -> img().src("data:text/html,<script>alert(1)</script>"));
     }
 
     @Test
     void blocksDataApplicationJavascript() {
         assertThrows(IllegalArgumentException.class,
-                () -> img().src("data:application/javascript,alert(1)"));
+            () -> img().src("data:application/javascript,alert(1)"));
     }
 
     @Test
     void blocksHttpByDefault() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("http://example.com"));
+            () -> a("Bad").href("http://example.com"));
     }
 
     @Test
     void blocksMailtoByDefault() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("mailto:user@example.com"));
+            () -> a("Bad").href("mailto:user@example.com"));
     }
 
     @Test
     void blocksTelByDefault() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("tel:+1234567890"));
+            () -> a("Bad").href("tel:+1234567890"));
     }
 
     @Test
     void blocksUnknownScheme() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("ftp://files.example.com/data"));
+            () -> a("Bad").href("ftp://files.example.com/data"));
     }
 
     // --- Configurable policy: http ---
 
     @Test
     void allowsHttpWhenConfigured() {
-        UrlPolicy.setDefault(UrlPolicy.builder().allowHttp().build());
+        UrlPolicy.setDefault(UrlPolicy.builder()
+            .allowHttp()
+            .build());
         assertDoesNotThrow(() -> a("Link").href("http://example.com"));
     }
 
@@ -157,7 +167,9 @@ final class SafeUrlPolicyTest {
 
     @Test
     void allowsMailtoWhenConfigured() {
-        UrlPolicy.setDefault(UrlPolicy.builder().allowMailto().build());
+        UrlPolicy.setDefault(UrlPolicy.builder()
+            .allowMailto()
+            .build());
         assertDoesNotThrow(() -> a("Email").href("mailto:user@example.com"));
     }
 
@@ -165,7 +177,9 @@ final class SafeUrlPolicyTest {
 
     @Test
     void allowsTelWhenConfigured() {
-        UrlPolicy.setDefault(UrlPolicy.builder().allowTel().build());
+        UrlPolicy.setDefault(UrlPolicy.builder()
+            .allowTel()
+            .build());
         assertDoesNotThrow(() -> a("Call").href("tel:+1234567890"));
     }
 
@@ -174,10 +188,10 @@ final class SafeUrlPolicyTest {
     @Test
     void allowsMultipleSchemesWhenConfigured() {
         UrlPolicy.setDefault(UrlPolicy.builder()
-                .allowHttp()
-                .allowMailto()
-                .allowTel()
-                .build());
+            .allowHttp()
+            .allowMailto()
+            .allowTel()
+            .build());
 
         assertDoesNotThrow(() -> a("Link").href("http://example.com"));
         assertDoesNotThrow(() -> a("Email").href("mailto:user@example.com"));
@@ -187,25 +201,25 @@ final class SafeUrlPolicyTest {
     @Test
     void javascriptAlwaysBlockedEvenWithPermissivePolicy() {
         UrlPolicy.setDefault(UrlPolicy.builder()
-                .allowHttp()
-                .allowMailto()
-                .allowTel()
-                .build());
+            .allowHttp()
+            .allowMailto()
+            .allowTel()
+            .build());
 
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("javascript:alert(1)"));
+            () -> a("Bad").href("javascript:alert(1)"));
     }
 
     @Test
     void vbscriptAlwaysBlockedEvenWithPermissivePolicy() {
         UrlPolicy.setDefault(UrlPolicy.builder()
-                .allowHttp()
-                .allowMailto()
-                .allowTel()
-                .build());
+            .allowHttp()
+            .allowMailto()
+            .allowTel()
+            .build());
 
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("vbscript:MsgBox(1)"));
+            () -> a("Bad").href("vbscript:MsgBox(1)"));
     }
 
     // --- Configurable policy: data image toggle ---
@@ -213,11 +227,11 @@ final class SafeUrlPolicyTest {
     @Test
     void blocksDataImageWhenDisabled() {
         UrlPolicy.setDefault(UrlPolicy.builder()
-                .allowDataImageUrls(false)
-                .build());
+            .allowDataImageUrls(false)
+            .build());
 
         assertThrows(IllegalArgumentException.class,
-                () -> img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="));
+            () -> img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="));
     }
 
     // --- Policy builder safety ---
@@ -225,20 +239,22 @@ final class SafeUrlPolicyTest {
     @Test
     void builderRejectsJavascriptScheme() {
         assertThrows(IllegalArgumentException.class,
-                () -> UrlPolicy.builder().allowScheme("javascript"));
+            () -> UrlPolicy.builder()
+                .allowScheme("javascript"));
     }
 
     @Test
     void builderRejectsVbscriptScheme() {
         assertThrows(IllegalArgumentException.class,
-                () -> UrlPolicy.builder().allowScheme("vbscript"));
+            () -> UrlPolicy.builder()
+                .allowScheme("vbscript"));
     }
 
     @Test
     void allowsCustomSchemeWhenConfigured() {
         UrlPolicy.setDefault(UrlPolicy.builder()
-                .allowScheme("ftp")
-                .build());
+            .allowScheme("ftp")
+            .build());
 
         assertDoesNotThrow(() -> a("Files").href("ftp://files.example.com/data"));
     }
@@ -248,49 +264,51 @@ final class SafeUrlPolicyTest {
     @Test
     void sanitizesHrefAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("javascript:alert(1)"));
+            () -> a("Bad").href("javascript:alert(1)"));
     }
 
     @Test
     void sanitizesSrcAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> img().src("javascript:alert(1)"));
+            () -> img().src("javascript:alert(1)"));
     }
 
     @Test
     void sanitizesActionAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> form().action("javascript:alert(1)"));
+            () -> form().action("javascript:alert(1)"));
     }
 
     @Test
     void sanitizesFormactionAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> button("Go").attr("formaction", "javascript:alert(1)"));
+            () -> button("Go").attr("formaction", "javascript:alert(1)"));
     }
 
     @Test
     void sanitizesPosterAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> video().poster("javascript:alert(1)"));
+            () -> video().poster("javascript:alert(1)"));
     }
 
     @Test
     void sanitizesCiteAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> blockquote().attr("cite", "javascript:alert(1)"));
+            () -> blockquote().attr("cite", "javascript:alert(1)"));
     }
 
     @Test
     void sanitizesBackgroundAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> Element.of("td").attr("background", "javascript:alert(1)"));
+            () -> Element.of("td")
+                .attr("background", "javascript:alert(1)"));
     }
 
     @Test
     void sanitizesDataAttribute() {
         assertThrows(IllegalArgumentException.class,
-                () -> Element.of("object").attr("data", "javascript:alert(1)"));
+            () -> Element.of("object")
+                .attr("data", "javascript:alert(1)"));
     }
 
     // --- Direct SafeUrl API with explicit policy ---
@@ -298,10 +316,10 @@ final class SafeUrlPolicyTest {
     @Test
     void sanitizeWithExplicitPolicy() {
         UrlPolicy permissive = UrlPolicy.builder()
-                .allowHttp()
-                .allowMailto()
-                .allowTel()
-                .build();
+            .allowHttp()
+            .allowMailto()
+            .allowTel()
+            .build();
 
         assertEquals("http://example.com", SafeUrl.sanitize("http://example.com", permissive));
         assertEquals("mailto:user@example.com", SafeUrl.sanitize("mailto:user@example.com", permissive));
@@ -311,13 +329,13 @@ final class SafeUrlPolicyTest {
     @Test
     void sanitizeWithExplicitPolicyStillBlocksJavascript() {
         UrlPolicy permissive = UrlPolicy.builder()
-                .allowHttp()
-                .allowMailto()
-                .allowTel()
-                .build();
+            .allowHttp()
+            .allowMailto()
+            .allowTel()
+            .build();
 
         assertThrows(IllegalArgumentException.class,
-                () -> SafeUrl.sanitize("javascript:alert(1)", permissive));
+            () -> SafeUrl.sanitize("javascript:alert(1)", permissive));
     }
 
     // --- Data image URL documentation coverage ---
@@ -338,6 +356,6 @@ final class SafeUrlPolicyTest {
     @Test
     void rejectsInvalidUrlSyntax() {
         assertThrows(IllegalArgumentException.class,
-                () -> a("Bad").href("https://example.com/path with spaces"));
+            () -> a("Bad").href("https://example.com/path with spaces"));
     }
 }

@@ -15,10 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static ujfe.core.UI.*;
 
 final class LiveSessionTest {
@@ -33,8 +30,10 @@ final class LiveSessionTest {
             String eventId = extractEventId(document);
             LiveRenderResult result = session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http"));
 
-            assertTrue(result.html().contains("Counter: 1"));
-            assertTrue(result.html().contains("data-ujfe-event="));
+            assertTrue(result.html()
+                .contains("Counter: 1"));
+            assertTrue(result.html()
+                .contains("data-ujfe-event="));
         }
     }
 
@@ -45,7 +44,7 @@ final class LiveSessionTest {
             String eventId = extractEventId(document);
 
             LiveCsrfException exception = assertThrows(LiveCsrfException.class,
-                    () -> session.handleEvent(eventId, ClientState.empty()));
+                () -> session.handleEvent(eventId, ClientState.empty()));
 
             assertEquals(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, exception.category());
             assertEquals("Missing CSRF token.", exception.safeMessage());
@@ -58,7 +57,7 @@ final class LiveSessionTest {
             session.renderDocument("/", ClientState.empty());
 
             LiveCsrfException exception = assertThrows(LiveCsrfException.class,
-                    () -> session.updateClientState(ClientState.empty()));
+                () -> session.updateClientState(ClientState.empty()));
 
             assertEquals(LiveHttpFailureCategory.MISSING_CSRF_TOKEN, exception.category());
             assertEquals("Missing CSRF token.", exception.safeMessage());
@@ -68,17 +67,17 @@ final class LiveSessionTest {
     @Test
     void exposesClientStateDuringRender() {
         ClientState clientState = ClientState.of(
-                Map.of("ujfe_demo", "ativo"),
-                Map.of("ujfe.theme", "dark"),
-                Map.of("ujfe.tab", "docs")
+            Map.of("ujfe_demo", "ativo"),
+            Map.of("ujfe.theme", "dark"),
+            Map.of("ujfe.tab", "docs")
         );
 
         String document;
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("ujfe.theme")
-                .allowSessionStorageKey("ujfe.tab")
-                .build();
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("ujfe.theme")
+            .allowSessionStorageKey("ujfe.tab")
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new ClientStatePage()), config)) {
             document = session.renderDocument("/", clientState);
         }
@@ -94,15 +93,15 @@ final class LiveSessionTest {
     @Test
     void clientStatePolicyBlocksUnauthorizedStateBeforeRender() {
         ClientState clientState = ClientState.of(
-                Map.of("ujfe_demo", "ativo", "secret", "hidden"),
-                Map.of("ujfe.theme", "dark", "token", "hidden"),
-                Map.of("ujfe.tab", "docs", "draft", "hidden")
+            Map.of("ujfe_demo", "ativo", "secret", "hidden"),
+            Map.of("ujfe.theme", "dark", "token", "hidden"),
+            Map.of("ujfe.tab", "docs", "draft", "hidden")
         );
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("ujfe.theme")
-                .allowSessionStorageKey("ujfe.tab")
-                .build();
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("ujfe.theme")
+            .allowSessionStorageKey("ujfe.tab")
+            .build();
 
         String document;
         try (LiveSession session = new LiveSession(new Router().register(new ClientStatePage()), config)) {
@@ -120,27 +119,29 @@ final class LiveSessionTest {
     @Test
     void allowedClientStateReachesLiveEventHandler() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("ujfe.theme")
-                .allowSessionStorageKey("ujfe.tab")
-                .build();
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("ujfe.theme")
+            .allowSessionStorageKey("ujfe.tab")
+            .build();
         try (LiveSession session = new LiveSession(new Router().register(new ClientStateEventPage()), config)) {
             String document = session.renderDocument("/", ClientState.empty());
             String eventId = extractEventId(document);
             ClientState nextClientState = ClientState.of(
-                    Map.of("ujfe_demo", "ativo", "secret", "hidden"),
-                    Map.of("ujfe.theme", "dark", "token", "hidden"),
-                    Map.of("ujfe.tab", "docs", "draft", "hidden")
+                Map.of("ujfe_demo", "ativo", "secret", "hidden"),
+                Map.of("ujfe.theme", "dark", "token", "hidden"),
+                Map.of("ujfe.tab", "docs", "draft", "hidden")
             );
 
             LiveRenderResult result = session.handleEvent(
-                    eventId,
-                    nextClientState,
-                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+                eventId,
+                nextClientState,
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
             );
 
-            assertTrue(result.html().contains("Seen: ativo/dark/docs"));
-            assertTrue(result.html().contains("Blocked: none/none/none"));
+            assertTrue(result.html()
+                .contains("Seen: ativo/dark/docs"));
+            assertTrue(result.html()
+                .contains("Blocked: none/none/none"));
         }
     }
 
@@ -148,7 +149,7 @@ final class LiveSessionTest {
     void includesDevToolsScriptWhenEnabled() {
         String document;
         try (LiveSession session = new LiveSession(
-                new Router().register(new CounterPage()), ujfe.core.CssTheme::defaultTheme, true)) {
+            new Router().register(new CounterPage()), ujfe.core.CssTheme::defaultTheme, true)) {
             document = session.renderDocument("/", ClientState.empty());
         }
 
@@ -171,11 +172,11 @@ final class LiveSessionTest {
     @Test
     void supportsExternalCssAndDocumentHeadConfiguration() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .cssMode(CssMode.EXTERNAL)
-                .lang("pt-BR")
-                .title("UJFE <External>")
-                .externalStylesheet("/app.css")
-                .build();
+            .cssMode(CssMode.EXTERNAL)
+            .lang("pt-BR")
+            .title("UJFE <External>")
+            .externalStylesheet("/app.css")
+            .build();
 
         String document;
         String css;
@@ -196,9 +197,9 @@ final class LiveSessionTest {
     @Test
     void supportsNoneCssModeWithoutRemovingClassAttributes() {
         LiveSessionConfig config = LiveSessionConfig.builder()
-                .cssMode(CssMode.NONE)
-                .externalStylesheet("/app.css")
-                .build();
+            .cssMode(CssMode.NONE)
+            .externalStylesheet("/app.css")
+            .build();
 
         String document;
         String css;
@@ -216,8 +217,8 @@ final class LiveSessionTest {
     @Test
     void internalCssIsScopedToClassesSeenDuringCurrentPageRender() {
         Router router = new Router()
-                .register(new FirstCssPage())
-                .register(new SecondCssPage());
+            .register(new FirstCssPage())
+            .register(new SecondCssPage());
 
         String first;
         String second;
@@ -247,13 +248,14 @@ final class LiveSessionTest {
             String eventId = extractNamedEventId(document, "input");
 
             LiveRenderResult result = session.handleEvent(
-                    eventId,
-                    "Ada",
-                    ClientState.empty(),
-                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+                eventId,
+                "Ada",
+                ClientState.empty(),
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
             );
 
-            assertTrue(result.html().contains("Input: Ada"));
+            assertTrue(result.html()
+                .contains("Input: Ada"));
         }
     }
 
@@ -264,13 +266,14 @@ final class LiveSessionTest {
             String eventId = extractNamedEventId(document, "change");
 
             LiveRenderResult result = session.handleEvent(
-                    eventId,
-                    "backend",
-                    ClientState.empty(),
-                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+                eventId,
+                "backend",
+                ClientState.empty(),
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
             );
 
-            assertTrue(result.html().contains("Change: backend"));
+            assertTrue(result.html()
+                .contains("Change: backend"));
         }
     }
 
@@ -281,13 +284,14 @@ final class LiveSessionTest {
             String eventId = extractNamedEventId(document, "submit");
 
             LiveRenderResult result = session.handleEvent(
-                    eventId,
-                    "name=Ada",
-                    ClientState.empty(),
-                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+                eventId,
+                "name=Ada",
+                ClientState.empty(),
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
             );
 
-            assertTrue(result.html().contains("Submits: 1"));
+            assertTrue(result.html()
+                .contains("Submits: 1"));
         }
     }
 
@@ -298,10 +302,10 @@ final class LiveSessionTest {
             String eventId = extractNamedEventId(document, "input");
 
             IllegalStateException exception = assertThrows(IllegalStateException.class, () -> session.handleEvent(
-                    eventId,
-                    "danger",
-                    ClientState.empty(),
-                    new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+                eventId,
+                "danger",
+                ClientState.empty(),
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
             ));
 
             assertEquals("typed failure", exception.getMessage());
@@ -309,13 +313,15 @@ final class LiveSessionTest {
     }
 
     private static String extractEventId(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find());
         return matcher.group(1);
     }
 
     private static String extractNamedEventId(String html, String eventName) {
-        Matcher matcher = Pattern.compile("data-ujfe-event-" + eventName + "=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event-" + eventName + "=\"([^\"]+)\"")
+            .matcher(html);
         assertTrue(matcher.find());
         return matcher.group(1);
     }
@@ -327,14 +333,14 @@ final class LiveSessionTest {
         @Override
         public Node render() {
             return div()
-                    .css("min-h-screen p-8 flex flex-col gap-4")
-                    .child(h1("UJFE").css("text-3xl font-bold"))
-                    .child(p(() -> "Counter: " + count.get()))
-                    .child(
-                            button("Incrementar")
-                                    .css("px-4 py-2 rounded bg-blue-600 text-white")
-                                    .onClick(count::incrementAndGet)
-                    );
+                .css("min-h-screen p-8 flex flex-col gap-4")
+                .child(h1("UJFE").css("text-3xl font-bold"))
+                .child(p(() -> "Counter: " + count.get()))
+                .child(
+                    button("Incrementar")
+                        .css("px-4 py-2 rounded bg-blue-600 text-white")
+                        .onClick(count::incrementAndGet)
+                );
         }
     }
 
@@ -342,7 +348,8 @@ final class LiveSessionTest {
     public static final class FirstCssPage implements Component {
         @Override
         public Node render() {
-            return div().css("p-4").child("One");
+            return div().css("p-4")
+                .child("One");
         }
     }
 
@@ -350,7 +357,8 @@ final class LiveSessionTest {
     public static final class SecondCssPage implements Component {
         @Override
         public Node render() {
-            return div().css("m-4").child("Two");
+            return div().css("m-4")
+                .child("Two");
         }
     }
 
@@ -359,12 +367,18 @@ final class LiveSessionTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Cookie: " + Ujfe.cookie("ujfe_demo").orElse("missing")))
-                    .child(p(() -> "Theme: " + Ujfe.localStorage("ujfe.theme").orElse("missing")))
-                    .child(p(() -> "Tab: " + Ujfe.sessionStorage("ujfe.tab").orElse("missing")))
-                    .child(p(() -> "Secret: " + Ujfe.cookie("secret").orElse("missing")))
-                    .child(p(() -> "Token: " + Ujfe.localStorage("token").orElse("missing")))
-                    .child(p(() -> "Draft: " + Ujfe.sessionStorage("draft").orElse("missing")));
+                .child(p(() -> "Cookie: " + Ujfe.cookie("ujfe_demo")
+                    .orElse("missing")))
+                .child(p(() -> "Theme: " + Ujfe.localStorage("ujfe.theme")
+                    .orElse("missing")))
+                .child(p(() -> "Tab: " + Ujfe.sessionStorage("ujfe.tab")
+                    .orElse("missing")))
+                .child(p(() -> "Secret: " + Ujfe.cookie("secret")
+                    .orElse("missing")))
+                .child(p(() -> "Token: " + Ujfe.localStorage("token")
+                    .orElse("missing")))
+                .child(p(() -> "Draft: " + Ujfe.sessionStorage("draft")
+                    .orElse("missing")));
         }
     }
 
@@ -376,16 +390,22 @@ final class LiveSessionTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Seen: " + seen.get()))
-                    .child(p(() -> "Blocked: " + blocked.get()))
-                    .child(button("Read").onClick(() -> {
-                        seen.set(Ujfe.cookie("ujfe_demo").orElse("none")
-                                + "/" + Ujfe.localStorage("ujfe.theme").orElse("none")
-                                + "/" + Ujfe.sessionStorage("ujfe.tab").orElse("none"));
-                        blocked.set(Ujfe.cookie("secret").orElse("none")
-                                + "/" + Ujfe.localStorage("token").orElse("none")
-                                + "/" + Ujfe.sessionStorage("draft").orElse("none"));
-                    }));
+                .child(p(() -> "Seen: " + seen.get()))
+                .child(p(() -> "Blocked: " + blocked.get()))
+                .child(button("Read").onClick(() -> {
+                    seen.set(Ujfe.cookie("ujfe_demo")
+                        .orElse("none")
+                        + "/" + Ujfe.localStorage("ujfe.theme")
+                        .orElse("none")
+                        + "/" + Ujfe.sessionStorage("ujfe.tab")
+                        .orElse("none"));
+                    blocked.set(Ujfe.cookie("secret")
+                        .orElse("none")
+                        + "/" + Ujfe.localStorage("token")
+                        .orElse("none")
+                        + "/" + Ujfe.sessionStorage("draft")
+                        .orElse("none"));
+                }));
         }
     }
 
@@ -398,16 +418,16 @@ final class LiveSessionTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Input: " + inputValue.get()))
-                    .child(p(() -> "Change: " + changeValue.get()))
-                    .child(p(() -> "Submits: " + submits.get()))
-                    .child(inputText().onInput(inputValue::set))
-                    .child(select()
-                            .onChange(changeValue::set)
-                            .child(option("Backend").value("backend")))
-                    .child(form()
-                            .onSubmit(submits::incrementAndGet)
-                            .child(inputText().name("name")));
+                .child(p(() -> "Input: " + inputValue.get()))
+                .child(p(() -> "Change: " + changeValue.get()))
+                .child(p(() -> "Submits: " + submits.get()))
+                .child(inputText().onInput(inputValue::set))
+                .child(select()
+                    .onChange(changeValue::set)
+                    .child(option("Backend").value("backend")))
+                .child(form()
+                    .onSubmit(submits::incrementAndGet)
+                    .child(inputText().name("name")));
         }
     }
 

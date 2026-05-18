@@ -4,9 +4,9 @@ import java.util.*;
 
 public final class ClientState {
     private static final ClientState EMPTY = new ClientState(
-            Collections.emptyMap(),
-            Collections.emptyMap(),
-            Collections.emptyMap()
+        Collections.emptyMap(),
+        Collections.emptyMap(),
+        Collections.emptyMap()
     );
 
     private final Map<String, String> cookies;
@@ -14,9 +14,9 @@ public final class ClientState {
     private final Map<String, String> sessionStorage;
 
     private ClientState(
-            Map<String, String> cookies,
-            Map<String, String> localStorage,
-            Map<String, String> sessionStorage
+        Map<String, String> cookies,
+        Map<String, String> localStorage,
+        Map<String, String> sessionStorage
     ) {
         this.cookies = copy(cookies);
         this.localStorage = copy(localStorage);
@@ -32,9 +32,9 @@ public final class ClientState {
     }
 
     public static ClientState of(
-            Map<String, String> cookies,
-            Map<String, String> localStorage,
-            Map<String, String> sessionStorage
+        Map<String, String> cookies,
+        Map<String, String> localStorage,
+        Map<String, String> sessionStorage
     ) {
         return new ClientState(cookies, localStorage, sessionStorage);
     }

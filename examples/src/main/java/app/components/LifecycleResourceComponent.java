@@ -29,28 +29,28 @@ public final class LifecycleResourceComponent implements Component, Lifecycle {
     @Override
     public Node render() {
         return div()
-                .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col gap-5")
-                .child(
-                        div()
-                                .css("flex flex-col gap-2")
-                                .child(h2("Lifecycle resource").css("text-lg font-bold text-slate-900"))
-                                .child(p("A server-side component opens a resource on mount and releases it on unmount.")
-                                        .css("text-xs text-slate-500 leading-relaxed"))
-                )
-                .child(
-                        div()
-                                .css("flex flex-col gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-4 font-mono text-xs text-slate-600")
-                                .child(p(() -> "Mount callbacks  : " + mounts.get()).css("font-semibold text-indigo-600"))
-                                .child(p(() -> "Cleanup callbacks: " + cleanups.get()).css("text-slate-500"))
-                                .child(p(() -> "Resource state   : " + (resourceOpen.get() ? "open" : "closed")).css("text-slate-500"))
-                                .child(p(() -> "Interactions     : " + interactions.get()).css("text-slate-500"))
-                )
-                .child(
-                        button("Touch stateful component")
-                                .css("w-full px-4 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
-                                .onClick(() -> interactions.update(value -> value + 1))
-                )
-                .child(span("Stable re-renders keep the same component instance mounted.")
-                        .css("text-xs text-slate-400 italic"));
+            .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col gap-5")
+            .child(
+                div()
+                    .css("flex flex-col gap-2")
+                    .child(h2("Lifecycle resource").css("text-lg font-bold text-slate-900"))
+                    .child(p("A server-side component opens a resource on mount and releases it on unmount.")
+                        .css("text-xs text-slate-500 leading-relaxed"))
+            )
+            .child(
+                div()
+                    .css("flex flex-col gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-4 font-mono text-xs text-slate-600")
+                    .child(p(() -> "Mount callbacks  : " + mounts.get()).css("font-semibold text-indigo-600"))
+                    .child(p(() -> "Cleanup callbacks: " + cleanups.get()).css("text-slate-500"))
+                    .child(p(() -> "Resource state   : " + (resourceOpen.get() ? "open" : "closed")).css("text-slate-500"))
+                    .child(p(() -> "Interactions     : " + interactions.get()).css("text-slate-500"))
+            )
+            .child(
+                button("Touch stateful component")
+                    .css("w-full px-4 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
+                    .onClick(() -> interactions.update(value -> value + 1))
+            )
+            .child(span("Stable re-renders keep the same component instance mounted.")
+                .css("text-xs text-slate-400 italic"));
     }
 }

@@ -15,15 +15,15 @@ public final class UjfeServletBootstrap implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         var routes = new ManualRouteSource()
-                .register("/home", HomePage::new);
+            .register("/home", HomePage::new);
         var router = new Router().register(routes);
         var config = LiveSessionConfig.builder()
-                .title("UJFE Servlet Tomcat Example")
-                .devToolsEnabled(true)
-                .allowClientCookie("ujfe_demo")
-                .allowLocalStorageKey("ujfe.theme")
-                .allowSessionStorageKey("ujfe.tab")
-                .build();
+            .title("UJFE Servlet Tomcat Example")
+            .devToolsEnabled(true)
+            .allowClientCookie("ujfe_demo")
+            .allowLocalStorageKey("ujfe.theme")
+            .allowSessionStorageKey("ujfe.tab")
+            .build();
 
         ServletContext context = event.getServletContext();
         ServletRegistration.Dynamic servlet = context.addServlet("ujfe", new UjfeServlet(router, config));

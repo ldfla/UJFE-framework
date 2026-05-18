@@ -41,8 +41,8 @@ final class HtmlNames {
         }
         if (isInlineEventHandler(name)) {
             throw new IllegalArgumentException(
-                    "Inline event handler attributes are blocked by default: " + name
-                            + ". Use Element.on(event, handler) for server-side live events.");
+                "Inline event handler attributes are blocked by default: " + name
+                    + ". Use Element.on(event, handler) for server-side live events.");
         }
         return name;
     }
@@ -78,13 +78,13 @@ final class HtmlNames {
 
     private static boolean isElementNameCharacter(char character) {
         return isAsciiLetter(character)
-                || character >= '0' && character <= '9'
-                || character == '-'
-                || character == '_';
+            || character >= '0' && character <= '9'
+            || character == '-'
+            || character == '_';
     }
 
     private static boolean isAsciiLetter(char character) {
         return character >= 'A' && character <= 'Z'
-                || character >= 'a' && character <= 'z';
+            || character >= 'a' && character <= 'z';
     }
 }

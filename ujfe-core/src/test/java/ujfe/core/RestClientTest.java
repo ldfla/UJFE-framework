@@ -25,8 +25,8 @@ final class RestClientTest {
     @Test
     void performsGetRequest() {
         RestClient client = new RestClient(
-                new FakeHttpClient(200, "[{\"name\":\"Banco Teste\"}]"),
-                Duration.ofSeconds(2)
+            new FakeHttpClient(200, "[{\"name\":\"Banco Teste\"}]"),
+            Duration.ofSeconds(2)
         );
 
         RestResponse response = client.get("https://example.test/banks");
@@ -34,7 +34,8 @@ final class RestClientTest {
         assertEquals(200, response.statusCode());
         assertEquals("[{\"name\":\"Banco Teste\"}]", response.body());
         assertTrue(response.successful());
-        assertEquals("application/json", response.firstHeader("content-type").orElseThrow());
+        assertEquals("application/json", response.firstHeader("content-type")
+            .orElseThrow());
     }
 
     private static final class FakeHttpClient extends HttpClient {
@@ -93,7 +94,7 @@ final class RestClientTest {
 
         @Override
         public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
-                throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
             @SuppressWarnings("unchecked")
             T typedBody = (T) body;
             return new FakeHttpResponse<>(request, statusCode, typedBody);
@@ -101,17 +102,17 @@ final class RestClientTest {
 
         @Override
         public <T> CompletableFuture<HttpResponse<T>> sendAsync(
-                HttpRequest request,
-                HttpResponse.BodyHandler<T> responseBodyHandler
+            HttpRequest request,
+            HttpResponse.BodyHandler<T> responseBodyHandler
         ) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public <T> CompletableFuture<HttpResponse<T>> sendAsync(
-                HttpRequest request,
-                HttpResponse.BodyHandler<T> responseBodyHandler,
-                HttpResponse.PushPromiseHandler<T> pushPromiseHandler
+            HttpRequest request,
+            HttpResponse.BodyHandler<T> responseBodyHandler,
+            HttpResponse.PushPromiseHandler<T> pushPromiseHandler
         ) {
             throw new UnsupportedOperationException();
         }

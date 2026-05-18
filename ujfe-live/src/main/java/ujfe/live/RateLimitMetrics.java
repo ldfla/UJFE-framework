@@ -14,13 +14,16 @@ public final class RateLimitMetrics {
 
     void recordAllowed(String endpointPath) {
         allowedRequests.increment();
-        allowedByEndpoint.computeIfAbsent(requireEndpoint(endpointPath), key -> new LongAdder()).increment();
+        allowedByEndpoint.computeIfAbsent(requireEndpoint(endpointPath), key -> new LongAdder())
+            .increment();
     }
 
     void recordRejected(String endpointPath, RateLimitKeyType keyType) {
         rejectedRequests.increment();
-        rejectedByEndpoint.computeIfAbsent(requireEndpoint(endpointPath), key -> new LongAdder()).increment();
-        rejectedByKeyType.computeIfAbsent(Objects.requireNonNull(keyType, "keyType"), key -> new LongAdder()).increment();
+        rejectedByEndpoint.computeIfAbsent(requireEndpoint(endpointPath), key -> new LongAdder())
+            .increment();
+        rejectedByKeyType.computeIfAbsent(Objects.requireNonNull(keyType, "keyType"), key -> new LongAdder())
+            .increment();
     }
 
     public long allowedRequests() {

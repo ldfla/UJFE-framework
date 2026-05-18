@@ -31,25 +31,28 @@ public final class UjfeServer {
         workerGroup = new NioEventLoopGroup();
 
         ServerBootstrap bootstrap = new ServerBootstrap()
-                .group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childHandler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) {
-                        socketChannel.pipeline()
-                                .addLast(new HttpServerCodec())
-                                .addLast(new HttpObjectAggregator(config.maxJsonPayloadBytes()))
-                                .addLast(new UjfeHttpHandler(liveSession, config.maxJsonPayloadBytes()));
-                    }
-                });
+            .group(bossGroup, workerGroup)
+            .channel(NioServerSocketChannel.class)
+            .childOption(ChannelOption.SO_KEEPALIVE, true)
+            .childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel socketChannel) {
+                    socketChannel.pipeline()
+                        .addLast(new HttpServerCodec())
+                        .addLast(new HttpObjectAggregator(config.maxJsonPayloadBytes()))
+                        .addLast(new UjfeHttpHandler(liveSession, config.maxJsonPayloadBytes()));
+                }
+            });
 
-        channel = bootstrap.bind(config.host(), config.port()).sync().channel();
+        channel = bootstrap.bind(config.host(), config.port())
+            .sync()
+            .channel();
     }
 
     public void blockUntilShutdown() throws InterruptedException {
         if (channel != null) {
-            channel.closeFuture().sync();
+            channel.closeFuture()
+                .sync();
         }
     }
 

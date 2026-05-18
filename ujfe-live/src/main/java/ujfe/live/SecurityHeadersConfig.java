@@ -16,14 +16,14 @@ public final class SecurityHeadersConfig {
     public static final String PERMISSIONS_POLICY = "Permissions-Policy";
 
     public static final String DEFAULT_CONTENT_SECURITY_POLICY = "default-src 'self'; "
-            + "script-src 'self'; "
-            + "style-src 'self' 'unsafe-inline'; "
-            + "img-src 'self' data: https:; "
-            + "media-src 'self' data: https:; "
-            + "object-src 'none'; "
-            + "base-uri 'self'; "
-            + "frame-ancestors 'none'; "
-            + "form-action 'self'";
+        + "script-src 'self'; "
+        + "style-src 'self' 'unsafe-inline'; "
+        + "img-src 'self' data: https:; "
+        + "media-src 'self' data: https:; "
+        + "object-src 'none'; "
+        + "base-uri 'self'; "
+        + "frame-ancestors 'none'; "
+        + "form-action 'self'";
 
     private final boolean enabled;
     private final Map<String, String> headers;
@@ -38,7 +38,8 @@ public final class SecurityHeadersConfig {
     }
 
     public static SecurityHeadersConfig disabled() {
-        return builder().enabled(false).build();
+        return builder().enabled(false)
+            .build();
     }
 
     public static Builder builder() {

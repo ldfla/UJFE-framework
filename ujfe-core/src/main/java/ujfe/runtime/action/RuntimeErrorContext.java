@@ -26,27 +26,27 @@ public final class RuntimeErrorContext {
     private final Map<String, Object> runtimeMetadata;
 
     public RuntimeErrorContext(
-            Throwable exception,
-            RuntimePhase phase,
-            String path,
-            String eventId,
-            String traceId,
-            Map<String, Object> metadata
+        Throwable exception,
+        RuntimePhase phase,
+        String path,
+        String eventId,
+        String traceId,
+        Map<String, Object> metadata
     ) {
         this(exception, phase, path, eventId, traceId, Map.of(), Map.of(), Map.of(), Map.of(), metadata);
     }
 
     public RuntimeErrorContext(
-            Throwable exception,
-            RuntimePhase phase,
-            String path,
-            String eventId,
-            String traceId,
-            Map<String, Object> routeMetadata,
-            Map<String, Object> eventMetadata,
-            Map<String, Object> requestMetadata,
-            Map<String, Object> sessionMetadata,
-            Map<String, Object> runtimeMetadata
+        Throwable exception,
+        RuntimePhase phase,
+        String path,
+        String eventId,
+        String traceId,
+        Map<String, Object> routeMetadata,
+        Map<String, Object> eventMetadata,
+        Map<String, Object> requestMetadata,
+        Map<String, Object> sessionMetadata,
+        Map<String, Object> runtimeMetadata
     ) {
         this.exception = Objects.requireNonNull(exception, "exception");
         this.phase = Objects.requireNonNull(phase, "phase");

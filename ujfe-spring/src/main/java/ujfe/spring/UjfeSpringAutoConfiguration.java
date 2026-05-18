@@ -17,17 +17,17 @@ import ujfe.router.Router;
 @ConditionalOnClass(DispatcherServlet.class)
 @ConditionalOnBean(Router.class)
 @EnableConfigurationProperties({
-        UjfeSpringProperties.class,
-        UjfeSpringSecurityHeadersProperties.class,
-        UjfeSpringClientStateProperties.class
+    UjfeSpringProperties.class,
+    UjfeSpringSecurityHeadersProperties.class,
+    UjfeSpringClientStateProperties.class
 })
 public class UjfeSpringAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LiveSessionConfig ujfeLiveSessionConfig(
-            UjfeSpringProperties properties,
-            UjfeSpringSecurityHeadersProperties securityHeadersProperties,
-            UjfeSpringClientStateProperties clientStateProperties
+        UjfeSpringProperties properties,
+        UjfeSpringSecurityHeadersProperties securityHeadersProperties,
+        UjfeSpringClientStateProperties clientStateProperties
     ) {
         LiveSessionConfig.Builder builder = LiveSessionConfig.builder();
         if (properties.isEnabled()) {

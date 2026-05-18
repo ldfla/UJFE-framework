@@ -7,22 +7,22 @@ import java.util.Set;
 
 final class UjfeJavaGenerator {
     private static final Set<String> UI_FACTORIES = Set.of(
-            "html", "head", "body", "title", "meta", "link", "style", "script", "base",
-            "div", "figure", "figcaption", "details", "summary", "dialog",
-            "header", "main", "aside", "section", "article", "nav", "footer", "address",
-            "h1", "h2", "h3", "h4", "h5", "h6",
-            "b", "i", "u", "em", "strong", "small", "mark", "abbr", "cite",
-            "p", "pre", "code", "blockquote", "q", "br", "hr",
-            "img", "picture", "source", "track", "audio", "video", "canvas", "svg", "map", "area",
-            "iframe", "object", "embed", "param",
-            "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
-            "form", "label", "input", "button", "a", "select", "option", "optgroup", "textarea",
-            "fieldset", "legend", "datalist", "output", "progress", "meter",
-            "li", "ul", "ol", "dt", "dd", "dl", "span", "template", "slot"
+        "html", "head", "body", "title", "meta", "link", "style", "script", "base",
+        "div", "figure", "figcaption", "details", "summary", "dialog",
+        "header", "main", "aside", "section", "article", "nav", "footer", "address",
+        "h1", "h2", "h3", "h4", "h5", "h6",
+        "b", "i", "u", "em", "strong", "small", "mark", "abbr", "cite",
+        "p", "pre", "code", "blockquote", "q", "br", "hr",
+        "img", "picture", "source", "track", "audio", "video", "canvas", "svg", "map", "area",
+        "iframe", "object", "embed", "param",
+        "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
+        "form", "label", "input", "button", "a", "select", "option", "optgroup", "textarea",
+        "fieldset", "legend", "datalist", "output", "progress", "meter",
+        "li", "ul", "ol", "dt", "dd", "dl", "span", "template", "slot"
     );
     private static final Set<String> BOOLEAN_ATTRIBUTES = Set.of("autofocus", "autoplay", "checked", "controls",
-            "disabled", "formnovalidate", "hidden", "ismap", "itemscope", "loop", "multiple", "muted",
-            "novalidate", "open", "playsinline", "popover", "readonly", "required", "reversed", "selected");
+        "disabled", "formnovalidate", "hidden", "ismap", "itemscope", "loop", "multiple", "muted",
+        "novalidate", "open", "playsinline", "popover", "readonly", "required", "reversed", "selected");
 
     String generate(HtmlParseResult parseResult, Path outputPath) {
         String packageName = packageName(outputPath);
@@ -31,17 +31,23 @@ final class UjfeJavaGenerator {
 
         StringBuilder java = new StringBuilder();
         if (!packageName.isBlank()) {
-            java.append("package ").append(packageName).append(";\n\n");
+            java.append("package ")
+                .append(packageName)
+                .append(";\n\n");
         }
         java.append("import static ujfe.core.UI.*;\n\n")
-                .append("import ujfe.core.Node;\n")
-                .append("import ujfe.router.Page;\n\n")
-                .append("@Page(\"/\")\n")
-                .append("public final class ").append(className).append(" {\n\n")
-                .append("    public Node render() {\n")
-                .append("        return ").append(indentContinuation(expression, 8)).append(";\n")
-                .append("    }\n")
-                .append("}\n");
+            .append("import ujfe.core.Node;\n")
+            .append("import ujfe.router.Page;\n\n")
+            .append("@Page(\"/\")\n")
+            .append("public final class ")
+            .append(className)
+            .append(" {\n\n")
+            .append("    public Node render() {\n")
+            .append("        return ")
+            .append(indentContinuation(expression, 8))
+            .append(";\n")
+            .append("    }\n")
+            .append("}\n");
         return java.toString();
     }
 
@@ -56,8 +62,8 @@ final class UjfeJavaGenerator {
         StringBuilder expression = new StringBuilder("div()");
         for (HtmlNode root : roots) {
             expression.append("\n                .child(")
-                    .append(indentContinuation(renderNode(root, 16), 16))
-                    .append(")");
+                .append(indentContinuation(renderNode(root, 16), 16))
+                .append(")");
         }
         return expression.toString();
     }
@@ -69,14 +75,15 @@ final class UjfeJavaGenerator {
 
         StringBuilder expression = new StringBuilder(factory(node.tagName()));
 
-        for (Map.Entry<String, String> attribute : node.attributes().entrySet()) {
+        for (Map.Entry<String, String> attribute : node.attributes()
+            .entrySet()) {
             String name = attribute.getKey();
             String value = attribute.getValue();
             expression.append("\n")
-                    .append(spaces(indent + 8))
-                    .append(".attr(")
-                    .append(quote(name))
-                    .append(", ");
+                .append(spaces(indent + 8))
+                .append(".attr(")
+                .append(quote(name))
+                .append(", ");
             if (BOOLEAN_ATTRIBUTES.contains(name.toLowerCase(java.util.Locale.ROOT)) && value.isBlank()) {
                 expression.append("true");
             } else {
@@ -87,10 +94,10 @@ final class UjfeJavaGenerator {
 
         for (HtmlNode child : node.children()) {
             expression.append("\n")
-                    .append(spaces(indent + 8))
-                    .append(".child(")
-                    .append(indentContinuation(renderNode(child, indent + 16), indent + 16))
-                    .append(")");
+                .append(spaces(indent + 8))
+                .append(".child(")
+                .append(indentContinuation(renderNode(child, indent + 16), indent + 16))
+                .append(")");
         }
 
         return expression.toString();
@@ -104,7 +111,9 @@ final class UjfeJavaGenerator {
     }
 
     private static String packageName(Path outputPath) {
-        String normalized = outputPath.normalize().toString().replace('\\', '/');
+        String normalized = outputPath.normalize()
+            .toString()
+            .replace('\\', '/');
         int marker = normalized.indexOf("src/main/java/");
         if (marker < 0) {
             return "";
@@ -115,11 +124,13 @@ final class UjfeJavaGenerator {
         if (lastSlash <= 0) {
             return "";
         }
-        return afterJava.substring(0, lastSlash).replace('/', '.');
+        return afterJava.substring(0, lastSlash)
+            .replace('/', '.');
     }
 
     private static String className(Path outputPath) {
-        String fileName = outputPath.getFileName().toString();
+        String fileName = outputPath.getFileName()
+            .toString();
         int dotIndex = fileName.lastIndexOf('.');
         String rawName = dotIndex < 0 ? fileName : fileName.substring(0, dotIndex);
         if (!rawName.matches("[A-Za-z_$][A-Za-z0-9_$]*")) {
@@ -137,7 +148,9 @@ final class UjfeJavaGenerator {
         StringBuilder result = new StringBuilder(lines[0]);
         String prefix = spaces(spaces);
         for (int index = 1; index < lines.length; index++) {
-            result.append('\n').append(prefix).append(lines[index]);
+            result.append('\n')
+                .append(prefix)
+                .append(lines[index]);
         }
         return result.toString();
     }
@@ -167,7 +180,8 @@ final class UjfeJavaGenerator {
                     break;
             }
         }
-        return quoted.append('"').toString();
+        return quoted.append('"')
+            .toString();
     }
 
     private static String spaces(int count) {

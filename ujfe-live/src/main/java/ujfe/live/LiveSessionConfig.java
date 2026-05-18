@@ -1,8 +1,8 @@
 package ujfe.live;
 
-import ujfe.core.Node;
 import ujfe.core.ClientStatePolicy;
 import ujfe.core.CssTheme;
+import ujfe.core.Node;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
 import java.time.Duration;
@@ -180,7 +180,8 @@ public final class LiveSessionConfig {
         }
 
         public Builder head(Node... nodes) {
-            Arrays.stream(nodes).forEach(node -> headNodes.add(Objects.requireNonNull(node, "node")));
+            Arrays.stream(nodes)
+                .forEach(node -> headNodes.add(Objects.requireNonNull(node, "node")));
             return this;
         }
 
@@ -212,10 +213,10 @@ public final class LiveSessionConfig {
 
         public Builder securityHeader(String name, String value) {
             this.securityHeadersConfig = SecurityHeadersConfig.builder()
-                    .headers(this.securityHeadersConfig.headers())
-                    .header(name, value)
-                    .enabled(this.securityHeadersConfig.isEnabled())
-                    .build();
+                .headers(this.securityHeadersConfig.headers())
+                .header(name, value)
+                .enabled(this.securityHeadersConfig.isEnabled())
+                .build();
             return this;
         }
 
@@ -231,11 +232,11 @@ public final class LiveSessionConfig {
 
         public Builder allowClientCookie(String name) {
             this.clientStatePolicy = ClientStatePolicy.builder()
-                    .allowCookies(this.clientStatePolicy.allowedCookies())
-                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
-                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
-                    .allowCookie(name)
-                    .build();
+                .allowCookies(this.clientStatePolicy.allowedCookies())
+                .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                .allowCookie(name)
+                .build();
             return this;
         }
 
@@ -247,11 +248,11 @@ public final class LiveSessionConfig {
 
         public Builder allowLocalStorageKey(String key) {
             this.clientStatePolicy = ClientStatePolicy.builder()
-                    .allowCookies(this.clientStatePolicy.allowedCookies())
-                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
-                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
-                    .allowLocalStorageKey(key)
-                    .build();
+                .allowCookies(this.clientStatePolicy.allowedCookies())
+                .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                .allowLocalStorageKey(key)
+                .build();
             return this;
         }
 
@@ -263,11 +264,11 @@ public final class LiveSessionConfig {
 
         public Builder allowSessionStorageKey(String key) {
             this.clientStatePolicy = ClientStatePolicy.builder()
-                    .allowCookies(this.clientStatePolicy.allowedCookies())
-                    .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
-                    .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
-                    .allowSessionStorageKey(key)
-                    .build();
+                .allowCookies(this.clientStatePolicy.allowedCookies())
+                .allowLocalStorageKeys(this.clientStatePolicy.allowedLocalStorageKeys())
+                .allowSessionStorageKeys(this.clientStatePolicy.allowedSessionStorageKeys())
+                .allowSessionStorageKey(key)
+                .build();
             return this;
         }
 

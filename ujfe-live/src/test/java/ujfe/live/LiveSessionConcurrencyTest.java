@@ -12,11 +12,7 @@ import ujfe.signals.Signals;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,21 +31,27 @@ final class LiveSessionConcurrencyTest {
             ExecutorService executor = Executors.newFixedThreadPool(2);
             try {
                 Future<LiveRenderResult> first = executor.submit(
-                        () -> session.handleEvent(eventIds.get(0), ClientState.empty(), metadata(session)));
+                    () -> session.handleEvent(eventIds.get(0), ClientState.empty(), metadata(session)));
                 assertTrue(page.first.awaitEntered(LONG_WAIT));
 
                 Future<LiveRenderResult> second = executor.submit(
-                        () -> session.handleEvent(eventIds.get(1), ClientState.empty(), metadata(session)));
+                    () -> session.handleEvent(eventIds.get(1), ClientState.empty(), metadata(session)));
                 assertFalse(page.second.awaitEntered(SHORT_WAIT));
 
                 page.first.release();
-                assertTrue(first.get(2, TimeUnit.SECONDS).html().contains("Counter: 1"));
+                assertTrue(first.get(2, TimeUnit.SECONDS)
+                    .html()
+                    .contains("Counter: 1"));
                 assertTrue(page.second.awaitEntered(LONG_WAIT));
 
                 page.second.release();
-                assertTrue(second.get(2, TimeUnit.SECONDS).html().contains("Counter: 2"));
+                assertTrue(second.get(2, TimeUnit.SECONDS)
+                    .html()
+                    .contains("Counter: 2"));
                 assertEquals(2, page.count());
-                assertTrue(session.renderPath("/").html().contains("Counter: 2"));
+                assertTrue(session.renderPath("/")
+                    .html()
+                    .contains("Counter: 2"));
             } finally {
                 page.releaseAll();
                 shutdown(executor);
@@ -83,8 +85,12 @@ final class LiveSessionConcurrencyTest {
 
                 firstPage.handler.release();
                 secondPage.handler.release();
-                assertTrue(first.get(2, TimeUnit.SECONDS).html().contains("Counter: 1"));
-                assertTrue(second.get(2, TimeUnit.SECONDS).html().contains("Counter: 1"));
+                assertTrue(first.get(2, TimeUnit.SECONDS)
+                    .html()
+                    .contains("Counter: 1"));
+                assertTrue(second.get(2, TimeUnit.SECONDS)
+                    .html()
+                    .contains("Counter: 1"));
                 assertEquals(1, firstPage.count());
                 assertEquals(1, secondPage.count());
             } finally {
@@ -114,11 +120,14 @@ final class LiveSessionConcurrencyTest {
 
                 start.countDown();
                 for (Future<LiveRenderResult> result : results) {
-                    assertTrue(result.get(5, TimeUnit.SECONDS).html().contains("Counter:"));
+                    assertTrue(result.get(5, TimeUnit.SECONDS)
+                        .html()
+                        .contains("Counter:"));
                 }
 
                 assertEquals(eventCount, page.count());
-                String html = session.renderPath("/").html();
+                String html = session.renderPath("/")
+                    .html();
                 assertTrue(html.contains("Counter: " + eventCount), html);
                 assertTrue(html.contains("<button"));
                 assertTrue(html.contains("</button>"));
@@ -133,7 +142,8 @@ final class LiveSessionConcurrencyTest {
     }
 
     private static List<String> extractEventIds(String html) {
-        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"").matcher(html);
+        Matcher matcher = Pattern.compile("data-ujfe-event=\"([^\"]+)\"")
+            .matcher(html);
         List<String> eventIds = new ArrayList<>();
         while (matcher.find()) {
             eventIds.add(matcher.group(1));
@@ -154,8 +164,8 @@ final class LiveSessionConcurrencyTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Counter: " + count.get()))
-                    .child(button("Increment").onClick(() -> count.update(value -> value + 1)));
+                .child(p(() -> "Counter: " + count.get()))
+                .child(button("Increment").onClick(() -> count.update(value -> value + 1)));
         }
 
         int count() {
@@ -171,8 +181,8 @@ final class LiveSessionConcurrencyTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Counter: " + count.get()))
-                    .child(button("Increment").onClick(handler::run));
+                .child(p(() -> "Counter: " + count.get()))
+                .child(button("Increment").onClick(handler::run));
         }
 
         int count() {
@@ -189,9 +199,9 @@ final class LiveSessionConcurrencyTest {
         @Override
         public Node render() {
             return div()
-                    .child(p(() -> "Counter: " + count.get()))
-                    .child(button("First").onClick(first::run))
-                    .child(button("Second").onClick(second::run));
+                .child(p(() -> "Counter: " + count.get()))
+                .child(button("First").onClick(first::run))
+                .child(button("Second").onClick(second::run));
         }
 
         int count() {
@@ -220,7 +230,8 @@ final class LiveSessionConcurrencyTest {
                     throw new AssertionError("Timed out waiting to release live event handler");
                 }
             } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                    .interrupt();
                 throw new AssertionError("Interrupted while waiting to release live event handler", exception);
             }
             count.update(value -> value + 1);

@@ -23,18 +23,18 @@ public final class RouteDefinition {
         this.pageFactory = Objects.requireNonNull(pageFactory, "pageFactory");
         this.pageType = pageType;
         this.sourceDescription = sourceDescription == null || sourceDescription.isBlank()
-                ? "route " + this.path
-                : sourceDescription;
+            ? "route " + this.path
+            : sourceDescription;
     }
 
     public static RouteDefinition pageClass(String path, Class<?> pageType) {
         Objects.requireNonNull(pageType, "pageType");
         PageClassValidator.validatePageClass(pageType);
         return new RouteDefinition(
-                path,
-                () -> PageClassValidator.instantiate(pageType),
-                pageType,
-                pageType.getName()
+            path,
+            () -> PageClassValidator.instantiate(pageType),
+            pageType,
+            pageType.getName()
         );
     }
 

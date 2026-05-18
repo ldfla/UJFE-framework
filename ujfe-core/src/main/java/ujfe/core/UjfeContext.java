@@ -95,11 +95,13 @@ public final class UjfeContext {
     }
 
     public void registerCssClasses(String classes) {
-        if (classes == null || classes.trim().isEmpty()) {
+        if (classes == null || classes.trim()
+            .isEmpty()) {
             return;
         }
 
-        String[] tokens = classes.trim().split("\\s+");
+        String[] tokens = classes.trim()
+            .split("\\s+");
         for (String token : tokens) {
             if (!token.isEmpty()) {
                 cssClasses.add(token);

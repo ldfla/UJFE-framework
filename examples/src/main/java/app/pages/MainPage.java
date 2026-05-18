@@ -4,9 +4,9 @@ import app.AppTheme;
 import app.components.AppHeader;
 import app.components.CounterComponent;
 import ujfe.core.Component;
-import ujfe.core.Ujfe;
 import ujfe.core.Element;
 import ujfe.core.Node;
+import ujfe.core.Ujfe;
 import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
@@ -180,11 +180,14 @@ public final class MainPage implements Component {
                         ? "flex flex-col gap-2.5 bg-slate-800 border border-slate-700 rounded-lg p-4 font-mono text-xs text-slate-300"
                         : "flex flex-col gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-4 font-mono text-xs text-slate-600")
                     .child(p(() -> "Events processed : " + pageEvents.get()).css("font-semibold text-primary-400"))
-                    .child(p(() -> "Cookie ujfe_demo : " + Ujfe.cookie("ujfe_demo").orElse("not sent"))
+                    .child(p(() -> "Cookie ujfe_demo : " + Ujfe.cookie("ujfe_demo")
+                        .orElse("not sent"))
                         .css(bodyTextClass()))
-                    .child(p(() -> "LocalStorage    : " + Ujfe.localStorage("ujfe.theme").orElse("not found"))
+                    .child(p(() -> "LocalStorage    : " + Ujfe.localStorage("ujfe.theme")
+                        .orElse("not found"))
                         .css(bodyTextClass()))
-                    .child(p(() -> "SessionStorage  : " + Ujfe.sessionStorage("ujfe.tab").orElse("not found"))
+                    .child(p(() -> "SessionStorage  : " + Ujfe.sessionStorage("ujfe.tab")
+                        .orElse("not found"))
                         .css(bodyTextClass()))
                     .child(p(() -> "Log             : " + lastBrowserRead.get())
                         .css(theme.darkMode()
@@ -209,9 +212,12 @@ public final class MainPage implements Component {
 
     private void readBrowserState() {
         pageEvents.update(value -> value + 1);
-        var cookie = Ujfe.cookie("ujfe_demo").orElse("not sent");
-        var theme = Ujfe.localStorage("ujfe.theme").orElse("not found");
-        var tab = Ujfe.sessionStorage("ujfe.tab").orElse("not found");
+        var cookie = Ujfe.cookie("ujfe_demo")
+            .orElse("not sent");
+        var theme = Ujfe.localStorage("ujfe.theme")
+            .orElse("not found");
+        var tab = Ujfe.sessionStorage("ujfe.tab")
+            .orElse("not found");
         lastBrowserRead.set("cookie=" + cookie + " | theme=" + theme + " | tab=" + tab);
     }
 
@@ -256,22 +262,32 @@ public final class MainPage implements Component {
                     .css("flex flex-col gap-4")
                     .onSubmit(this::submitDemoForm)
                     .child(formField("Name", "demo-name",
-                        inputText().id("demo-name").name("name").placeholder("Said Adla")))
+                        inputText().id("demo-name")
+                            .name("name")
+                            .placeholder("Said Adla")))
                     .child(formField("Age", "demo-age",
-                        inputNumber().id("demo-age").name("age").min("0").max("120").placeholder("25")))
+                        inputNumber().id("demo-age")
+                            .name("age")
+                            .min("0")
+                            .max("120")
+                            .placeholder("25")))
                     .child(formField("Password", "demo-password",
-                        inputPassword().id("demo-password").name("password").placeholder("********")))
+                        inputPassword().id("demo-password")
+                            .name("password")
+                            .placeholder("********")))
                     .child(
                         div()
                             .css("flex flex-col gap-1.5")
-                            .child(label("Profile").forId("demo-role").css(labelClass()))
+                            .child(label("Profile").forId("demo-role")
+                                .css(labelClass()))
                             .child(
                                 select()
                                     .id("demo-role")
                                     .name("role")
                                     .css(inputClass())
                                     .child(option("Java backend").value("backend"))
-                                    .child(option("Full stack Java").value("fullstack").selected(true))
+                                    .child(option("Full stack Java").value("fullstack")
+                                        .selected(true))
                             )
                     )
                     .child(
@@ -279,7 +295,8 @@ public final class MainPage implements Component {
                             .css(theme.darkMode()
                                 ? "inline-flex items-center gap-2 text-xs font-medium text-slate-300"
                                 : "inline-flex items-center gap-2 text-xs font-medium text-slate-700")
-                            .child(checkbox().name("newsletter").checked(true))
+                            .child(checkbox().name("newsletter")
+                                .checked(true))
                             .child("Receive UJFE updates")
                     )
                     .child(
@@ -289,11 +306,14 @@ public final class MainPage implements Component {
                                 : "flex gap-4 text-xs font-medium text-slate-700")
                             .child(label()
                                 .css("inline-flex items-center gap-1.5")
-                                .child(radio().name("plan").value("starter").checked(true))
+                                .child(radio().name("plan")
+                                    .value("starter")
+                                    .checked(true))
                                 .child("Starter"))
                             .child(label()
                                 .css("inline-flex items-center gap-1.5")
-                                .child(radio().name("plan").value("pro"))
+                                .child(radio().name("plan")
+                                    .value("pro"))
                                 .child("Pro"))
                     )
                     .child(
@@ -313,7 +333,8 @@ public final class MainPage implements Component {
     private Node formField(String labelText, String id, Element inputNode) {
         return div()
             .css("flex flex-col gap-1.5")
-            .child(label(labelText).forId(id).css(labelClass()))
+            .child(label(labelText).forId(id)
+                .css(labelClass()))
             .child(inputNode.css(inputClass()));
     }
 

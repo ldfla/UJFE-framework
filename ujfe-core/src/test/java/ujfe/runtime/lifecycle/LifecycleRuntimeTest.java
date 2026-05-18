@@ -39,7 +39,8 @@ final class LifecycleRuntimeTest {
 
         assertTrue(failures.isEmpty());
         assertEquals(List.of("first:mount", "second:mount", "second:unmount", "first:unmount"), events);
-        assertTrue(runtime.registry().isEmpty());
+        assertTrue(runtime.registry()
+            .isEmpty());
     }
 
     @Test
@@ -67,16 +68,25 @@ final class LifecycleRuntimeTest {
 
         render(runtime, "/", first, second, first);
 
-        assertEquals(2, runtime.registry().size());
-        List<MountedComponent> mounted = runtime.registry().mountedComponents();
+        assertEquals(2, runtime.registry()
+            .size());
+        List<MountedComponent> mounted = runtime.registry()
+            .mountedComponents();
         assertEquals(2, mounted.size());
-        assertSame(first, mounted.get(0).lifecycle());
-        assertSame(second, mounted.get(1).lifecycle());
-        assertEquals(0, mounted.get(0).mountIndex());
-        assertEquals(1, mounted.get(1).mountIndex());
-        assertEquals("/", mounted.get(0).path());
-        assertEquals("trace", mounted.get(0).traceId());
-        assertNotNull(mounted.get(0).mountedAt());
+        assertSame(first, mounted.get(0)
+            .lifecycle());
+        assertSame(second, mounted.get(1)
+            .lifecycle());
+        assertEquals(0, mounted.get(0)
+            .mountIndex());
+        assertEquals(1, mounted.get(1)
+            .mountIndex());
+        assertEquals("/", mounted.get(0)
+            .path());
+        assertEquals("trace", mounted.get(0)
+            .traceId());
+        assertNotNull(mounted.get(0)
+            .mountedAt());
         assertEquals(1, first.mounts());
         assertEquals(1, second.mounts());
     }
@@ -109,13 +119,16 @@ final class LifecycleRuntimeTest {
         FailingMountLifecycle failing = new FailingMountLifecycle();
 
         LifecycleException failure = assertThrows(
-                LifecycleException.class, () -> render(runtime, "/", stable, failing));
+            LifecycleException.class, () -> render(runtime, "/", stable, failing));
 
-        assertEquals("/", failure.context().orElseThrow().path());
+        assertEquals("/", failure.context()
+            .orElseThrow()
+            .path());
         assertEquals(1, stable.mounts());
         assertEquals(1, stable.unmounts());
         assertEquals(1, failing.mountAttempts());
-        assertTrue(runtime.registry().isEmpty());
+        assertTrue(runtime.registry()
+            .isEmpty());
     }
 
     @Test
@@ -128,11 +141,15 @@ final class LifecycleRuntimeTest {
         List<LifecycleException> failures = runtime.cleanup(unmountContext("session-close"));
 
         assertEquals(1, failures.size());
-        assertEquals("onUnmount", failures.get(0).callback());
-        assertEquals("session-close", ((UnmountContext) failures.get(0).context().orElseThrow()).reason());
+        assertEquals("onUnmount", failures.get(0)
+            .callback());
+        assertEquals("session-close", ((UnmountContext) failures.get(0)
+            .context()
+            .orElseThrow()).reason());
         assertEquals(1, stable.unmounts());
         assertEquals(1, failing.unmountAttempts());
-        assertTrue(runtime.registry().isEmpty());
+        assertTrue(runtime.registry()
+            .isEmpty());
     }
 
     @Test
@@ -145,15 +162,18 @@ final class LifecycleRuntimeTest {
         assertSame(lifecycle, failure.lifecycle());
         assertEquals("onMount", failure.callback());
         assertSame(cause, failure.getCause());
-        assertTrue(failure.context().isEmpty());
+        assertTrue(failure.context()
+            .isEmpty());
     }
 
     @Test
     void emptyRegistryCleanupIsSafe() {
         LifecycleRuntime runtime = LifecycleRuntime.create();
 
-        assertTrue(runtime.cleanup(unmountContext("empty")).isEmpty());
-        assertTrue(runtime.registry().isEmpty());
+        assertTrue(runtime.cleanup(unmountContext("empty"))
+            .isEmpty());
+        assertTrue(runtime.registry()
+            .isEmpty());
     }
 
     @Test
@@ -172,8 +192,10 @@ final class LifecycleRuntimeTest {
         assertNotNull(mountEvent.timestamp());
         assertNotNull(unmountEvent.timestamp());
         assertEquals(LifecycleState.UNMOUNTED, unmounted.state());
-        assertEquals("/", mountEvent.context().path());
-        assertEquals("test", unmountEvent.context().reason());
+        assertEquals("/", mountEvent.context()
+            .path());
+        assertEquals("test", unmountEvent.context()
+            .reason());
     }
 
     private static List<LifecycleException> render(LifecycleRuntime runtime, String path, Object... components) {
@@ -192,7 +214,8 @@ final class LifecycleRuntimeTest {
         try {
             latch.await();
         } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                .interrupt();
             throw new IllegalStateException(exception);
         }
     }
