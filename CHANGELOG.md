@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## Version 0.18.0 - 17/05/2026
+
+- Updated the Maven project version to `0.18.0-SNAPSHOT`.
+- Replaced `LiveSession` method-level `synchronized` locking with an explicit per-session `ReentrantReadWriteLock`.
+- Serialized same-session render, live event, client state, and lifecycle mutations through the session write lock while keeping independent sessions isolated.
+- Added render-scoped live event reconciliation so concurrent events from the same rendered page remain resolvable after a re-render.
+- Added stress-style concurrency tests for same-session events, independent sessions, signal update consistency, and coherent HTML output under contention.
+- Documented the live runtime concurrency model in `docs/runtime/concurrency.md`.
+
 ## Version 0.17.0 - 17/05/2026
 
 - Updated the Maven project version to `0.17.0-SNAPSHOT`.
