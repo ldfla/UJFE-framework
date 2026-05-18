@@ -4,7 +4,7 @@ UJFE renders HTML void elements according to the Web Platform rule: they have a 
 
 ## Void Element List
 
-The centralized void element metadata is exposed through `ujfe.html.HtmlElementMetadata`:
+The centralized void element metadata is exposed through `ujfe.core.HtmlElementMetadata`:
 
 ```java
 HtmlElementMetadata.isVoidElement("img");

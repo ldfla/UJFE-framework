@@ -1,7 +1,7 @@
 package ujfe.live;
 
 import ujfe.core.*;
-import ujfe.html.CssTheme;
+import ujfe.core.CssTheme;
 import ujfe.router.PageRenderer;
 import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import static ujfe.core.UI.link;
 
 public final class LiveSession implements AutoCloseable {
     private final Router router;
@@ -156,6 +158,15 @@ public final class LiveSession implements AutoCloseable {
             return renderPathLocked(path, null);
         } finally {
             writeLock.unlock();
+        }
+    }
+
+    public boolean hasRoute(String path) {
+        readLock.lock();
+        try {
+            return router.resolve(path).isPresent();
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -332,6 +343,7 @@ public final class LiveSession implements AutoCloseable {
                     + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
                     + "<title>" + HtmlEscaper.escape(config.title()) + "</title>"
                     + renderHeadNodes()
+                    + renderExternalStylesheets()
                     + renderActionHeadContributions()
                     + renderInternalCss(result.css())
                     + renderCsrfMetaTag()
@@ -447,10 +459,22 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private String renderInternalCss(String css) {
-        if (config.cssMode() == CssMode.EXTERNAL) {
+        if (config.cssMode() != CssMode.INTERNAL) {
             return "";
         }
         return "<style data-ujfe-css>" + css + "</style>";
+    }
+
+    private String renderExternalStylesheets() {
+        if (config.cssMode() != CssMode.EXTERNAL || config.externalStylesheets().isEmpty()) {
+            return "";
+        }
+        UjfeContext context = UjfeContext.create();
+        StringBuilder html = new StringBuilder();
+        for (String href : config.externalStylesheets()) {
+            html.append(link().attr("rel", "stylesheet").attr("href", href).render(context));
+        }
+        return html.toString();
     }
 
     private String renderCsrfMetaTag() {

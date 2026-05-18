@@ -2,14 +2,12 @@ package ujfe.live;
 
 import ujfe.core.Node;
 import ujfe.core.ClientStatePolicy;
-import ujfe.html.CssTheme;
+import ujfe.core.CssTheme;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Supplier;
-
-import static ujfe.html.UI.link;
 
 public final class LiveSessionConfig {
     public static final int DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_CAPACITY = 120;
@@ -22,6 +20,7 @@ public final class LiveSessionConfig {
     private final String lang;
     private final String title;
     private final List<Node> headNodes;
+    private final List<String> externalStylesheets;
     private final RuntimeActionRegistry runtimeActions;
     private final boolean csrfProtectionDisabled;
     private final boolean developmentErrorDetailsEnabled;
@@ -40,6 +39,7 @@ public final class LiveSessionConfig {
         this.lang = builder.lang;
         this.title = builder.title;
         this.headNodes = List.copyOf(builder.headNodes);
+        this.externalStylesheets = List.copyOf(builder.externalStylesheets);
         this.runtimeActions = builder.runtimeActions;
         this.csrfProtectionDisabled = builder.csrfProtectionDisabled;
         this.developmentErrorDetailsEnabled = builder.developmentErrorDetailsEnabled;
@@ -82,6 +82,10 @@ public final class LiveSessionConfig {
 
     List<Node> headNodes() {
         return headNodes;
+    }
+
+    List<String> externalStylesheets() {
+        return externalStylesheets;
     }
 
     public RuntimeActionRegistry runtimeActions() {
@@ -135,6 +139,7 @@ public final class LiveSessionConfig {
         private String lang = "en";
         private String title = "UJFE";
         private final List<Node> headNodes = new ArrayList<>();
+        private final List<String> externalStylesheets = new ArrayList<>();
         private RuntimeActionRegistry runtimeActions = RuntimeActionRegistry.empty();
         private boolean csrfProtectionDisabled;
         private boolean developmentErrorDetailsEnabled;
@@ -306,7 +311,8 @@ public final class LiveSessionConfig {
         }
 
         public Builder externalStylesheet(String href) {
-            return head(link().attr("rel", "stylesheet").attr("href", href));
+            externalStylesheets.add(requireText(href, "href"));
+            return this;
         }
 
         public LiveSessionConfig build() {

@@ -15,13 +15,13 @@ public final class Main {
 
     public static void main(String[] args) throws InterruptedException {
         var appTheme = new AppTheme();
-        var runtimeActionsPage = new RuntimeActionsPage();
+        var runtimeActionsPage = new RuntimeActionsPage(appTheme);
         var routes = new ManualRouteSource()
             .register("/", () -> new MainPage(appTheme))
             .register("/docs", () -> new DocumentationPage(appTheme))
-            .register("/forms", FormsPage::new)
-            .register("/signals", SignalsPage::new)
-            .register("/lifecycle", LifecyclePage::new)
+            .register("/forms", () -> new FormsPage(appTheme))
+            .register("/signals", () -> new SignalsPage(appTheme))
+            .register("/lifecycle", () -> new LifecyclePage(appTheme))
             .register("/runtime-actions", () -> runtimeActionsPage);
         var router = new Router()
             .register(routes);

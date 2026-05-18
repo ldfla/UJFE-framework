@@ -1,6 +1,6 @@
 # Standard HTML Helpers
 
-UJFE provides helper methods for the common HTML surface through `ujfe.html.UI`. These helpers are convenience factories; the compatibility foundation remains `Element.of(...)`.
+UJFE provides helper methods for the common HTML surface through `ujfe.core.UI`. These helpers are convenience factories; the compatibility foundation remains `Element.of(...)`.
 
 Every helper returns an `Element`, so behavior is consistent across tags:
 

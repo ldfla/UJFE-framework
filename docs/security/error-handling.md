@@ -96,6 +96,8 @@ Development responses still use stable error codes. The optional `details` field
 | Failure | Status |
 | --- | --- |
 | Missing route | `404 Not Found` |
+| Missing static asset | `404 Not Found` text response |
+| Unsafe static asset path | `400 Bad Request` text response |
 | Invalid request | `400 Bad Request` |
 | Wrong method | `405 Method Not Allowed` |
 | CSRF validation failure | `403 Forbidden` |
@@ -105,6 +107,8 @@ Development responses still use stable error codes. The optional `details` field
 | Unknown internal failure | `500 Internal Server Error` |
 
 Failed internal runtime operations must not return `200 OK`.
+
+Static asset misses are not treated as UJFE page render failures. Requests such as `/poster.png`, `/demo.mp4`, and `/audio.mp3` bypass page rendering and return a normal static asset `404` without severe route error stack traces.
 
 ## Logging
 

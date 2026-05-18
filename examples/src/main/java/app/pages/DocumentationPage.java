@@ -1,15 +1,16 @@
 package app.pages;
 
 import app.AppTheme;
+import app.components.AppHeader;
 import app.components.BankSelectComponent;
 import ujfe.core.Component;
-import ujfe.html.Element;
-import ujfe.html.Node;
+import ujfe.core.Element;
+import ujfe.core.Node;
 import ujfe.router.Page;
 
 import java.util.Objects;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/docs")
 public final class DocumentationPage implements Component {
@@ -22,9 +23,8 @@ public final class DocumentationPage implements Component {
 
     @Override
     public Node render() {
-        return div()
-            .css("min-h-screen bg-slate-50 text-slate-900")
-            .child(topBar())
+        return AppHeader.pageShell(theme)
+            .child(new AppHeader(theme, AppHeader.DOCS).render())
             .child(
                 div()
                     .css("max-w-7xl mx-auto p-6 docs-grid gap-6")
@@ -47,29 +47,6 @@ public final class DocumentationPage implements Component {
                             .child(restSection())
                             .child(cliSection())
                             .child(devPreviewSection())
-                    )
-            );
-    }
-
-    private Node topBar() {
-        return header()
-            .css("border-b border-primary-200 bg-white")
-            .child(
-                div()
-                    .css("max-w-7xl mx-auto p-6 flex items-center justify-between gap-4")
-                    .child(
-                        div()
-                            .css("flex flex-col gap-1")
-                            .child(span("UJFE Docs").css("text-sm font-bold text-primary-700"))
-                            .child(h1("HTML, live UI, and security reference").css("text-3xl font-bold"))
-                            .child(p("A compact reference for building server-rendered interfaces with safe defaults.")
-                                .css("text-sm text-slate-600"))
-                    )
-                    .child(
-                        nav()
-                            .css("flex items-center gap-2")
-                            .child(a("Example").attr("href", "/").css("px-3 py-2 rounded border border-slate-200 bg-white text-sm font-semibold text-slate-700"))
-                            .child(a("Docs").attr("href", "/docs").css("px-3 py-2 rounded bg-primary-700 text-white text-sm font-semibold"))
                     )
             );
     }
@@ -550,8 +527,8 @@ public final class DocumentationPage implements Component {
     }
 
     private String factoryIndex() {
-        return "import ujfe.html.Element;\n\n"
-            + "import static ujfe.html.UI.*;\n\n"
+        return "import ujfe.core.Element;\n\n"
+            + "import static ujfe.core.UI.*;\n\n"
             + "// Safe by default: text content is escaped.\n"
             + "p(\"<script>\")\n\n"
             + "// Explicit unsafe escape hatch for trusted, pre-sanitized HTML only.\n"
@@ -608,7 +585,7 @@ public final class DocumentationPage implements Component {
             + "import ujfe.core.Node;\n"
             + "import ujfe.live.LiveSession;\n"
             + "import ujfe.router.Router;\n"
-            + "import static ujfe.html.UI.*;\n\n"
+            + "import static ujfe.core.UI.*;\n\n"
             + "public final class Demo {\n"
             + "    static final class Metric {\n"
             + "        private final String label;\n"
@@ -936,8 +913,8 @@ public final class DocumentationPage implements Component {
 
     private String cliOutputCode() {
         return "package app.pages;\n\n"
-            + "import static ujfe.html.UI.*;\n\n"
-            + "import ujfe.html.Node;\n"
+            + "import static ujfe.core.UI.*;\n\n"
+            + "import ujfe.core.Node;\n"
             + "import ujfe.router.Page;\n\n"
             + "@Page(\"/\")\n"
             + "public final class Page {\n\n"

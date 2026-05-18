@@ -1,4 +1,4 @@
-package ujfe.html;
+package ujfe.core;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -57,10 +57,15 @@ public final class UtilityCssRenderer {
         utilities.put("col-span-3", "grid-column:span 3 / span 3;");
         utilities.put("relative", "position:relative;");
         utilities.put("absolute", "position:absolute;");
+        utilities.put("fixed", "position:fixed;");
         utilities.put("sticky", "position:sticky;");
+        utilities.put("inset-0", "inset:0;");
         utilities.put("top-0", "top:0;");
         utilities.put("top-24", "top:6rem;");
         utilities.put("right-0", "right:0;");
+        utilities.put("right-6", "right:1.5rem;");
+        utilities.put("bottom-6", "bottom:1.5rem;");
+        utilities.put("z-40", "z-index:40;");
         utilities.put("z-50", "z-index:50;");
         utilities.put("overflow-hidden", "overflow:hidden;");
         utilities.put("min-h-screen", "min-height:100vh;");
@@ -73,6 +78,8 @@ public final class UtilityCssRenderer {
         utilities.put("max-w-6xl", "max-width:72rem;");
         utilities.put("max-w-7xl", "max-width:80rem;");
         utilities.put("max-w-3xl", "max-width:48rem;");
+        utilities.put("max-w-2xl", "max-width:42rem;");
+        utilities.put("max-w-md", "max-width:28rem;");
         utilities.put("mx-auto", "margin-left:auto;margin-right:auto;");
         utilities.put("w-full", "width:100%;");
         utilities.put("min-w-0", "min-width:0;");
@@ -179,8 +186,10 @@ public final class UtilityCssRenderer {
         utilities.put("bg-slate-800", "background-color:#1e293b;");
         utilities.put("bg-slate-900", "background-color:#0f172a;");
         utilities.put("bg-slate-950", "background-color:#020617;");
+        utilities.put("bg-black/50", "background-color:rgba(0,0,0,0.5);");
         utilities.put("bg-white", "background-color:#fff;");
         utilities.put("bg-white/80", "background-color:rgba(255,255,255,0.8);");
+        utilities.put("bg-white/95", "background-color:rgba(255,255,255,0.95);");
         utilities.put("bg-emerald-50", "background-color:#ecfdf5;");
         utilities.put("bg-emerald-600", "background-color:#059669;");
         utilities.put("bg-emerald-700", "background-color:#047857;");

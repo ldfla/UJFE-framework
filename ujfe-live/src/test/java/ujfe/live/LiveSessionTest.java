@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class LiveSessionTest {
     @Test
@@ -148,7 +148,7 @@ final class LiveSessionTest {
     void includesDevToolsScriptWhenEnabled() {
         String document;
         try (LiveSession session = new LiveSession(
-                new Router().register(new CounterPage()), ujfe.html.CssTheme::defaultTheme, true)) {
+                new Router().register(new CounterPage()), ujfe.core.CssTheme::defaultTheme, true)) {
             document = session.renderDocument("/", ClientState.empty());
         }
 
@@ -189,7 +189,55 @@ final class LiveSessionTest {
         assertTrue(document.contains("<link rel=\"stylesheet\" href=\"/app.css\">"));
         assertFalse(document.contains("data-ujfe-css"));
         assertFalse(document.contains(".bg-blue-600"));
+        assertTrue(document.contains("bg-blue-600"));
         assertTrue(css.isEmpty());
+    }
+
+    @Test
+    void supportsNoneCssModeWithoutRemovingClassAttributes() {
+        LiveSessionConfig config = LiveSessionConfig.builder()
+                .cssMode(CssMode.NONE)
+                .externalStylesheet("/app.css")
+                .build();
+
+        String document;
+        String css;
+        try (LiveSession session = new LiveSession(new Router().register(new CounterPage()), config)) {
+            document = session.renderDocument("/", ClientState.empty());
+            css = session.renderCss(Set.of("bg-blue-600"));
+        }
+
+        assertFalse(document.contains("data-ujfe-css"));
+        assertFalse(document.contains("<link rel=\"stylesheet\" href=\"/app.css\">"));
+        assertTrue(document.contains("class=\"min-h-screen p-8 flex flex-col gap-4\""));
+        assertTrue(css.isEmpty());
+    }
+
+    @Test
+    void internalCssIsScopedToClassesSeenDuringCurrentPageRender() {
+        Router router = new Router()
+                .register(new FirstCssPage())
+                .register(new SecondCssPage());
+
+        String first;
+        String second;
+        try (LiveSession session = new LiveSession(router)) {
+            first = session.renderDocument("/one", ClientState.empty());
+            second = session.renderDocument("/two", ClientState.empty());
+        }
+
+        assertTrue(first.contains(".p-4{padding:1rem;}"));
+        assertFalse(first.contains(".m-4{margin:1rem;}"));
+        assertTrue(second.contains(".m-4{margin:1rem;}"));
+        assertFalse(second.contains(".p-4{padding:1rem;}"));
+    }
+
+    @Test
+    void exposesRoutePresenceWithoutRenderingPage() {
+        try (LiveSession session = new LiveSession(new Router().register(new CounterPage()))) {
+            assertTrue(session.hasRoute("/"));
+            assertFalse(session.hasRoute("/poster.png"));
+        }
     }
 
     @Test
@@ -287,6 +335,22 @@ final class LiveSessionTest {
                                     .css("px-4 py-2 rounded bg-blue-600 text-white")
                                     .onClick(count::incrementAndGet)
                     );
+        }
+    }
+
+    @Page("/one")
+    public static final class FirstCssPage implements Component {
+        @Override
+        public Node render() {
+            return div().css("p-4").child("One");
+        }
+    }
+
+    @Page("/two")
+    public static final class SecondCssPage implements Component {
+        @Override
+        public Node render() {
+            return div().css("m-4").child("Two");
         }
     }
 

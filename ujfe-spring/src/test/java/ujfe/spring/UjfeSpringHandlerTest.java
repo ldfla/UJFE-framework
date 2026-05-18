@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class UjfeSpringHandlerTest {
     @Test
@@ -432,6 +432,33 @@ final class UjfeSpringHandlerTest {
     }
 
     @Test
+    void staticAssetRequestsReturnPlain404BeforePageRenderingWhenHandlerReceivesThem() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new AssetLikePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+
+            assertStaticAssetNotFound(handle(handler, new MockHttpServletRequest("GET", "/poster.png")));
+            assertStaticAssetNotFound(handle(handler, new MockHttpServletRequest("GET", "/demo.mp4")));
+            assertStaticAssetNotFound(handle(handler, new MockHttpServletRequest("GET", "/audio.mp3")));
+        }
+    }
+
+    @Test
+    void unsafeStaticAssetPathIsRejectedWithoutRendering() throws Exception {
+        try (LiveSession session = new LiveSession(new Router().register(new AssetLikePage()))) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse response;
+
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                response = handle(handler, new MockHttpServletRequest("GET", "/assets/%2e%2e/secret.txt"));
+            }
+
+            assertEquals(400, response.getStatus());
+            assertTrue(response.getContentType().startsWith("text/plain"));
+            assertEquals("Invalid static asset path.", response.getContentAsString());
+        }
+    }
+
+    @Test
     void publicPageRouteIsNotRateLimited() throws Exception {
         LiveSessionConfig config = LiveSessionConfig.builder()
                 .internalEndpointRateLimit(1, 1, Duration.ofMinutes(1))
@@ -454,6 +481,13 @@ final class UjfeSpringHandlerTest {
         request.setContent(body.getBytes(StandardCharsets.UTF_8));
         request.setContentType("application/json");
         return request;
+    }
+
+    private static MockHttpServletResponse handle(UjfeSpringHandler handler, MockHttpServletRequest request)
+            throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        handler.handleRequest(request, response);
+        return response;
     }
 
     private static LiveSessionConfig clientStateConfig() {
@@ -487,6 +521,14 @@ final class UjfeSpringHandlerTest {
         assertFalse(body.contains("/Users/"), body);
     }
 
+    private static void assertStaticAssetNotFound(MockHttpServletResponse response) throws Exception {
+        assertEquals(404, response.getStatus());
+        assertTrue(response.getContentType().startsWith("text/plain"));
+        assertEquals("Static asset not found.", response.getContentAsString());
+        assertFalse(response.getContentAsString().contains("UJFE_ROUTE_NOT_FOUND"));
+        assertFalse(response.getContentAsString().contains("No UJFE route registered"));
+    }
+
     @Page("/")
     public static final class HomePage {
         public Node render() {
@@ -514,25 +556,38 @@ final class UjfeSpringHandlerTest {
         }
     }
 
+    @Page("/poster.png")
+    public static final class AssetLikePage {
+        public Node render() {
+            throw new IllegalStateException("asset-like route should not render");
+        }
+    }
+
     private static final class CodecLogSilencer implements AutoCloseable {
         private final Logger codecLogger;
         private final Logger errorLogger;
+        private final Logger staticAssetLogger;
         private final boolean codecUseParentHandlers;
         private final boolean errorUseParentHandlers;
+        private final boolean staticAssetUseParentHandlers;
 
-        private CodecLogSilencer(Logger codecLogger, Logger errorLogger) {
+        private CodecLogSilencer(Logger codecLogger, Logger errorLogger, Logger staticAssetLogger) {
             this.codecLogger = codecLogger;
             this.errorLogger = errorLogger;
+            this.staticAssetLogger = staticAssetLogger;
             this.codecUseParentHandlers = codecLogger.getUseParentHandlers();
             this.errorUseParentHandlers = errorLogger.getUseParentHandlers();
+            this.staticAssetUseParentHandlers = staticAssetLogger.getUseParentHandlers();
             this.codecLogger.setUseParentHandlers(false);
             this.errorLogger.setUseParentHandlers(false);
+            this.staticAssetLogger.setUseParentHandlers(false);
         }
 
         static CodecLogSilencer attach() {
             return new CodecLogSilencer(
                     Logger.getLogger(ujfe.live.LiveHttpCodec.class.getName()),
-                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName())
+                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
+                    Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
             );
         }
 
@@ -540,6 +595,7 @@ final class UjfeSpringHandlerTest {
         public void close() {
             codecLogger.setUseParentHandlers(codecUseParentHandlers);
             errorLogger.setUseParentHandlers(errorUseParentHandlers);
+            staticAssetLogger.setUseParentHandlers(staticAssetUseParentHandlers);
         }
     }
 }

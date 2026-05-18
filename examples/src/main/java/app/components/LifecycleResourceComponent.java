@@ -6,7 +6,7 @@ import ujfe.core.Node;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class LifecycleResourceComponent implements Component, Lifecycle {
     private final Signal<Integer> mounts = Signals.signal(0);

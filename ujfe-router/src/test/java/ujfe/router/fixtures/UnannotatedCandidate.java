@@ -2,7 +2,7 @@ package ujfe.router.fixtures;
 
 import ujfe.core.Node;
 
-import static ujfe.html.UI.div;
+import static ujfe.core.UI.div;
 
 public final class UnannotatedCandidate {
     public Node render() {

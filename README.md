@@ -50,6 +50,9 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Secure HTTP headers](docs/security/headers.md)
 - [Signals](docs/signals.md)
 - [Live events](docs/live-events.md)
+- [CSS modes](docs/css.md)
+- [Static assets](docs/static-assets.md)
+- [Core HTML APIs](docs/core/html.md)
 - [Router](docs/router.md)
 - [AOT route metadata roadmap](docs/aot-roadmap.md)
 - [Standalone Jakarta Servlet runtime](docs/runtime/servlet.md)
@@ -59,8 +62,7 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 
 ## Modules
 
-- `ujfe-core`: shared rendering contracts, context, escaping, client state, and REST client.
-- `ujfe-html`: Java HTML DSL, generic element core, HTML helpers, and optional server-side utility CSS renderer.
+- `ujfe-core`: shared rendering contracts, context, escaping, client state, REST client, Java HTML DSL, generic element core, HTML helpers, and optional server-side utility CSS renderer.
 - `ujfe-signals`: mutable signals and computed values.
 - `ujfe-router`: `@Page` routing and page rendering.
 - `ujfe-live`: live event registry, page re-rendering, client script, and dev tools script.
@@ -113,11 +115,11 @@ Available example routes:
 ```java
 package app.pages;
 
-import ujfe.html.Node;
-import ujfe.html.Element;
+import ujfe.core.Node;
+import ujfe.core.Element;
 import ujfe.router.Page;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/")
 public final class HomePage {
@@ -236,7 +238,7 @@ import ujfe.core.Node;
 import ujfe.live.LiveSession;
 import ujfe.router.Router;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 record Metric(String label, int value) {}
 
@@ -305,11 +307,11 @@ public final class Main {
 ```java
 package app.components;
 
-import ujfe.html.Node;
+import ujfe.core.Node;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class CounterComponent {
     private final Signal<Integer> count = Signals.signal(0);
@@ -327,9 +329,9 @@ public final class CounterComponent {
 ## Form Example
 
 ```java
-import ujfe.html.Node;
+import ujfe.core.Node;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public Node renderForm() {
     return form()
@@ -393,7 +395,7 @@ section()
 
 ## CSS Modes
 
-UJFE can run with its internal server-side utility CSS renderer or with external CSS managed by Tailwind, Bootstrap, CSS files, CSS Modules, or an enterprise design system. With the bundled Netty runtime, keep external stylesheets same-origin so they fit the default CSP. With Spring MVC integration, the same configuration is rendered by Tomcat through the application port.
+UJFE can run in `INTERNAL`, `EXTERNAL`, or `NONE` CSS mode. Class attributes stay in the rendered HTML in every mode, so teams can use the built-in server-side utility renderer, Tailwind, Bootstrap, CSS files, CSS Modules, an enterprise design system, or no framework-managed CSS at all. With the bundled Netty runtime, keep external stylesheets same-origin unless the CSP is intentionally widened.
 
 Internal CSS is the default:
 
@@ -416,17 +418,25 @@ LiveSessionConfig config = LiveSessionConfig.builder()
 LiveSession liveSession = new LiveSession(router, config);
 ```
 
+No CSS mode keeps classes but emits no generated stylesheet and no configured external stylesheet links:
+
+```java
+LiveSessionConfig config = LiveSessionConfig.builder()
+        .cssMode(CssMode.NONE)
+        .build();
+```
+
 ## Public API Reference
 
 The public API is documented in English so the project can be used globally. The high-level surface is intentionally small:
 
-- `ujfe.html.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag, `Element.svg(tagName)` for SVG descendants, and `Element.mathMl(tagName)` for MathML descendants. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`. Attribute names are validated at construction time; inline event handler attributes (`on*`) are blocked by default.
-- `ujfe.html.UI`: optional helper factories for official HTML tags. Helpers delegate to `Element.of(...)`; they are convenience methods, not the source of HTML support. `unsafeHtml(...)` is the explicit raw HTML escape hatch for trusted content only.
-- `ujfe.html.UnsafeHtml`: intentionally unsafe raw HTML node. It bypasses escaping and should only receive trusted, sanitized HTML.
-- `ujfe.html.UrlPolicy`: configurable URL scheme policy. The default allows `https` and `data:image/*`. Applications opt into `http`, `mailto`, `tel`, or custom schemes through `UrlPolicy.builder()`. `javascript:` and `vbscript:` are permanently blocked.
-- `ujfe.html.SafeUrl`: URL sanitizer for HTML URL-bearing attributes. Delegates scheme decisions to the active `UrlPolicy`. URL attributes (`href`, `src`, `action`, `poster`, `formaction`, `cite`, `data`, `background`) are routed through this sanitizer.
+- `ujfe.core.Element`: generic HTML element core. Use `Element.of(tagName)` or `element(tagName)` for any valid HTML/custom/future tag, `Element.svg(tagName)` for SVG descendants, and `Element.mathMl(tagName)` for MathML descendants. Use `attr(name, value)`, `attr(name, true)`, `boolAttr(...)`, `child(...)`, `children(...)`, `css(...)`, and event methods such as `onClick(...)`. Attribute names are validated at construction time; inline event handler attributes (`on*`) are blocked by default.
+- `ujfe.core.UI`: optional helper factories for official HTML tags. Helpers delegate to `Element.of(...)`; they are convenience methods, not the source of HTML support. `unsafeHtml(...)` is the explicit raw HTML escape hatch for trusted content only.
+- `ujfe.core.UnsafeHtml`: intentionally unsafe raw HTML node. It bypasses escaping and should only receive trusted, sanitized HTML.
+- `ujfe.core.UrlPolicy`: configurable URL scheme policy. The default allows `https` and `data:image/*`. Applications opt into `http`, `mailto`, `tel`, or custom schemes through `UrlPolicy.builder()`. `javascript:` and `vbscript:` are permanently blocked.
+- `ujfe.core.SafeUrl`: URL sanitizer for HTML URL-bearing attributes. Delegates scheme decisions to the active `UrlPolicy`. URL attributes (`href`, `src`, `action`, `poster`, `formaction`, `cite`, `data`, `background`) are routed through this sanitizer.
 - `ujfe.live.LiveSessionConfig`: document-level runtime configuration for language, title, head nodes, CSS mode, theme supplier, and dev tools.
-- `ujfe.live.CssMode`: `INTERNAL` generates UJFE's server-side utility stylesheet; `EXTERNAL` disables it so teams can use Tailwind, Bootstrap, CSS files, CSS Modules, or enterprise design systems.
+- `ujfe.live.CssMode`: `INTERNAL` generates UJFE's server-side utility stylesheet; `EXTERNAL` renders configured stylesheet links without internal CSS; `NONE` keeps classes in HTML but emits no framework CSS.
 - `ujfe.router.Router` and `@Page`: register page instances, page classes, or explicit route factories.
 - `ujfe.http.UjfeServer`: standalone Netty runtime for UJFE sessions.
 - `ujfe.spring`: Spring Boot/MVC adapter that serves UJFE routes through the same DispatcherServlet/Tomcat port as the application.
@@ -569,7 +579,7 @@ import org.springframework.stereotype.Component;
 import ujfe.core.Node;
 import ujfe.router.Page;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/")
 @Component

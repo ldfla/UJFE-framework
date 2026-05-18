@@ -4,8 +4,8 @@ import ujfe.core.ClientState;
 import ujfe.core.ElementIdGenerator;
 import ujfe.core.Node;
 import ujfe.core.UjfeContext;
-import ujfe.html.CssTheme;
-import ujfe.html.UtilityCssRenderer;
+import ujfe.core.CssTheme;
+import ujfe.core.UtilityCssRenderer;
 import ujfe.runtime.lifecycle.LifecycleTracker;
 
 import java.util.Collection;
@@ -90,7 +90,7 @@ public final class LiveComponentRenderer {
 
     public String renderCss(Collection<String> classes) {
         Objects.requireNonNull(classes, "classes");
-        if (cssMode == CssMode.EXTERNAL) {
+        if (cssMode != CssMode.INTERNAL) {
             return "";
         }
         return UtilityCssRenderer.render(classes, themeSupplier.get());

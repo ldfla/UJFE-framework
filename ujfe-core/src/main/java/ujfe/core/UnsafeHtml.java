@@ -1,6 +1,4 @@
-package ujfe.html;
-
-import ujfe.core.UjfeContext;
+package ujfe.core;
 
 import java.util.Objects;
 

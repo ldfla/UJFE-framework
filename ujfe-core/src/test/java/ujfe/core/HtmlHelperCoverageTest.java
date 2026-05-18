@@ -1,4 +1,4 @@
-package ujfe.html;
+package ujfe.core;
 
 import org.junit.jupiter.api.Test;
 

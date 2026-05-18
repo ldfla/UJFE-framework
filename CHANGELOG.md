@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## Version 0.21.0 - 18/05/2026
+
+- Updated the Maven project version to `0.21.0-SNAPSHOT`.
+- Consolidated the HTML DSL, element model, safe URL handling, utility CSS renderer, and HTML tests into `ujfe-core`; removed the separate HTML Maven module from the reactor.
+- Added `CssMode.NONE` and completed deterministic behavior for `INTERNAL`, `EXTERNAL`, and `NONE` CSS modes while preserving HTML `class` attributes in every mode.
+- Changed `externalStylesheet(...)` to render configured stylesheet links only in `CssMode.EXTERNAL`; `NONE` renders no internal or external framework CSS.
+- Added shared static asset routing detection for common images, video, audio, fonts, CSS, JavaScript, source maps, and data/text assets.
+- Updated Netty, Servlet, and Spring adapters so `/poster.png`, `/demo.mp4`, `/audio.mp3`, and other asset-like requests bypass page rendering and return safe static asset responses.
+- Added static asset path traversal rejection for unsafe or encoded traversal paths.
+- Added tests for CSS mode behavior, static asset routing, adapter behavior, and the HTML/core consolidation.
+- Documented CSS modes, static asset routing, runtime routing order, and the canonical core HTML APIs.
+
 ## Version 0.20.0 - 18/05/2026
 
 - Updated the Maven project version to `0.20.0-SNAPSHOT`.

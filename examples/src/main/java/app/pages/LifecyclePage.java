@@ -1,5 +1,7 @@
 package app.pages;
 
+import app.AppTheme;
+import app.components.AppHeader;
 import app.components.LifecycleResourceComponent;
 import ujfe.core.Component;
 import ujfe.core.Lifecycle;
@@ -8,14 +10,21 @@ import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.*;
+import java.util.Objects;
+
+import static ujfe.core.UI.*;
 
 @Page("/lifecycle")
 public final class LifecyclePage implements Component, Lifecycle {
+    private final AppTheme theme;
     private final Signal<Integer> pageMounts = Signals.signal(0);
     private final Signal<Integer> pageUnmounts = Signals.signal(0);
     private final Signal<Integer> refreshes = Signals.signal(0);
     private final LifecycleResourceComponent resourceComponent = new LifecycleResourceComponent();
+
+    public LifecyclePage(AppTheme theme) {
+        this.theme = Objects.requireNonNull(theme, "theme");
+    }
 
     @Override
     public void onMount() {
@@ -29,37 +38,13 @@ public final class LifecyclePage implements Component, Lifecycle {
 
     @Override
     public Node render() {
-        return div()
-                .css("min-h-screen bg-slate-50 text-slate-900 font-sans antialiased")
-                .child(topBar())
+        return AppHeader.pageShell(theme)
+                .child(new AppHeader(theme, AppHeader.LIFECYCLE).render())
                 .child(
                         main()
                                 .css("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-8")
                                 .child(hero())
                                 .child(panels())
-                );
-    }
-
-    private Node topBar() {
-        return header()
-                .css("sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-md")
-                .child(
-                        div()
-                                .css("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between")
-                                .child(
-                                        div()
-                                                .css("flex items-center gap-3")
-                                                .child(span("UJFE")
-                                                        .css("px-2.5 py-1 text-xs font-black bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded shadow-sm"))
-                                                .child(h1("Server-side Lifecycle").css("hidden md:block text-sm font-semibold text-slate-900"))
-                                )
-                                .child(
-                                        nav()
-                                                .css("flex items-center gap-4")
-                                                .child(a("Home").attr("href", "/").css("text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"))
-                                                .child(a("Docs").attr("href", "/docs").css("text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"))
-                                                .child(a("Actions").attr("href", "/runtime-actions").css("text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"))
-                                )
                 );
     }
 

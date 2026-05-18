@@ -1,4 +1,4 @@
-package ujfe.html;
+package ujfe.core;
 
 import java.util.Locale;
 import java.util.Objects;

@@ -1,7 +1,4 @@
-package ujfe.html;
-
-import ujfe.core.HtmlEscaper;
-import ujfe.core.UjfeContext;
+package ujfe.core;
 
 import java.util.Objects;
 import java.util.function.Supplier;

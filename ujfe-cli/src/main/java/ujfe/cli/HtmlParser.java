@@ -1,6 +1,6 @@
 package ujfe.cli;
 
-import ujfe.html.HtmlElementMetadata;
+import ujfe.core.HtmlElementMetadata;
 
 import java.util.*;
 

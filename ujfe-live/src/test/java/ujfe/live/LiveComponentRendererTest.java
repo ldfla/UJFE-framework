@@ -3,14 +3,14 @@ package ujfe.live;
 import org.junit.jupiter.api.Test;
 import ujfe.core.ClientState;
 import ujfe.core.ElementIdGenerator;
-import ujfe.html.CssTheme;
+import ujfe.core.CssTheme;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.p;
+import static ujfe.core.UI.button;
+import static ujfe.core.UI.p;
 
 final class LiveComponentRendererTest {
     @Test
@@ -50,5 +50,24 @@ final class LiveComponentRendererTest {
 
         assertTrue(css.contains("--ujfe-primary-500:#ff0000"));
         assertTrue(css.contains(".bg-primary{background-color:var(--ujfe-primary-500);}"));
+    }
+
+    @Test
+    void externalAndNoneCssModesDoNotGenerateInternalCss() {
+        LiveComponentRenderer external = new LiveComponentRenderer(
+                new LiveEventRegistry(),
+                ElementIdGenerator.sequential(),
+                CssTheme::defaultTheme,
+                CssMode.EXTERNAL
+        );
+        LiveComponentRenderer none = new LiveComponentRenderer(
+                new LiveEventRegistry(),
+                ElementIdGenerator.sequential(),
+                CssTheme::defaultTheme,
+                CssMode.NONE
+        );
+
+        assertEquals("", external.renderCss(List.of("bg-primary")));
+        assertEquals("", none.renderCss(List.of("bg-primary")));
     }
 }

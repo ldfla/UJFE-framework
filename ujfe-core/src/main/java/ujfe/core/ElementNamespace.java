@@ -1,4 +1,4 @@
-package ujfe.html;
+package ujfe.core;
 
 public enum ElementNamespace {
     HTML,

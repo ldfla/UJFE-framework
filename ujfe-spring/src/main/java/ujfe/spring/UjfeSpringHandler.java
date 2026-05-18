@@ -19,6 +19,7 @@ import ujfe.live.LiveSession;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.StaticAssetHandler;
 import ujfe.live.UjfeErrorResponse;
 import ujfe.runtime.action.RuntimePhase;
 
@@ -64,6 +65,11 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
                 return;
             }
 
+            if ("GET".equals(method) && StaticAssetHandler.isStaticAssetPath(path)) {
+                writeStaticAssetResponse(response, path);
+                return;
+            }
+
             if ("POST".equals(method) && LiveHttpPaths.EVENT.equals(path)) {
                 LiveHttpRequestMetadata metadata = createMetadata(request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
@@ -93,6 +99,10 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             }
 
             if ("GET".equals(method)) {
+                if (!liveSession.hasRoute(path)) {
+                    writeError(response, errorRenderer().routeNotFound(errorContext(request, path)));
+                    return;
+                }
                 Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
                 String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
                 write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
@@ -194,6 +204,18 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
     private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
         error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
         write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
+    }
+
+    private void writeStaticAssetResponse(HttpServletResponse response, String path) throws IOException {
+        if (StaticAssetHandler.isUnsafePath(path)) {
+            StaticAssetHandler.logRejected("spring", path);
+            write(response, HttpServletResponse.SC_BAD_REQUEST,
+                    "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
+            return;
+        }
+        StaticAssetHandler.logNotFound("spring", path);
+        write(response, HttpServletResponse.SC_NOT_FOUND,
+                "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
     }
 
     private void applySecurityHeaders(HttpServletResponse response) {

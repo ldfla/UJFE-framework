@@ -3,14 +3,14 @@ package app.components;
 import app.model.Bank;
 import app.services.BrazilApiBankClient;
 import ujfe.core.Component;
-import ujfe.html.Node;
+import ujfe.core.Node;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class BankSelectComponent implements Component {
     private final BrazilApiBankClient bankClient;

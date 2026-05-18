@@ -64,10 +64,10 @@ import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.button;
-import static ujfe.html.UI.h1;
-import static ujfe.html.UI.main;
-import static ujfe.html.UI.p;
+import static ujfe.core.UI.button;
+import static ujfe.core.UI.h1;
+import static ujfe.core.UI.main;
+import static ujfe.core.UI.p;
 
 @Page("/home")
 public final class HomePage {
@@ -319,7 +319,7 @@ Supported keys:
 | `ujfe.live.title` | `UJFE Servlet App` | Document `<title>` |
 | `ujfe.live.lang` | `en` | Document `<html lang="...">` |
 | `ujfe.live.dev-tools-enabled` | `true` | Whether `/_ujfe/dev.js` is added to rendered documents |
-| `ujfe.live.css-mode` | `internal` | CSS delivery mode used by `LiveSessionConfig` |
+| `ujfe.live.css-mode` | `internal` | CSS delivery mode: `internal`, `external`, or `none` |
 | `ujfe.live.max-json-payload-bytes` | `262144` | Maximum accepted JSON body size for `/_ujfe/event` and `/_ujfe/state`; defaults to `1048576` |
 | `ujfe.client-state.cookies` | `ujfe_demo` | Comma-separated cookies exposed through `Ujfe.cookie(...)` |
 | `ujfe.client-state.local-storage-keys` | `ujfe.theme` | Comma-separated `localStorage` keys exposed through `Ujfe.localStorage(...)` |
@@ -353,6 +353,7 @@ var config = LiveSessionConfig.builder()
         .title("Enterprise Portal")
         .lang("en")
         .devToolsEnabled(false)
+        .cssMode(CssMode.EXTERNAL)
         .externalStylesheet("/assets/app.css")
         .runtimeActions(runtimeActions)
         .build();
@@ -423,6 +424,8 @@ Live JSON parsing, response serialization, payload size validation, and safe err
 
 Unknown paths return `404` instead of rendering an arbitrary page. Non-GET requests to known page routes return `405`.
 
+If an asset-like request reaches `UjfeServlet` because the servlet is mapped broadly, the servlet returns a normal text `404` static asset response instead of treating it as a missing UJFE page route.
+
 Applications can inspect this behavior directly:
 
 ```java
@@ -489,7 +492,7 @@ ujfe.security.headers.x-frame-options=SAMEORIGIN
 
 See [Secure HTTP headers](../security/headers.md) for the shared policy, Java configuration, Spring behavior, and CSP notes.
 
-Safe-by-default HTML rendering still comes from the HTML module:
+Safe-by-default HTML rendering comes from the HTML APIs in `ujfe-core`:
 
 - text content is escaped by default.
 - attribute values are escaped.
@@ -516,6 +519,8 @@ The servlet delegates error rendering to the same `ErrorResponseRenderer` used b
 | --- | --- | --- |
 | invalid live payload | `400 Bad Request` | `UJFE_BAD_REQUEST` |
 | unknown route | `404 Not Found` | `UJFE_ROUTE_NOT_FOUND` |
+| missing static asset | `404 Not Found` | plain text static asset response |
+| unsafe static asset path | `400 Bad Request` | plain text static asset response |
 | wrong method | `405 Method Not Allowed` | `UJFE_INVALID_REQUEST` |
 | CSRF validation failure | `403 Forbidden` | `UJFE_CSRF_VALIDATION_FAILED` |
 | rate limit exceeded | `429 Too Many Requests` | `UJFE_RATE_LIMITED` |
@@ -533,6 +538,7 @@ A minimal smoke test should verify:
 - `POST /_ujfe/state` returns JSON with `html` and `css`.
 - `POST /_ujfe/event` dispatches an event id captured from the rendered page.
 - `GET /assets/app.css` is not claimed by UJFE when assets are outside the UJFE mapping.
+- `GET /poster.png`, `/demo.mp4`, or `/audio.mp3` does not trigger UJFE page rendering when it reaches the servlet.
 
 The module test suite uses servlet mocks for those behaviors. Embedded container tests can be added later if the project decides to include a Tomcat test dependency.
 
