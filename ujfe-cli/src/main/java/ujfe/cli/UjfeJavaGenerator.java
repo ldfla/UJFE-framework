@@ -33,8 +33,8 @@ final class UjfeJavaGenerator {
         if (!packageName.isBlank()) {
             java.append("package ").append(packageName).append(";\n\n");
         }
-        java.append("import static ujfe.html.UI.*;\n\n")
-                .append("import ujfe.html.Node;\n")
+        java.append("import static ujfe.core.UI.*;\n\n")
+                .append("import ujfe.core.Node;\n")
                 .append("import ujfe.router.Page;\n\n")
                 .append("@Page(\"/\")\n")
                 .append("public final class ").append(className).append(" {\n\n")

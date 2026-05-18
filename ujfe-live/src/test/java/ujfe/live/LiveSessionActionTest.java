@@ -15,7 +15,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class LiveSessionActionTest {
 
@@ -223,7 +223,7 @@ final class LiveSessionActionTest {
     void legacyConstructorsRemainUsable() {
         Router router = new Router().register(new SimplePage());
 
-        try (LiveSession session = new LiveSession(router, ujfe.html.CssTheme::defaultTheme)) {
+        try (LiveSession session = new LiveSession(router, ujfe.core.CssTheme::defaultTheme)) {
             assertTrue(session.renderPath("/")
                     .html()
                     .contains("Hello"));
@@ -234,13 +234,13 @@ final class LiveSessionActionTest {
                     .contains("Hello"));
         }
         try (LiveSession session = new LiveSession(
-                router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme)) {
+                router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme)) {
             assertTrue(session.renderPath("/")
                     .html()
                     .contains("Hello"));
         }
         try (LiveSession session = new LiveSession(
-                router, new PageRenderer(), new LiveEventRegistry(), ujfe.html.CssTheme::defaultTheme, true)) {
+                router, new PageRenderer(), new LiveEventRegistry(), ujfe.core.CssTheme::defaultTheme, true)) {
             assertTrue(session.renderPath("/")
                     .html()
                     .contains("Hello"));

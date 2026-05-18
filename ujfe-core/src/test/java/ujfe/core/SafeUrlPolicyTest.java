@@ -1,11 +1,11 @@
-package ujfe.html;
+package ujfe.core;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class SafeUrlPolicyTest {
     private UrlPolicy savedPolicy;

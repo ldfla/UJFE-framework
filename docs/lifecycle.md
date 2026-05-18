@@ -19,7 +19,7 @@ import ujfe.core.Lifecycle;
 import ujfe.core.Node;
 import ujfe.router.Page;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/dashboard")
 public final class DashboardPage implements Component, Lifecycle {
@@ -53,7 +53,7 @@ import ujfe.core.Component;
 import ujfe.core.Lifecycle;
 import ujfe.core.Node;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class DashboardPage implements Component {
     private final MetricsPanel metricsPanel = new MetricsPanel();
@@ -185,11 +185,11 @@ Conditional rendering controls component lifetime:
 ```java
 import ujfe.core.Component;
 import ujfe.core.Node;
-import ujfe.html.Element;
+import ujfe.core.Element;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class SettingsPage implements Component {
     private final Signal<Boolean> showAdvanced = Signals.signal(false);
@@ -223,7 +223,7 @@ import ujfe.core.Lifecycle;
 import ujfe.core.Node;
 import ujfe.router.Page;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/reports")
 public final class ReportsPage implements Component, Lifecycle {
@@ -257,7 +257,7 @@ import ujfe.core.Component;
 import ujfe.core.Lifecycle;
 import ujfe.core.Node;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class ResourcePanel implements Component, Lifecycle {
     private ServerResource resource;

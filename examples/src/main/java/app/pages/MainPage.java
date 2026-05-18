@@ -1,18 +1,19 @@
 package app.pages;
 
 import app.AppTheme;
+import app.components.AppHeader;
 import app.components.CounterComponent;
 import ujfe.core.Component;
 import ujfe.core.Ujfe;
-import ujfe.html.Element;
-import ujfe.html.Node;
+import ujfe.core.Element;
+import ujfe.core.Node;
 import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
 import java.util.Objects;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/")
 public final class MainPage implements Component {
@@ -20,6 +21,9 @@ public final class MainPage implements Component {
     private final CounterComponent counter;
     private final Signal<Integer> pageEvents = Signals.signal(0);
     private final Signal<Integer> formSubmits = Signals.signal(0);
+    private final Signal<Boolean> modalOpen = Signals.signal(false);
+    private final Signal<Boolean> toastVisible = Signals.signal(false);
+    private final Signal<String> alertTone = Signals.signal("success");
     private final Signal<String> lastBrowserRead = Signals.signal("No browser state event has been processed yet.");
 
     public MainPage(AppTheme theme) {
@@ -29,10 +33,8 @@ public final class MainPage implements Component {
 
     @Override
     public Node render() {
-        return div()
-            .attr("data-ujfe-dev-preview", String.valueOf(theme.devPreviewEnabled()))
-            .css(pageShellClass())
-            .child(topBar())
+        return AppHeader.pageShell(theme)
+            .child(new AppHeader(theme, AppHeader.HOME).render())
             .child(
                 div()
                     .css("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8")
@@ -41,94 +43,14 @@ public final class MainPage implements Component {
                         main()
                             .css("lg:col-span-3 flex flex-col gap-8")
                             .child(heroSection())
+                            .child(capabilitySection())
                             .child(demoPanels())
+                            .child(feedbackSection())
                             .child(codeExample())
                     )
-            );
-    }
-
-    private Node topBar() {
-        return header()
-            .css(theme.darkMode()
-                ? "sticky top-0 z-50 border-b border-slate-800 bg-slate-900 backdrop-blur-md"
-                : "sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-md")
-            .child(
-                div()
-                    .css("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between")
-                    .child(
-                        div()
-                            .css("flex items-center gap-3")
-                            .child(
-                                span("UJFE")
-                                    .css("px-2.5 py-1 text-xs font-black bg-primary-600 text-white rounded shadow-sm")
-                            )
-                            .child(
-                                h1("Modern Reactive UI Framework")
-                                    .css(theme.darkMode()
-                                        ? "hidden md:block text-sm font-semibold text-slate-100"
-                                        : "hidden md:block text-sm font-semibold text-slate-900")
-                            )
-                    )
-                    .child(
-                        nav()
-                            .css("flex items-center gap-4")
-                            .child(a("Documentation")
-                                .attr("href", "/docs")
-                                .css(navLinkClass()))
-                            .child(a("Forms")
-                                .attr("href", "/forms")
-                                .css(navLinkClass()))
-                            .child(a("Signals")
-                                .attr("href", "/signals")
-                                .css(navLinkClass()))
-                            .child(a("Lifecycle")
-                                .attr("href", "/lifecycle")
-                                .css(navLinkClass()))
-                            .child(a("Actions")
-                                .attr("href", "/runtime-actions")
-                                .css(navLinkClass()))
-                            .child(featureToggle("Dark mode", theme.darkMode(), theme::toggleDarkMode))
-                            .child(featureToggle("UJFE Dev Preview", theme.devPreviewEnabled(), theme::toggleDevPreview))
-                            .child(span("JVM SSR")
-                                .css(statusPillClass()))
-                    )
-            );
-    }
-
-    private String pageShellClass() {
-        return theme.darkMode()
-            ? "min-h-screen bg-slate-950 text-zinc-50 font-sans antialiased"
-            : "min-h-screen bg-slate-50 text-slate-900 font-sans antialiased";
-    }
-
-    private String navLinkClass() {
-        return theme.darkMode()
-            ? "text-sm font-medium text-slate-100 hover:text-primary-200 transition-colors"
-            : "text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors";
-    }
-
-    private String statusPillClass() {
-        return theme.darkMode()
-            ? "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-950 text-secondary-200 border border-secondary-700"
-            : "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-50 text-secondary-700 border border-secondary-200";
-    }
-
-    private Node featureToggle(String label, boolean active, Runnable action) {
-        String buttonClass = theme.darkMode()
-            ? "inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800 text-xs font-semibold transition-colors"
-            : "inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-primary-50 text-xs font-semibold transition-colors";
-        String stateClass = active
-            ? "px-2 py-1 rounded-full bg-primary-600 text-white"
-            : (theme.darkMode()
-               ? "px-2 py-1 rounded-full bg-slate-800 text-slate-300"
-               : "px-2 py-1 rounded-full bg-slate-100 text-slate-500");
-        return button()
-            .attr("data-ujfe-dev-control", "true")
-            .attr("aria-pressed", String.valueOf(active))
-            .css(buttonClass)
-            .child(span(label))
-            .child(span(active ? "On" : "Off").css(stateClass))
-            .onClick(action);
+            )
+            .child(toastOverlay())
+            .child(modalOverlay());
     }
 
     private Node sidebar() {
@@ -146,10 +68,10 @@ public final class MainPage implements Component {
                         .css(theme.darkMode()
                             ? "list-none flex flex-col gap-2.5 text-sm font-medium text-slate-300"
                             : "list-none flex flex-col gap-2.5 text-sm font-medium text-slate-600")
-                        .child(navItem("Header", "Layout brand"))
-                        .child(navItem("Sidebar", "Navigation"))
-                        .child(navItem("Main", "Reactive core"))
-                        .child(navItem("Live", "State and Signals"))
+                        .child(navItem("Showcase", "Core capabilities"))
+                        .child(navItem("Live", "Signals and events"))
+                        .child(navItem("Feedback", "Alerts, toasts, modals"))
+                        .child(navItem("Code", "Java DSL preview"))
                 ));
     }
 
@@ -184,6 +106,18 @@ public final class MainPage implements Component {
                     : "text-base text-slate-600 leading-relaxed max-w-3xl"))
             .child(
                 div()
+                    .css("flex flex-wrap gap-3")
+                    .child(button("Open live modal")
+                        .css("px-4 h-10 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
+                        .onClick(this::openShowcaseModal))
+                    .child(a("Read the docs")
+                        .href("/docs")
+                        .css(theme.darkMode()
+                            ? "inline-flex items-center px-4 h-10 rounded-lg border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 text-sm font-semibold transition-colors"
+                            : "inline-flex items-center px-4 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-semibold transition-colors"))
+            )
+            .child(
+                div()
                     .css("grid grid-cols-1 md:grid-cols-3 gap-4 mt-2")
                     .child(heroMetric("HTML-first", "Real DOM elements and standard semantic attributes."))
                     .child(heroMetric("Server-first", "Event propagation executes safely inside the JVM."))
@@ -200,6 +134,25 @@ public final class MainPage implements Component {
                 ? "text-sm font-semibold text-slate-100"
                 : "text-sm font-semibold text-slate-900"))
             .child(span(body).css(bodyTextClass()));
+    }
+
+    private Node capabilitySection() {
+        return section()
+            .css("grid grid-cols-1 md:grid-cols-2 gap-6")
+            .child(capabilityCard("Generic HTML", "Element.of(...) renders current tags, future tags, Web Components, SVG, and MathML without waiting for helper releases."))
+            .child(capabilityCard("Live Events", "Click, input, change, and submit handlers execute as Java callbacks while keeping event ids opaque and server controlled."))
+            .child(capabilityCard("Runtime Actions", "Server-side extension points observe rendering, live events, errors, and head contribution without tying code to an adapter."))
+            .child(capabilityCard("Security Defaults", "Escaped text, URL policy, CSRF checks, rate limits, safe errors, and explicit unsafe HTML boundaries are part of the runtime surface."));
+    }
+
+    private Node capabilityCard(String title, String body) {
+        return div()
+            .css(cardClass("flex flex-col gap-3"))
+            .child(span("Capability").css(theme.darkMode()
+                ? "text-xs font-semibold uppercase text-primary-300"
+                : "text-xs font-semibold uppercase text-indigo-600"))
+            .child(h2(title).css(titleClass()))
+            .child(p(body).css(bodyTextClass()));
     }
 
     private Node demoPanels() {
@@ -269,7 +222,7 @@ public final class MainPage implements Component {
                 div()
                     .css("flex flex-col gap-2")
                     .child(h2("Declarative UI and Styles").css(titleClass()))
-                    .child(p("The engine tracks utility classes evaluated during SSR and mounts an optimized stylesheet.")
+                    .child(p("CSS can run in internal, external, or none mode while preserving standard class attributes.")
                         .css(bodyTextClass()))
             )
             .child(
@@ -277,13 +230,13 @@ public final class MainPage implements Component {
                     .css(theme.darkMode()
                         ? "relative overflow-hidden rounded-lg border border-primary-700 bg-slate-800 p-6 text-center shadow-inner"
                         : "relative overflow-hidden rounded-lg border border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-slate-50/20 p-6 text-center shadow-inner")
-                    .child(p("This node uses scoped JIT classes evaluated on the server stream.")
+                    .child(p("Static media such as /poster.png, /demo.mp4, and /audio.mp3 is handled outside page routing.")
                         .css(theme.darkMode()
                             ? "text-sm font-semibold text-primary-200 leading-relaxed"
                             : "text-sm font-semibold text-indigo-950 leading-relaxed"))
             )
             .child(
-                p("Dynamic stylesheets are optimized to strip unused CSS rules automatically.")
+                p("Missing assets now return safe 404 responses without route exceptions or severe stack traces.")
                     .css("text-xs text-slate-400 italic")
             );
     }
@@ -368,6 +321,208 @@ public final class MainPage implements Component {
         formSubmits.update(value -> value + 1);
     }
 
+    private Node feedbackSection() {
+        return section()
+            .css(cardClass("flex flex-col gap-6"))
+            .child(
+                div()
+                    .css("flex flex-col gap-2")
+                    .child(span("Interactive feedback").css(theme.darkMode()
+                        ? "text-xs font-semibold uppercase text-primary-300"
+                        : "text-xs font-semibold uppercase text-indigo-600"))
+                    .child(h2("Alerts, toasts, and modal flows rendered from Java").css(theme.darkMode()
+                        ? "text-xl font-bold text-slate-100"
+                        : "text-xl font-bold text-slate-900"))
+                    .child(p("Feedback primitives are ordinary components: state lives in Signals, events run on the JVM, and the rendered HTML stays safe by default.")
+                        .css(theme.darkMode() ? "text-sm text-slate-300 leading-relaxed" : "text-sm text-slate-600 leading-relaxed"))
+            )
+            .child(
+                div()
+                    .css("grid grid-cols-1 md:grid-cols-3 gap-4")
+                    .child(alertShowcase())
+                    .child(toastShowcase())
+                    .child(modalShowcase())
+            );
+    }
+
+    private Node alertShowcase() {
+        return div()
+            .css(featurePanelClass())
+            .child(h3("Contextual alerts").css(titleClass()))
+            .child(alertBox())
+            .child(button("Change alert tone")
+                .css(secondaryButtonClass())
+                .onClick(this::cycleAlertTone));
+    }
+
+    private Node alertBox() {
+        return div()
+            .role("status")
+            .css(alertClass())
+            .child(strong(alertTitle()).css("text-sm font-bold"))
+            .child(p(alertMessage()).css("text-xs leading-relaxed"));
+    }
+
+    private Node toastShowcase() {
+        return div()
+            .css(featurePanelClass())
+            .child(h3("Server toast").css(titleClass()))
+            .child(p("A floating status message can be displayed after any live server event.")
+                .css(bodyTextClass()))
+            .child(button("Show toast")
+                .css(primaryButtonClass())
+                .onClick(this::showToast))
+            .child(p("The toast is rendered as live HTML after the server handler updates its Signal.")
+                .css("text-xs text-slate-400 italic"));
+    }
+
+    private Node modalShowcase() {
+        return div()
+            .css(featurePanelClass())
+            .child(h3("Modal workflow").css(titleClass()))
+            .child(p("A modal can be driven by the same server-side state and event pipeline.")
+                .css(bodyTextClass()))
+            .child(button("Open modal")
+                .css(primaryButtonClass())
+                .onClick(this::openShowcaseModal))
+            .child(p("The modal uses the same server-side state model as every other component on this page.")
+                .css("text-xs text-slate-400 italic"));
+    }
+
+    private Node toastOverlay() {
+        return div()
+            .role("status")
+            .css(toastOverlayClass())
+            .child(strong("Live update completed").css(theme.darkMode() ? "text-sm text-slate-100" : "text-sm text-slate-900"))
+            .child(p("This toast was rendered by a Java event handler.").css(bodyTextClass()))
+            .child(button("Dismiss")
+                .css(secondaryButtonClass())
+                .onClick(() -> toastVisible.set(false)));
+    }
+
+    private Node modalOverlay() {
+        return div()
+            .css(modalOverlayClass())
+            .child(
+                div()
+                    .role("dialog")
+                    .aria("modal", "true")
+                    .ariaLabel("UJFE showcase modal")
+                    .css(theme.darkMode()
+                        ? "max-w-2xl w-full rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-sm flex flex-col gap-5"
+                        : "max-w-2xl w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-5")
+                    .child(
+                        div()
+                            .css("flex items-start justify-between gap-4")
+                            .child(
+                                div()
+                                    .css("flex flex-col gap-1")
+                                    .child(span("Modal").css(theme.darkMode()
+                                        ? "text-xs font-semibold uppercase text-primary-300"
+                                        : "text-xs font-semibold uppercase text-indigo-600"))
+                                    .child(h2("A modal rendered from the same Java component tree").css(theme.darkMode()
+                                        ? "text-2xl font-bold text-slate-100"
+                                        : "text-2xl font-bold text-slate-900"))
+                            )
+                            .child(button("Close")
+                                .css(secondaryButtonClass())
+                                .onClick(this::closeShowcaseModal))
+                    )
+                    .child(p("No client framework is required for this interaction. The button event updates server state, UJFE re-renders the affected tree, and the client bridge applies the new HTML.")
+                        .css(theme.darkMode() ? "text-sm text-slate-300 leading-relaxed" : "text-sm text-slate-600 leading-relaxed"))
+                    .child(
+                        div()
+                            .css(theme.darkMode()
+                                ? "grid grid-cols-1 md:grid-cols-3 gap-3 rounded-lg border border-slate-800 bg-slate-950 p-4"
+                                : "grid grid-cols-1 md:grid-cols-3 gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4")
+                            .child(modalMetric("State", "Signal<Boolean>"))
+                            .child(modalMetric("Event", "onClick(...)"))
+                            .child(modalMetric("HTML", "role=\"dialog\""))
+                    )
+            );
+    }
+
+    private String toastOverlayClass() {
+        String visibleClass = theme.darkMode()
+            ? "fixed right-6 bottom-6 z-50 max-w-md rounded-lg border border-slate-700 bg-slate-900 p-4 shadow-sm flex flex-col gap-2"
+            : "fixed right-6 bottom-6 z-50 max-w-md rounded-lg border border-slate-200 bg-white/95 p-4 shadow-sm flex flex-col gap-2";
+        return toastVisible.get() ? visibleClass : visibleClass + " hidden";
+    }
+
+    private String modalOverlayClass() {
+        String visibleClass = "fixed inset-0 z-40 flex items-center justify-center p-6 bg-black/50 backdrop-blur-md";
+        return modalOpen.get() ? visibleClass : visibleClass + " hidden";
+    }
+
+    private Node modalMetric(String label, String value) {
+        return div()
+            .css("flex flex-col gap-1")
+            .child(span(label).css("text-xs text-slate-400 uppercase font-semibold"))
+            .child(strong(value).css(theme.darkMode() ? "text-sm text-slate-100" : "text-sm text-slate-900"));
+    }
+
+    private void showToast() {
+        toastVisible.set(true);
+    }
+
+    private void openShowcaseModal() {
+        modalOpen.set(true);
+    }
+
+    private void closeShowcaseModal() {
+        modalOpen.set(false);
+    }
+
+    private void cycleAlertTone() {
+        String current = alertTone.get();
+        if ("success".equals(current)) {
+            alertTone.set("warning");
+        } else if ("warning".equals(current)) {
+            alertTone.set("danger");
+        } else {
+            alertTone.set("success");
+        }
+    }
+
+    private String alertClass() {
+        String tone = alertTone.get();
+        if ("warning".equals(tone)) {
+            return theme.darkMode()
+                ? "rounded-lg border border-amber-200 bg-slate-800 p-4 flex flex-col gap-1 text-amber-300"
+                : "rounded-lg border border-amber-200 bg-amber-50 p-4 flex flex-col gap-1 text-amber-800";
+        }
+        if ("danger".equals(tone)) {
+            return theme.darkMode()
+                ? "rounded-lg border border-rose-200 bg-slate-800 p-4 flex flex-col gap-1 text-slate-100"
+                : "rounded-lg border border-rose-200 bg-rose-50 p-4 flex flex-col gap-1 text-rose-700";
+        }
+        return theme.darkMode()
+            ? "rounded-lg border border-emerald-200 bg-slate-800 p-4 flex flex-col gap-1 text-emerald-400"
+            : "rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex flex-col gap-1 text-emerald-700";
+    }
+
+    private String alertTitle() {
+        String tone = alertTone.get();
+        if ("warning".equals(tone)) {
+            return "Configuration review";
+        }
+        if ("danger".equals(tone)) {
+            return "Policy blocked";
+        }
+        return "Render completed";
+    }
+
+    private String alertMessage() {
+        String tone = alertTone.get();
+        if ("warning".equals(tone)) {
+            return "A server-side validation can change the rendered alert state before the response reaches the browser.";
+        }
+        if ("danger".equals(tone)) {
+            return "Unsafe input is rejected before rendering and can be surfaced with a stable, safe message.";
+        }
+        return "The UI was updated from a JVM callback and text remains escaped by default.";
+    }
+
     private Node codeExample() {
         return section()
             .css(cardClass("flex flex-col gap-4"))
@@ -390,6 +545,22 @@ public final class MainPage implements Component {
             ? "rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-sm "
             : "rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm ";
         return base + layoutClasses;
+    }
+
+    private String featurePanelClass() {
+        return theme.darkMode()
+            ? "rounded-lg border border-slate-800 bg-slate-800 p-5 flex flex-col gap-4"
+            : "rounded-lg border border-slate-100 bg-slate-50/50 p-5 flex flex-col gap-4";
+    }
+
+    private String primaryButtonClass() {
+        return "w-full px-4 h-10 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all";
+    }
+
+    private String secondaryButtonClass() {
+        return theme.darkMode()
+            ? "px-4 h-10 rounded-lg border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800 text-sm font-semibold transition-colors"
+            : "px-4 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-sm font-semibold transition-colors";
     }
 
     private String titleClass() {

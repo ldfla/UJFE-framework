@@ -1,6 +1,6 @@
 package app;
 
-import ujfe.html.CssTheme;
+import ujfe.core.CssTheme;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 

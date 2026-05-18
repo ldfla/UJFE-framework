@@ -1,14 +1,14 @@
 package app.components;
 
 import ujfe.core.Component;
-import ujfe.html.Node;
+import ujfe.core.Node;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 public final class CounterComponent implements Component {
     private final BooleanSupplier darkMode;

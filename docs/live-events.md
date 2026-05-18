@@ -39,7 +39,7 @@ Live HTTP requests use UJFE internal endpoints:
 | --- | --- | --- |
 | `/_ujfe/event` | `POST` | Dispatch a browser event to its server-side Java handler |
 | `/_ujfe/state` | `POST` | Synchronize policy-allowed browser state with the current live session |
-| `/_ujfe/css` | `GET` | Render server-side CSS for requested classes |
+| `/_ujfe/css` | `GET` | Render server-side CSS for requested classes in `CssMode.INTERNAL`; returns an empty stylesheet in `EXTERNAL` and `NONE` |
 | `/_ujfe/client.js` | `GET` | Serve the browser event bridge |
 | `/_ujfe/dev.js` | `GET` | Serve optional development preview tooling |
 

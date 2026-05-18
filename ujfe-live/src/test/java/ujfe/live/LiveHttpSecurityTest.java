@@ -6,7 +6,7 @@ import ujfe.router.Page;
 import ujfe.router.Router;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.p;
+import static ujfe.core.UI.p;
 
 final class LiveHttpSecurityTest {
     @Test

@@ -1,4 +1,4 @@
-package ujfe.html;
+package ujfe.core;
 
 import org.junit.jupiter.api.Test;
 
@@ -7,8 +7,8 @@ import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static ujfe.html.UI.p;
-import static ujfe.html.UI.unsafeHtml;
+import static ujfe.core.UI.p;
+import static ujfe.core.UI.unsafeHtml;
 
 final class UnsafeHtmlTest {
     @Test

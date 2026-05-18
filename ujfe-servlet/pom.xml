@@ -6,7 +6,7 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.20.0-SNAPSHOT</version>
+        <version>0.21.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-servlet</artifactId>
@@ -21,11 +21,6 @@
         <dependency>
             <groupId>dev.ujfe</groupId>
             <artifactId>ujfe-router</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.ujfe</groupId>
-            <artifactId>ujfe-html</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

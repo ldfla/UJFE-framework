@@ -22,6 +22,7 @@ import ujfe.live.LiveSessionConfig;
 import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
+import ujfe.live.StaticAssetHandler;
 import ujfe.live.UjfeErrorResponse;
 import ujfe.router.Router;
 import ujfe.router.source.ReflectionPageScanner;
@@ -119,6 +120,11 @@ public final class UjfeServlet extends HttpServlet {
         try {
             if (LiveHttpPaths.isInternalPath(path)) {
                 handleInternalEndpoint(method, path, request, response);
+                return;
+            }
+
+            if ("GET".equals(method) && StaticAssetHandler.isStaticAssetPath(path)) {
+                writeStaticAssetResponse(response, path);
                 return;
             }
 
@@ -254,6 +260,18 @@ public final class UjfeServlet extends HttpServlet {
     private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {
         error.retryAfterSeconds().ifPresent(seconds -> response.setHeader("Retry-After", Long.toString(seconds)));
         write(response, error.httpStatus(), UjfeErrorResponse.CONTENT_TYPE, error.body());
+    }
+
+    private void writeStaticAssetResponse(HttpServletResponse response, String path) throws IOException {
+        if (StaticAssetHandler.isUnsafePath(path)) {
+            StaticAssetHandler.logRejected("servlet", path);
+            write(response, HttpServletResponse.SC_BAD_REQUEST,
+                    "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
+            return;
+        }
+        StaticAssetHandler.logNotFound("servlet", path);
+        write(response, HttpServletResponse.SC_NOT_FOUND,
+                "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
     }
 
     private ErrorResponseRenderer errorRenderer() {

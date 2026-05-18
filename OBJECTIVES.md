@@ -454,7 +454,7 @@ The project should remain modular.
 Expected module responsibilities:
 
 - `ujfe-core`: shared rendering contracts, escaping, context, client state, and REST client primitives.
-- `ujfe-html`: HTML element model, helpers, safe rendering, CSS utility rendering, themes, and raw HTML escape hatch.
+- `ujfe-core`: HTML element model, helpers, safe rendering, CSS utility rendering, themes, and raw HTML escape hatch.
 - `ujfe-signals`: signals and computed values.
 - `ujfe-router`: route annotations, route definitions, page registration, and page rendering.
 - `ujfe-live`: live event registry, re-rendering, client bridge, document rendering, CSS mode configuration, hooks, and lifecycle integration.

@@ -5,7 +5,7 @@ import ujfe.router.Page;
 import ujfe.signals.Signal;
 import ujfe.signals.Signals;
 
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 @Page("/home")
 public final class HomePage {

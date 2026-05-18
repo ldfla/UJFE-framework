@@ -5,7 +5,7 @@
 
     <groupId>dev.ujfe</groupId>
     <artifactId>ujfe</artifactId>
-    <version>0.20.0-SNAPSHOT</version>
+    <version>0.21.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>UJFE</name>
@@ -13,7 +13,6 @@
 
     <modules>
         <module>ujfe-core</module>
-        <module>ujfe-html</module>
         <module>ujfe-signals</module>
         <module>ujfe-router</module>
         <module>ujfe-live</module>

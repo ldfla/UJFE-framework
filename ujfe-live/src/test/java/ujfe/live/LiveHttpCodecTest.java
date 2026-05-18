@@ -20,7 +20,7 @@ final class LiveHttpCodecTest {
     void parsesValidEventPayload() {
         LiveHttpEventPayload payload = LiveHttpCodec.parseEventPayload("{"
                 + "\"eventId\":\"evt-42\","
-                + "\"value\":\"Ada Lovelace\","
+                + "\"value\":\"Said Adla\","
                 + "\"clientState\":{"
                 + "\"cookies\":\"ujfe_demo=ativo; theme=dark\","
                 + "\"localStorage\":{\"ujfe.theme\":\"dark\",\"escaped\":\"A\\nB\"},"
@@ -29,7 +29,7 @@ final class LiveHttpCodecTest {
                 + "}");
 
         assertEquals("evt-42", payload.eventId());
-        assertEquals("Ada Lovelace", payload.value());
+        assertEquals("Said Adla", payload.value());
         assertEquals("ativo", payload.clientState().cookie("ujfe_demo").orElseThrow());
         assertEquals("dark", payload.clientState().localStorage("ujfe.theme").orElseThrow());
         assertEquals("A\nB", payload.clientState().localStorage("escaped").orElseThrow());

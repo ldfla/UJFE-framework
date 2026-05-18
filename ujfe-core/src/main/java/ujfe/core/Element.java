@@ -1,7 +1,4 @@
-package ujfe.html;
-
-import ujfe.core.AttributeEscaper;
-import ujfe.core.UjfeContext;
+package ujfe.core;
 
 import java.util.*;
 import java.util.function.BooleanSupplier;
@@ -18,7 +15,7 @@ public final class Element implements Node {
     private final Map<String, Supplier<String>> dynamicAttributes;
     private final Map<String, Supplier<Boolean>> booleanAttributes;
     private final Map<String, Consumer<String>> eventHandlers;
-    private final List<ujfe.core.Node> children;
+    private final List<Node> children;
     private String cssClasses;
 
     public static Element of(String tagName) {
@@ -133,10 +130,6 @@ public final class Element implements Node {
     }
 
     public Element child(Node child) {
-        return child((ujfe.core.Node) child);
-    }
-
-    public Element child(ujfe.core.Node child) {
         Objects.requireNonNull(child, "child");
         requireChildrenAllowed();
         children.add(child);
@@ -156,12 +149,7 @@ public final class Element implements Node {
         return this;
     }
 
-    public Element children(ujfe.core.Node... nodes) {
-        Arrays.stream(nodes).forEach(this::child);
-        return this;
-    }
-
-    public Element children(Collection<? extends ujfe.core.Node> nodes) {
+    public Element children(Collection<? extends Node> nodes) {
         nodes.forEach(this::child);
         return this;
     }
@@ -528,7 +516,7 @@ public final class Element implements Node {
             return html.toString();
         }
 
-        for (ujfe.core.Node child : children) {
+        for (Node child : children) {
             html.append(child.render(context));
         }
         html.append("</").append(tagName).append('>');

@@ -2,5 +2,6 @@ package ujfe.live;
 
 public enum CssMode {
     INTERNAL,
-    EXTERNAL
+    EXTERNAL,
+    NONE
 }

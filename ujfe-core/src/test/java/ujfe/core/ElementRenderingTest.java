@@ -1,13 +1,10 @@
-package ujfe.html;
+package ujfe.core;
 
 import org.junit.jupiter.api.Test;
-import ujfe.core.Component;
-import ujfe.core.UjfeContext;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class ElementRenderingTest {
     @Test

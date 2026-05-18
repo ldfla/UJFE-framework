@@ -1,9 +1,9 @@
-package ujfe.html;
+package ujfe.core;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class VoidElementRenderingTest {
     @Test

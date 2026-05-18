@@ -1,46 +1,88 @@
 package app.pages;
 
+import app.AppTheme;
+import app.components.AppHeader;
 import ujfe.core.Component;
-import ujfe.html.Node;
+import ujfe.core.Node;
 import ujfe.router.Page;
 import ujfe.runtime.action.RuntimeActionRegistry;
 
-import static ujfe.html.UI.*;
+import java.util.Objects;
+
+import static ujfe.core.UI.*;
 
 /**
  * Example page demonstrating server-side runtime extension points.
  */
 @Page("/runtime-actions")
 public final class RuntimeActionsPage implements Component {
+    private final AppTheme theme;
+
+    public RuntimeActionsPage(AppTheme theme) {
+        this.theme = Objects.requireNonNull(theme, "theme");
+    }
 
     @Override
     public Node render() {
+        return AppHeader.pageShell(theme)
+                .child(new AppHeader(theme, AppHeader.ACTIONS).render())
+                .child(main()
+                        .css("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-8")
+                        .child(hero())
+                        .child(sectionGrid())
+                        .child(enterprisePatterns()));
+    }
+
+    private Node hero() {
+        return section()
+                .css(cardClass("relative overflow-hidden p-8 sm:p-10 flex flex-col gap-6"))
+                .child(div()
+                        .css("flex flex-col gap-2")
+                        .child(span("Runtime actions").css(theme.darkMode()
+                                ? "text-xs font-semibold uppercase text-primary-300"
+                                : "text-xs font-semibold uppercase text-indigo-600"))
+                        .child(h1("Server-side extension points without runtime coupling")
+                                .css(theme.darkMode()
+                                        ? "text-3xl sm:text-4xl font-extrabold text-slate-100 leading-none"
+                                        : "text-3xl sm:text-4xl font-extrabold text-slate-900 leading-none")))
+                .child(p("Actions let applications participate in rendering, live events, error handling, and document head assembly while keeping the runtime deterministic and adapter-agnostic.")
+                        .css(theme.darkMode()
+                                ? "text-base text-slate-300 leading-relaxed max-w-3xl"
+                                : "text-base text-slate-600 leading-relaxed max-w-3xl"))
+                .child(div()
+                        .css("grid grid-cols-1 md:grid-cols-3 gap-4 mt-2")
+                        .child(metric("Explicit", "Registered through RuntimeActionRegistry."))
+                        .child(metric("Ordered", "Lower priority executes first."))
+                        .child(metric("Server-side", "No browser lifecycle hooks or JS framework concepts.")));
+    }
+
+    private Node metric(String title, String body) {
         return div()
-                .css("min-h-screen bg-slate-50 p-8 flex flex-col gap-8")
-                .child(header())
+                .css(theme.darkMode()
+                        ? "rounded-lg border border-slate-800 bg-slate-800 p-5 flex flex-col gap-1.5"
+                        : "rounded-lg border border-slate-100 bg-slate-50/50 p-5 flex flex-col gap-1.5")
+                .child(strong(title).css(theme.darkMode()
+                        ? "text-sm font-semibold text-slate-100"
+                        : "text-sm font-semibold text-slate-900"))
+                .child(span(body).css(bodyTextClass()));
+    }
+
+    private Node sectionGrid() {
+        return section()
+                .css("grid grid-cols-1 lg:grid-cols-2 gap-6")
                 .child(registryExample())
                 .child(orderingExample())
                 .child(headContributionExample())
-                .child(errorHandlingExample())
-                .child(enterprisePatterns())
-                .child(backLink());
-    }
-
-    private Node header() {
-        return div()
-                .css("flex flex-col gap-2")
-                .child(h1("Runtime Extension Points")
-                        .css("text-3xl font-bold text-slate-800"))
-                .child(p("Server-side Java runtime actions for rendering, events, errors, and head contributions.")
-                        .css("text-lg text-slate-600"));
+                .child(errorHandlingExample());
     }
 
     private Node registryExample() {
         return section()
-                .css("rounded-lg border border-blue-200 bg-blue-50 p-6 flex flex-col gap-4")
-                .child(h2("Registry").css("text-2xl font-bold text-blue-700"))
+                .css(cardClass("p-6 flex flex-col gap-4"))
+                .child(sectionEyebrow("Registry"))
+                .child(h2("Register runtime behavior explicitly").css(titleClass()))
                 .child(p("Actions are registered through a builder and wired into LiveSessionConfig.")
-                        .css("text-base text-slate-700"))
+                        .css(bodyTextClass()))
                 .child(codeBlock(
                         "RuntimeActionRegistry registry = RuntimeActionRegistry.builder()\n"
                                 + "    .beforeRender(ctx -> log(\"Rendering \" + ctx.path()))\n"
@@ -58,12 +100,13 @@ public final class RuntimeActionsPage implements Component {
 
     private Node orderingExample() {
         return section()
-                .css("rounded-lg border border-emerald-200 bg-emerald-50 p-6 flex flex-col gap-4")
-                .child(h2("Ordering").css("text-2xl font-bold text-emerald-700"))
+                .css(cardClass("p-6 flex flex-col gap-4"))
+                .child(sectionEyebrow("Ordering"))
+                .child(h2("Deterministic action order").css(titleClass()))
                 .child(p("Actions execute deterministically. Lower priority values run first. Equal priorities preserve registration order.")
-                        .css("text-base text-slate-700"))
+                        .css(bodyTextClass()))
                 .child(div()
-                        .css("grid grid-cols-5 gap-2")
+                        .css("grid grid-cols-2 sm:grid-cols-5 gap-2")
                         .child(orderPill("FIRST", "0"))
                         .child(orderPill("EARLY", "250"))
                         .child(orderPill("NORMAL", "500"))
@@ -78,10 +121,11 @@ public final class RuntimeActionsPage implements Component {
 
     private Node headContributionExample() {
         return section()
-                .css("rounded-lg border border-violet-200 bg-violet-50 p-6 flex flex-col gap-4")
-                .child(h2("Head Contributions").css("text-2xl font-bold text-violet-700"))
+                .css(cardClass("p-6 flex flex-col gap-4"))
+                .child(sectionEyebrow("Head"))
+                .child(h2("Contribute document head nodes").css(titleClass()))
                 .child(p("Actions can inject nodes into the document <head> during rendering.")
-                        .css("text-base text-slate-700"))
+                        .css(bodyTextClass()))
                 .child(codeBlock(
                         ".contributeHead(ctx -> {\n"
                                 + "    ctx.add(meta().attr(\"name\", \"viewport\")\n"
@@ -94,24 +138,30 @@ public final class RuntimeActionsPage implements Component {
 
     private Node errorHandlingExample() {
         return section()
-                .css("rounded-lg border border-rose-200 bg-rose-50 p-6 flex flex-col gap-4")
-                .child(h2("Error Handling").css("text-2xl font-bold text-rose-700"))
-                .child(p("Exceptions in actions are routed to onError. If onError itself throws, the exception is logged to stderr — no infinite recursion.")
-                        .css("text-base text-slate-700"))
+                .css(cardClass("p-6 flex flex-col gap-4"))
+                .child(sectionEyebrow("Errors"))
+                .child(h2("Observe failures without leaking details").css(titleClass()))
+                .child(p("Exceptions in actions are routed to onError. If onError itself throws, the exception is logged to stderr and execution avoids recursive error handling.")
+                        .css(bodyTextClass()))
                 .child(ul()
-                        .css("list-disc pl-6 text-slate-700 text-sm flex flex-col gap-1")
-                        .child(li().child("Action exception → routed to onError(...)"))
-                        .child(li().child("onError exception → logged to stderr, execution continues"))
-                        .child(li().child("Original pipeline exception → re-thrown to caller"))
+                        .css(theme.darkMode()
+                                ? "list-disc pl-6 text-slate-300 text-sm flex flex-col gap-1"
+                                : "list-disc pl-6 text-slate-700 text-sm flex flex-col gap-1")
+                        .child(li().child("Action exception -> routed to onError(...)"))
+                        .child(li().child("onError exception -> logged to stderr, execution continues"))
+                        .child(li().child("Original pipeline exception -> re-thrown to caller"))
                         .child(li().child("Runtime integrity is always preserved")));
     }
 
     private Node enterprisePatterns() {
         return section()
-                .css("rounded-lg border border-amber-200 bg-amber-50 p-6 flex flex-col gap-4")
-                .child(h2("Enterprise Patterns").css("text-2xl font-bold text-amber-700"))
+                .css(cardClass("p-6 flex flex-col gap-4"))
+                .child(sectionEyebrow("Patterns"))
+                .child(h2("Enterprise usage patterns").css(titleClass()))
+                .child(p("These examples show where security, observability, SEO, and auditing concerns can attach without coupling the app to Netty, Servlet, or Spring APIs.")
+                        .css(bodyTextClass()))
                 .child(div()
-                        .css("grid grid-cols-2 gap-4")
+                        .css("grid grid-cols-1 md:grid-cols-2 gap-4")
                         .child(patternCard("Observability",
                                 ".afterRender(result -> {\n"
                                         + "    metrics.record(\"render.ms\",\n"
@@ -136,30 +186,57 @@ public final class RuntimeActionsPage implements Component {
                                         + "})")));
     }
 
-    private Node backLink() {
-        return p()
-                .css("text-sm text-slate-500")
-                .child(a("← Back to documentation").href("/docs"));
-    }
-
     private Node orderPill(String name, String value) {
         return div()
-                .css("rounded-lg bg-white border border-emerald-200 p-3 text-center flex flex-col gap-1")
-                .child(span(name).css("text-sm font-bold text-emerald-700"))
-                .child(span(value).css("text-xs text-slate-500"));
+                .css(theme.darkMode()
+                        ? "rounded-lg bg-slate-800 border border-slate-700 p-3 text-center flex flex-col gap-1"
+                        : "rounded-lg bg-slate-50 border border-slate-200 p-3 text-center flex flex-col gap-1")
+                .child(span(name).css(theme.darkMode()
+                        ? "text-sm font-bold text-primary-200"
+                        : "text-sm font-bold text-primary-700"))
+                .child(span(value).css(theme.darkMode() ? "text-xs text-slate-400" : "text-xs text-slate-500"));
     }
 
     private Node patternCard(String title, String code) {
         return div()
-                .css("rounded-lg bg-white border border-amber-200 p-4 flex flex-col gap-2")
-                .child(h3(title).css("text-lg font-bold text-amber-700"))
+                .css(theme.darkMode()
+                        ? "rounded-lg bg-slate-800 border border-slate-700 p-4 flex flex-col gap-3"
+                        : "rounded-lg bg-slate-50 border border-slate-200 p-4 flex flex-col gap-3")
+                .child(h3(title).css(theme.darkMode()
+                        ? "text-lg font-bold text-slate-100"
+                        : "text-lg font-bold text-slate-900"))
                 .child(codeBlock(code));
     }
 
     private Node codeBlock(String text) {
         return pre()
-                .css("bg-slate-800 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto")
+                .css("overflow-x-auto rounded-lg bg-slate-950 text-slate-100 p-5 text-xs font-mono border border-slate-800 shadow-inner leading-relaxed")
                 .child(code(text));
+    }
+
+    private Node sectionEyebrow(String label) {
+        return span(label).css(theme.darkMode()
+                ? "text-xs font-semibold uppercase text-primary-300"
+                : "text-xs font-semibold uppercase text-indigo-600");
+    }
+
+    private String cardClass(String layoutClasses) {
+        String base = theme.darkMode()
+                ? "rounded-lg border border-slate-800 bg-slate-900 shadow-sm "
+                : "rounded-lg border border-slate-200/60 bg-white shadow-sm ";
+        return base + layoutClasses;
+    }
+
+    private String titleClass() {
+        return theme.darkMode()
+                ? "text-xl font-bold text-slate-100"
+                : "text-xl font-bold text-slate-900";
+    }
+
+    private String bodyTextClass() {
+        return theme.darkMode()
+                ? "text-sm text-slate-300 leading-relaxed"
+                : "text-sm text-slate-600 leading-relaxed";
     }
 
     /**

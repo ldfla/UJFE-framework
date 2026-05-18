@@ -32,7 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ujfe.html.UI.*;
+import static ujfe.core.UI.*;
 
 final class UjfeHttpHandlerTest {
     static {
@@ -312,6 +312,36 @@ final class UjfeHttpHandlerTest {
     }
 
     @Test
+    void staticAssetRequestsReturnPlain404BeforePageRendering() {
+        try (LiveSession session = new LiveSession(new Router().register(new AssetLikePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            assertStaticAssetNotFound(send(channel, request(HttpMethod.GET, "/poster.png", "")));
+            assertStaticAssetNotFound(send(channel, request(HttpMethod.GET, "/demo.mp4", "")));
+            assertStaticAssetNotFound(send(channel, request(HttpMethod.GET, "/audio.mp3", "")));
+
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void unsafeStaticAssetPathIsRejectedWithoutRendering() {
+        try (LiveSession session = new LiveSession(new Router().register(new AssetLikePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            FullHttpResponse response;
+            try (CodecLogSilencer ignored = CodecLogSilencer.attach()) {
+                response = send(channel, request(HttpMethod.GET, "/assets/%2e%2e/secret.txt", ""));
+            }
+
+            assertEquals(HttpResponseStatus.BAD_REQUEST, response.status());
+            assertTrue(response.headers().get(HttpHeaderNames.CONTENT_TYPE).startsWith("text/plain"));
+            assertEquals("Invalid static asset path.", responseBody(response));
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
     void runtimeOnErrorObservesSafeStructuredErrorMetadata() {
         AtomicReference<RuntimeErrorContext> observed = new AtomicReference<>();
         LiveSessionConfig config = LiveSessionConfig.builder()
@@ -477,6 +507,14 @@ final class UjfeHttpHandlerTest {
         assertFalse(body.contains("/Users/"), body);
     }
 
+    private static void assertStaticAssetNotFound(FullHttpResponse response) {
+        assertEquals(HttpResponseStatus.NOT_FOUND, response.status());
+        assertTrue(response.headers().get(HttpHeaderNames.CONTENT_TYPE).startsWith("text/plain"));
+        assertEquals("Static asset not found.", responseBody(response));
+        assertFalse(responseBody(response).contains("UJFE_ROUTE_NOT_FOUND"));
+        assertFalse(responseBody(response).contains("No UJFE route registered"));
+    }
+
     private static String firstEventId(String html) {
         Matcher matcher = Pattern.compile("data-ujfe-event-click=\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "Expected rendered page to contain a click event id");
@@ -517,25 +555,38 @@ final class UjfeHttpHandlerTest {
         }
     }
 
+    @Page("/poster.png")
+    public static final class AssetLikePage {
+        public Node render() {
+            throw new IllegalStateException("asset-like route should not render");
+        }
+    }
+
     private static final class CodecLogSilencer implements AutoCloseable {
         private final Logger codecLogger;
         private final Logger errorLogger;
+        private final Logger staticAssetLogger;
         private final boolean codecUseParentHandlers;
         private final boolean errorUseParentHandlers;
+        private final boolean staticAssetUseParentHandlers;
 
-        private CodecLogSilencer(Logger codecLogger, Logger errorLogger) {
+        private CodecLogSilencer(Logger codecLogger, Logger errorLogger, Logger staticAssetLogger) {
             this.codecLogger = codecLogger;
             this.errorLogger = errorLogger;
+            this.staticAssetLogger = staticAssetLogger;
             this.codecUseParentHandlers = codecLogger.getUseParentHandlers();
             this.errorUseParentHandlers = errorLogger.getUseParentHandlers();
+            this.staticAssetUseParentHandlers = staticAssetLogger.getUseParentHandlers();
             this.codecLogger.setUseParentHandlers(false);
             this.errorLogger.setUseParentHandlers(false);
+            this.staticAssetLogger.setUseParentHandlers(false);
         }
 
         static CodecLogSilencer attach() {
             return new CodecLogSilencer(
                     Logger.getLogger(LiveHttpCodec.class.getName()),
-                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName())
+                    Logger.getLogger(ujfe.live.ErrorResponseRenderer.class.getName()),
+                    Logger.getLogger(ujfe.live.StaticAssetHandler.class.getName())
             );
         }
 
@@ -543,6 +594,7 @@ final class UjfeHttpHandlerTest {
         public void close() {
             codecLogger.setUseParentHandlers(codecUseParentHandlers);
             errorLogger.setUseParentHandlers(errorUseParentHandlers);
+            staticAssetLogger.setUseParentHandlers(staticAssetUseParentHandlers);
         }
     }
 

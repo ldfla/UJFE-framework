@@ -30,6 +30,7 @@ import ujfe.live.LiveCsrfException;
 import ujfe.live.LiveHttpRequestMetadata;
 import ujfe.live.LiveRateLimitException;
 import ujfe.live.SecurityHeadersConfig;
+import ujfe.live.StaticAssetHandler;
 import ujfe.live.UjfeErrorResponse;
 import ujfe.runtime.action.RuntimePhase;
 
@@ -88,6 +89,10 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                 return response(HttpResponseStatus.OK, "text/css; charset=utf-8", liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
             }
 
+            if (request.method().equals(HttpMethod.GET) && StaticAssetHandler.isStaticAssetPath(path)) {
+                return staticAssetResponse(path);
+            }
+
             if (request.method().equals(HttpMethod.POST) && LiveHttpPaths.EVENT.equals(path)) {
                 LiveHttpRequestMetadata metadata = createMetadata(context, request);
                 liveSession.checkInternalEndpointRateLimit(path, metadata);
@@ -115,6 +120,9 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             }
 
             if (request.method().equals(HttpMethod.GET)) {
+                if (!liveSession.hasRoute(path)) {
+                    return errorResponse(errorRenderer().routeNotFound(errorContext(request, path)));
+                }
                 String cookieHeader = request.headers().get(HttpHeaderNames.COOKIE);
                 String document = liveSession.renderDocument(path, ClientState.of(LiveHttpCodec.parseCookies(cookieHeader), Map.of()));
                 return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
@@ -249,6 +257,15 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         );
         error.retryAfterSeconds().ifPresent(seconds -> response.headers().set("Retry-After", Long.toString(seconds)));
         return response;
+    }
+
+    private FullHttpResponse staticAssetResponse(String path) {
+        if (StaticAssetHandler.isUnsafePath(path)) {
+            StaticAssetHandler.logRejected("netty", path);
+            return response(HttpResponseStatus.BAD_REQUEST, "text/plain; charset=utf-8", StaticAssetHandler.rejectedAssetBody());
+        }
+        StaticAssetHandler.logNotFound("netty", path);
+        return response(HttpResponseStatus.NOT_FOUND, "text/plain; charset=utf-8", StaticAssetHandler.missingAssetBody());
     }
 
     static void applySecurityHeaders(FullHttpResponse response) {
