@@ -3,6 +3,8 @@ package ujfe.live;
 import ujfe.core.ClientStatePolicy;
 import ujfe.core.CssTheme;
 import ujfe.core.Node;
+import ujfe.observability.ObservabilityConfig;
+import ujfe.observability.TraceSink;
 import ujfe.runtime.action.RuntimeActionRegistry;
 import ujfe.validation.ValidationMode;
 import ujfe.validation.ValidationOptions;
@@ -34,6 +36,7 @@ public final class LiveSessionConfig {
     private final Duration internalEndpointRateLimitRefillPeriod;
     private final Set<String> trustedProxyAddresses;
     private final ValidationOptions validationOptions;
+    private final ObservabilityConfig observabilityConfig;
 
     private LiveSessionConfig(Builder builder) {
         this.themeSupplier = builder.themeSupplier;
@@ -54,6 +57,7 @@ public final class LiveSessionConfig {
         this.internalEndpointRateLimitRefillPeriod = builder.internalEndpointRateLimitRefillPeriod;
         this.trustedProxyAddresses = Set.copyOf(builder.trustedProxyAddresses);
         this.validationOptions = builder.validationOptions;
+        this.observabilityConfig = builder.observabilityConfig;
     }
 
     public static LiveSessionConfig defaults() {
@@ -140,6 +144,10 @@ public final class LiveSessionConfig {
         return validationOptions;
     }
 
+    public ObservabilityConfig observabilityConfig() {
+        return observabilityConfig;
+    }
+
     public static final class Builder {
         private Supplier<CssTheme> themeSupplier = CssTheme::defaultTheme;
         private CssMode cssMode = CssMode.INTERNAL;
@@ -159,6 +167,7 @@ public final class LiveSessionConfig {
         private Duration internalEndpointRateLimitRefillPeriod = DEFAULT_INTERNAL_ENDPOINT_RATE_LIMIT_REFILL_PERIOD;
         private final Set<String> trustedProxyAddresses = new LinkedHashSet<>();
         private ValidationOptions validationOptions = ValidationOptions.off();
+        private ObservabilityConfig observabilityConfig = ObservabilityConfig.defaults();
 
         private Builder() {
         }
@@ -202,6 +211,18 @@ public final class LiveSessionConfig {
 
         public Builder runtimeActions(RuntimeActionRegistry runtimeActions) {
             this.runtimeActions = Objects.requireNonNull(runtimeActions, "runtimeActions");
+            return this;
+        }
+
+        public Builder observability(ObservabilityConfig observabilityConfig) {
+            this.observabilityConfig = Objects.requireNonNull(observabilityConfig, "observabilityConfig");
+            return this;
+        }
+
+        public Builder traceSink(TraceSink traceSink) {
+            this.observabilityConfig = ObservabilityConfig.builder()
+                .traceSink(traceSink)
+                .build();
             return this;
         }
 

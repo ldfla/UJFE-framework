@@ -33,7 +33,9 @@ final class ExamplePageRenderTest {
         String html = new SignalsPage(new AppTheme()).render().render();
 
         assertTrue(html.contains("<main"));
-        assertTrue(html.contains("Signals are the state primitive"));
+        assertTrue(html.contains("Signals for checkout state"));
+        assertTrue(html.contains("Checkout estimator"));
+        assertTrue(html.contains("cart, filters, form drafts, live previews"));
         assertTrue(html.contains("Signals.signal"));
         assertTrue(html.contains("Signals.computed"));
         assertTrue(html.contains("Computed signal contract"));
@@ -45,7 +47,8 @@ final class ExamplePageRenderTest {
 
         assertTrue(html.contains("<main"));
         assertTrue(html.contains("Lifecycle behavior explains"));
-        assertTrue(html.contains("event handlers update server state"));
+        assertTrue(html.contains("live order page"));
+        assertTrue(html.contains("subscribe to order updates"));
         assertTrue(html.contains("onUnmount"));
         assertTrue(html.contains("Route transition"));
     }

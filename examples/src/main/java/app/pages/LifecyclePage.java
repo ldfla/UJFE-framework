@@ -53,16 +53,16 @@ public final class LifecyclePage implements Component, Lifecycle {
         return section()
             .css(cardClass("p-8 sm:p-10 flex flex-col gap-6"))
             .child(span("Runtime lifecycle").css(kickerClass()))
-            .child(h1("Deterministic mount and cleanup for live server components")
+            .child(h1("Lifecycle for pages that open real server resources")
                 .css(heroTitleClass()))
-            .child(p("Lifecycle behavior explains when UJFE mounts component instances, when server events trigger re-rendering, and when cleanup runs during route transitions or session shutdown.")
+            .child(p("Lifecycle behavior explains what happens when a user opens a live page, clicks controls that update server state, and then navigates away. Use it for resources that need a clear start and cleanup point.")
                 .css(bodyClass("text-base max-w-3xl")))
             .child(
                 div()
                     .css("grid grid-cols-1 md:grid-cols-3 gap-4")
-                    .child(metric("Mount once", "Stable component instances do not remount on ordinary re-render."))
-                    .child(metric("Unmount once", "Removed components are cleaned up exactly once."))
-                    .child(metric("Runtime-safe", "Failures are routed through runtime error actions."))
+                    .child(metric("Open", "Start a subscription, observer, or handle when the page appears."))
+                    .child(metric("Update", "Event handlers update server state without recreating stable resources."))
+                    .child(metric("Cleanup", "Close resources on route change or session shutdown."))
             );
     }
 
@@ -78,18 +78,18 @@ public final class LifecyclePage implements Component, Lifecycle {
     private Node pageLifecyclePanel() {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
-            .child(h2("Page lifecycle").css(titleClass()))
-            .child(p("Rendering builds the component tree. Stable instances mount once, event handlers update server state, and re-rendering reads the latest state without remounting the same object.")
+            .child(h2("Order page lifecycle").css(titleClass()))
+            .child(p("A live order page renders the current order, mounts the page once, then event handlers update server state and trigger re-rendering. The mounted page instance is reused while the user stays on the same route.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css(codePanelClass())
-                    .child(p(() -> "Page mounts   : " + pageMounts.get()).css("font-semibold text-indigo-600"))
-                    .child(p(() -> "Page unmounts : " + pageUnmounts.get()).css(mutedTextClass()))
-                    .child(p(() -> "Refresh events: " + refreshes.get()).css(mutedTextClass()))
+                    .child(p(() -> "Order page mounted : " + pageMounts.get()).css("font-semibold text-indigo-600"))
+                    .child(p(() -> "Order page cleaned : " + pageUnmounts.get()).css(mutedTextClass()))
+                    .child(p(() -> "Status refreshes   : " + refreshes.get()).css(mutedTextClass()))
             )
             .child(
-                button("Refresh lifecycle view")
+                button("Refresh order timeline")
                     .css("w-full px-4 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm active:scale-[0.98] transition-all")
                     .onClick(() -> refreshes.update(value -> value + 1))
             );
@@ -99,14 +99,14 @@ public final class LifecyclePage implements Component, Lifecycle {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
             .child(h2("Cleanup pattern").css(titleClass()))
-            .child(p("Use onMount for server resources such as subscriptions, handles, or observers. Use onUnmount to release them when the component leaves the live tree.")
+            .child(p("Use onMount for work that should start when the live page becomes active: subscribe to order updates, attach an observer, or allocate a scoped handle. Use onUnmount to release it.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css(theme.darkMode()
                         ? "rounded-lg border border-indigo-800 bg-slate-950 p-6"
                         : "rounded-lg border border-indigo-100 bg-indigo-50 p-6")
-                    .child(strong("Avoid long blocking work inside lifecycle callbacks; start resources there and release them predictably in onUnmount.").css(theme.darkMode()
+                    .child(strong("Do not fetch a whole report or run slow business logic inside lifecycle callbacks. Start lightweight resources there and release them predictably in onUnmount.").css(theme.darkMode()
                         ? "text-sm text-indigo-200"
                         : "text-sm text-indigo-950"))
             );
@@ -116,7 +116,7 @@ public final class LifecyclePage implements Component, Lifecycle {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
             .child(h2("Route transition").css(titleClass()))
-            .child(p("Move to another route to unmount this page and its nested resource component. Return here to mount them again in the same server session.")
+            .child(p("Move to another route to unmount this order page and its live subscription. Return here to mount them again in the same server session.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()

@@ -1,6 +1,10 @@
 package ujfe.live;
 
 import ujfe.core.*;
+import ujfe.observability.EventTrace;
+import ujfe.observability.ObservabilityConfig;
+import ujfe.observability.RenderTrace;
+import ujfe.observability.TraceStatus;
 import ujfe.router.PageRenderer;
 import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
@@ -23,6 +27,7 @@ import static ujfe.core.UI.link;
 
 public final class LiveSession implements AutoCloseable {
     private static final Logger VALIDATION_LOGGER = Logger.getLogger(LiveSession.class.getName());
+    private static final LiveHttpRequestMetadata NO_HTTP_METADATA = new LiveHttpRequestMetadata(null, null, null, null);
 
     private final Router router;
     private final PageRenderer pageRenderer;
@@ -30,6 +35,7 @@ public final class LiveSession implements AutoCloseable {
     private final LiveComponentRenderer componentRenderer;
     private final LiveSessionConfig config;
     private final RuntimeActionRegistry runtimeActions;
+    private final ObservabilityConfig observability;
     private final LifecycleRuntime lifecycleRuntime;
     private final String csrfToken;
     private final String sessionId;
@@ -101,6 +107,7 @@ public final class LiveSession implements AutoCloseable {
         this.eventRegistry = Objects.requireNonNull(eventRegistry, "eventRegistry");
         this.config = Objects.requireNonNull(config, "config");
         this.runtimeActions = config.runtimeActions();
+        this.observability = config.observabilityConfig();
         this.lifecycleRuntime = LifecycleRuntime.create();
         this.componentRenderer = new LiveComponentRenderer(
             eventRegistry,
@@ -163,7 +170,7 @@ public final class LiveSession implements AutoCloseable {
     public LiveRenderResult renderPath(String path) {
         writeLock.lock();
         try {
-            return renderPathLocked(path, null);
+            return renderPathLocked(path, null, NO_HTTP_METADATA);
         } finally {
             writeLock.unlock();
         }
@@ -180,8 +187,13 @@ public final class LiveSession implements AutoCloseable {
     }
 
     private LiveRenderResult renderPathLocked(String path, String eventId) {
+        return renderPathLocked(path, eventId, NO_HTTP_METADATA);
+    }
+
+    private LiveRenderResult renderPathLocked(String path, String eventId, LiveHttpRequestMetadata metadata) {
         String traceId = nextTraceId();
-        Instant start = Instant.now();
+        Instant start = observability.clock()
+            .instant();
         RouteDefinition route;
         Object page;
 
@@ -190,6 +202,21 @@ public final class LiveSession implements AutoCloseable {
                 .orElseThrow(() -> new IllegalArgumentException("No UJFE route registered for " + path));
             page = pageFor(route);
         } catch (Exception exception) {
+            emitRenderTrace(RenderTrace.builder()
+                .traceId(traceId)
+                .requestId(requestId(metadata))
+                .route(path)
+                .httpMethod(method(metadata))
+                .httpStatus(404)
+                .adapterName(adapterName(metadata))
+                .startedAt(start)
+                .duration(durationSince(start))
+                .responseSizeBytes(0)
+                .status(TraceStatus.NOT_FOUND)
+                .errorCode(UjfeErrorCode.UJFE_ROUTE_NOT_FOUND.name())
+                .errorType(errorType(exception))
+                .source("routing")
+                .build());
             runtimeActions.executeOnError(new RuntimeErrorContext(
                 exception, RuntimePhase.ROUTING, path, null, traceId,
                 errorMetadata(UjfeErrorCode.UJFE_ROUTE_NOT_FOUND, 404, "routing")));
@@ -211,14 +238,42 @@ public final class LiveSession implements AutoCloseable {
         } catch (Exception exception) {
             lifecycleTracker.abort();
             routeRenderFailure(exception, route.path(), eventId, traceId);
+            emitRenderTrace(RenderTrace.builder()
+                .traceId(traceId)
+                .requestId(requestId(metadata))
+                .route(route.path())
+                .httpMethod(method(metadata))
+                .httpStatus(500)
+                .adapterName(adapterName(metadata))
+                .startedAt(start)
+                .duration(durationSince(start))
+                .responseSizeBytes(0)
+                .status(TraceStatus.SERVER_ERROR)
+                .errorCode(UjfeErrorCode.UJFE_RENDER_ERROR.name())
+                .errorType(errorType(exception))
+                .source("render")
+                .build());
             throw exception;
         }
 
-        Duration duration = Duration.between(start, Instant.now());
+        Duration duration = durationSince(start);
         RenderResult renderResult = new RenderResult(
             result.html(), result.css(), currentPath, duration, traceId,
             config.headNodes(), Map.of(), Map.of(), Map.of());
         runtimeActions.executeAfterRender(renderResult);
+        emitRenderTrace(RenderTrace.builder()
+            .traceId(traceId)
+            .requestId(requestId(metadata))
+            .route(currentPath)
+            .httpMethod(method(metadata))
+            .httpStatus(200)
+            .adapterName(adapterName(metadata))
+            .startedAt(start)
+            .duration(duration)
+            .responseSizeBytes(responseSize(result.html()))
+            .status(TraceStatus.SUCCESS)
+            .source("render")
+            .build());
 
         return result;
     }
@@ -255,6 +310,24 @@ public final class LiveSession implements AutoCloseable {
         try {
             LiveHttpSecurity.validateCsrf(config, csrfToken, metadata);
         } catch (RuntimeException exception) {
+            emitEventTrace(EventTrace.builder()
+                .traceId(traceId)
+                .requestId(requestId(metadata))
+                .route(currentPath)
+                .eventId(eventId)
+                .httpMethod(method(metadata))
+                .httpStatus(403)
+                .adapterName(adapterName(metadata))
+                .startedAt(observability.clock()
+                    .instant())
+                .duration(Duration.ZERO)
+                .responseSizeBytes(0)
+                .status(TraceStatus.FORBIDDEN)
+                .errorCode(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED.name())
+                .errorType(errorType(exception))
+                .handlerFound(false)
+                .handlerCompleted(false)
+                .build());
             runtimeActions.executeOnError(new RuntimeErrorContext(
                 exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
                 errorMetadata(UjfeErrorCode.UJFE_CSRF_VALIDATION_FAILED, 403, "csrf")));
@@ -262,6 +335,8 @@ public final class LiveSession implements AutoCloseable {
         }
 
         Instant start = Instant.now();
+        Instant traceStart = observability.clock()
+            .instant();
 
         ClientState eventClientState = clientState.mergeCookiesAndReplaceLocalStorage(filterClientState(nextClientState));
 
@@ -270,16 +345,41 @@ public final class LiveSession implements AutoCloseable {
         runtimeActions.executeBeforeEvent(eventContext);
 
         LiveRenderResult result;
+        boolean handlerFound = eventRegistry.find(eventId)
+            .isPresent();
+        boolean handlerCompleted = false;
+        Duration handlerDuration = Duration.ZERO;
         try {
             clientState = eventClientState;
-            if (eventRegistry.find(eventId)
-                .isEmpty()) {
-                result = renderPathLocked(currentPath, eventId);
+            if (!handlerFound) {
+                result = renderPathLocked(currentPath, eventId, metadata);
             } else {
+                Instant handlerStart = observability.clock()
+                    .instant();
                 componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId, eventValue));
-                result = renderPathLocked(currentPath, eventId);
+                handlerDuration = durationSince(handlerStart);
+                handlerCompleted = true;
+                result = renderPathLocked(currentPath, eventId, metadata);
             }
         } catch (Exception exception) {
+            handlerDuration = durationSince(traceStart);
+            emitEventTrace(EventTrace.builder()
+                .traceId(traceId)
+                .requestId(requestId(metadata))
+                .route(currentPath)
+                .eventId(eventId)
+                .httpMethod(method(metadata))
+                .httpStatus(500)
+                .adapterName(adapterName(metadata))
+                .startedAt(traceStart)
+                .duration(handlerDuration)
+                .responseSizeBytes(0)
+                .status(TraceStatus.SERVER_ERROR)
+                .errorCode(UjfeErrorCode.UJFE_EVENT_HANDLER_ERROR.name())
+                .errorType(errorType(exception))
+                .handlerFound(handlerFound)
+                .handlerCompleted(false)
+                .build());
             runtimeActions.executeOnError(new RuntimeErrorContext(
                 exception, RuntimePhase.EVENT, currentPath, eventId, traceId,
                 errorMetadata(UjfeErrorCode.UJFE_EVENT_HANDLER_ERROR, 500, "event")));
@@ -291,6 +391,21 @@ public final class LiveSession implements AutoCloseable {
             result.html(), eventId, duration, traceId,
             Map.of("eventType", "live"), Map.of("path", currentPath), clientStateMetadata(), Map.of());
         runtimeActions.executeAfterEvent(eventResult);
+        emitEventTrace(EventTrace.builder()
+            .traceId(traceId)
+            .requestId(requestId(metadata))
+            .route(currentPath)
+            .eventId(eventId)
+            .httpMethod(method(metadata))
+            .httpStatus(200)
+            .adapterName(adapterName(metadata))
+            .startedAt(traceStart)
+            .duration(handlerDuration)
+            .responseSizeBytes(responseSize(result.html()))
+            .status(handlerFound ? TraceStatus.SUCCESS : TraceStatus.NOT_FOUND)
+            .handlerFound(handlerFound)
+            .handlerCompleted(handlerCompleted)
+            .build());
 
         return result;
     }
@@ -319,7 +434,7 @@ public final class LiveSession implements AutoCloseable {
             throw exception;
         }
         mergeClientState(nextClientState);
-        return renderPathLocked(currentPath, null);
+        return renderPathLocked(currentPath, null, metadata);
     }
 
     public void reportHttpError(
@@ -331,25 +446,31 @@ public final class LiveSession implements AutoCloseable {
         Map<String, Object> requestMetadata,
         Map<String, Object> runtimeMetadata
     ) {
+        String effectiveTraceId = traceId == null || traceId.isBlank() ? nextTraceId() : traceId;
         runtimeActions.executeOnError(new RuntimeErrorContext(
             exception,
             phase,
             path,
             eventId,
-            traceId == null || traceId.isBlank() ? nextTraceId() : traceId,
+            effectiveTraceId,
             Map.of(),
             Map.of(),
             requestMetadata,
             Map.of("sessionReference", Integer.toHexString(sessionId.hashCode())),
             runtimeMetadata
         ));
+        emitHttpErrorTrace(phase, path, eventId, effectiveTraceId, requestMetadata, runtimeMetadata, exception);
     }
 
     public String renderDocument(String path, ClientState initialClientState) {
+        return renderDocument(path, initialClientState, NO_HTTP_METADATA);
+    }
+
+    public String renderDocument(String path, ClientState initialClientState, LiveHttpRequestMetadata metadata) {
         writeLock.lock();
         try {
             mergeClientState(initialClientState);
-            LiveRenderResult result = renderPathLocked(path, null);
+            LiveRenderResult result = renderPathLocked(path, null, metadata);
             String document = "<!doctype html>"
                 + "<html lang=\"" + AttributeEscaper.escape(config.lang()) + "\">"
                 + "<head>"
@@ -373,6 +494,27 @@ public final class LiveSession implements AutoCloseable {
         } finally {
             writeLock.unlock();
         }
+    }
+
+    public void reportRouteNotFound(String path, LiveHttpRequestMetadata metadata) {
+        String traceId = nextTraceId();
+        Instant start = observability.clock()
+            .instant();
+        emitRenderTrace(RenderTrace.builder()
+            .traceId(traceId)
+            .requestId(requestId(metadata))
+            .route(path)
+            .httpMethod(method(metadata))
+            .httpStatus(404)
+            .adapterName(adapterName(metadata))
+            .startedAt(start)
+            .duration(Duration.ZERO)
+            .responseSizeBytes(0)
+            .status(TraceStatus.NOT_FOUND)
+            .errorCode(UjfeErrorCode.UJFE_ROUTE_NOT_FOUND.name())
+            .errorType("routing")
+            .source("safe-error")
+            .build());
     }
 
     public String renderCss(Collection<String> classes) {
@@ -448,6 +590,143 @@ public final class LiveSession implements AutoCloseable {
             "httpStatus", httpStatus,
             "reason", reason
         );
+    }
+
+    private void emitHttpErrorTrace(
+        RuntimePhase phase,
+        String path,
+        String eventId,
+        String traceId,
+        Map<String, Object> requestMetadata,
+        Map<String, Object> runtimeMetadata,
+        Throwable exception
+    ) {
+        int httpStatus = intMetadata(runtimeMetadata, "httpStatus", 500);
+        String errorCode = stringMetadata(runtimeMetadata, "errorCode");
+        TraceStatus status = statusFor(httpStatus);
+        Instant startedAt = observability.clock()
+            .instant();
+        if (phase == RuntimePhase.EVENT) {
+            emitEventTrace(EventTrace.builder()
+                .traceId(traceId)
+                .requestId(stringMetadata(requestMetadata, "requestId"))
+                .route(path)
+                .eventId(eventId)
+                .httpMethod(stringMetadata(requestMetadata, "method"))
+                .httpStatus(httpStatus)
+                .adapterName(stringMetadata(requestMetadata, "adapter"))
+                .startedAt(startedAt)
+                .duration(Duration.ZERO)
+                .responseSizeBytes(0)
+                .status(status)
+                .errorCode(errorCode)
+                .errorType(errorType(exception))
+                .handlerFound(false)
+                .handlerCompleted(false)
+                .build());
+            return;
+        }
+        if (phase == RuntimePhase.RENDER || phase == RuntimePhase.ROUTING) {
+            emitRenderTrace(RenderTrace.builder()
+                .traceId(traceId)
+                .requestId(stringMetadata(requestMetadata, "requestId"))
+                .route(path)
+                .httpMethod(stringMetadata(requestMetadata, "method"))
+                .httpStatus(httpStatus)
+                .adapterName(stringMetadata(requestMetadata, "adapter"))
+                .startedAt(startedAt)
+                .duration(Duration.ZERO)
+                .responseSizeBytes(0)
+                .status(status)
+                .errorCode(errorCode)
+                .errorType(errorType(exception))
+                .source("safe-error")
+                .build());
+        }
+    }
+
+    private void emitRenderTrace(RenderTrace trace) {
+        if (!observability.renderTracesEnabled()) {
+            return;
+        }
+        try {
+            observability.traceSink()
+                .onRenderTrace(trace);
+        } catch (Exception exception) {
+            System.err.println("UJFE: trace sink failed for render trace: " + exception.getMessage());
+        }
+        runtimeActions.executeRenderTrace(trace);
+    }
+
+    private void emitEventTrace(EventTrace trace) {
+        if (!observability.eventTracesEnabled()) {
+            return;
+        }
+        try {
+            observability.traceSink()
+                .onEventTrace(trace);
+        } catch (Exception exception) {
+            System.err.println("UJFE: trace sink failed for event trace: " + exception.getMessage());
+        }
+        runtimeActions.executeEventTrace(trace);
+    }
+
+    private Duration durationSince(Instant start) {
+        return Duration.between(start, observability.clock()
+            .instant());
+    }
+
+    private static long responseSize(String html) {
+        return html == null ? 0 : html.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+    }
+
+    private static String adapterName(LiveHttpRequestMetadata metadata) {
+        return metadata == null ? null : metadata.adapterName()
+            .orElse(null);
+    }
+
+    private static String method(LiveHttpRequestMetadata metadata) {
+        return metadata == null ? null : metadata.method()
+            .orElse(null);
+    }
+
+    private static String requestId(LiveHttpRequestMetadata metadata) {
+        return metadata == null ? null : metadata.requestId()
+            .orElse(null);
+    }
+
+    private static String errorType(Throwable exception) {
+        return exception == null ? null : exception.getClass()
+            .getName();
+    }
+
+    private static TraceStatus statusFor(int httpStatus) {
+        if (httpStatus == 404) {
+            return TraceStatus.NOT_FOUND;
+        }
+        if (httpStatus == 403 || httpStatus == 401) {
+            return TraceStatus.FORBIDDEN;
+        }
+        if (httpStatus == 429) {
+            return TraceStatus.RATE_LIMITED;
+        }
+        if (httpStatus >= 400 && httpStatus < 500) {
+            return TraceStatus.CLIENT_ERROR;
+        }
+        if (httpStatus >= 500) {
+            return TraceStatus.SERVER_ERROR;
+        }
+        return TraceStatus.SUCCESS;
+    }
+
+    private static String stringMetadata(Map<String, Object> metadata, String key) {
+        Object value = metadata == null ? null : metadata.get(key);
+        return value instanceof String && !((String) value).isBlank() ? (String) value : null;
+    }
+
+    private static int intMetadata(Map<String, Object> metadata, String key, int fallback) {
+        Object value = metadata == null ? null : metadata.get(key);
+        return value instanceof Number ? ((Number) value).intValue() : fallback;
     }
 
     private String renderHeadNodes() {

@@ -1,6 +1,8 @@
 package ujfe.runtime.action;
 
 import ujfe.core.Node;
+import ujfe.observability.EventTrace;
+import ujfe.observability.RenderTrace;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,8 @@ public final class RuntimeActionRegistry {
     private final ActionChain<AfterEventAction> afterEvent;
     private final ActionChain<ErrorAction> onError;
     private final ActionChain<HeadContributionAction> contributeHead;
+    private final ActionChain<RenderTraceAction> renderTrace;
+    private final ActionChain<EventTraceAction> eventTrace;
 
     private RuntimeActionRegistry(Builder builder) {
         this.beforeRender = ActionChain.of(builder.beforeRender);
@@ -34,6 +38,8 @@ public final class RuntimeActionRegistry {
         this.afterEvent = ActionChain.of(builder.afterEvent);
         this.onError = ActionChain.of(builder.onError);
         this.contributeHead = ActionChain.of(builder.contributeHead);
+        this.renderTrace = ActionChain.of(builder.renderTrace);
+        this.eventTrace = ActionChain.of(builder.eventTrace);
     }
 
     /**
@@ -143,6 +149,36 @@ public final class RuntimeActionRegistry {
     }
 
     /**
+     * Executes render trace actions. Trace action failures are isolated from
+     * user rendering so observability cannot break normal requests.
+     */
+    public void executeRenderTrace(RenderTrace trace) {
+        Objects.requireNonNull(trace, "trace");
+        for (RenderTraceAction action : renderTrace.actions()) {
+            try {
+                action.execute(trace);
+            } catch (Exception exception) {
+                System.err.println("UJFE: render trace action failed: " + exception.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Executes event trace actions. Trace action failures are isolated from
+     * user event handling so observability cannot break normal requests.
+     */
+    public void executeEventTrace(EventTrace trace) {
+        Objects.requireNonNull(trace, "trace");
+        for (EventTraceAction action : eventTrace.actions()) {
+            try {
+                action.execute(trace);
+            } catch (Exception exception) {
+                System.err.println("UJFE: event trace action failed: " + exception.getMessage());
+            }
+        }
+    }
+
+    /**
      * Executes all {@link HeadContributionAction} actions and returns
      * the contributed nodes in insertion order.
      *
@@ -175,7 +211,9 @@ public final class RuntimeActionRegistry {
             && beforeEvent.isEmpty()
             && afterEvent.isEmpty()
             && onError.isEmpty()
-            && contributeHead.isEmpty();
+            && contributeHead.isEmpty()
+            && renderTrace.isEmpty()
+            && eventTrace.isEmpty();
     }
 
     private static RuntimeException propagate(Exception exception) {
@@ -193,6 +231,8 @@ public final class RuntimeActionRegistry {
         private final List<ActionChain.OrderedAction<AfterEventAction>> afterEvent = new ArrayList<>();
         private final List<ActionChain.OrderedAction<ErrorAction>> onError = new ArrayList<>();
         private final List<ActionChain.OrderedAction<HeadContributionAction>> contributeHead = new ArrayList<>();
+        private final List<ActionChain.OrderedAction<RenderTraceAction>> renderTrace = new ArrayList<>();
+        private final List<ActionChain.OrderedAction<EventTraceAction>> eventTrace = new ArrayList<>();
 
         protected Builder() {
         }
@@ -248,6 +288,24 @@ public final class RuntimeActionRegistry {
 
         public Builder contributeHead(ActionOrder order, HeadContributionAction action) {
             contributeHead.add(new ActionChain.OrderedAction<>(order, nextIndex++, action));
+            return this;
+        }
+
+        public Builder renderTrace(RenderTraceAction action) {
+            return renderTrace(ActionOrder.NORMAL, action);
+        }
+
+        public Builder renderTrace(ActionOrder order, RenderTraceAction action) {
+            renderTrace.add(new ActionChain.OrderedAction<>(order, nextIndex++, action));
+            return this;
+        }
+
+        public Builder eventTrace(EventTraceAction action) {
+            return eventTrace(ActionOrder.NORMAL, action);
+        }
+
+        public Builder eventTrace(ActionOrder order, EventTraceAction action) {
+            eventTrace.add(new ActionChain.OrderedAction<>(order, nextIndex++, action));
             return this;
         }
 
