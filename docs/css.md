@@ -29,6 +29,12 @@ LiveSessionConfig none = LiveSessionConfig.builder()
 
 Use `INTERNAL` for the bundled utility renderer, `EXTERNAL` for Tailwind, Bootstrap, design systems, CSS files, or CDN stylesheets, and `NONE` for tests, embedded rendering, or fully custom styling.
 
+## Dark Mode In Examples
+
+The example app controls dark mode through `AppTheme.darkMode()`. Shared layout and page components should branch on that value or use theme-aware helpers for surfaces, text, borders, code blocks, links, and buttons.
+
+Avoid unconditional light-only classes in example components that render inside the shared page shell. For example, a card should not always use `bg-white text-slate-900`; it should choose a dark branch such as `bg-slate-900 text-slate-100 border-slate-800` when dark mode is active. Code blocks should remain high contrast in both modes.
+
 ## Security And CSP
 
 The default standalone CSP allows same-origin scripts and framework style output. In `EXTERNAL` mode, keep stylesheets same-origin or deliberately extend `style-src`. In `NONE` mode, UJFE emits no framework CSS and does not require `/_ujfe/css` for styling.

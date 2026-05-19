@@ -20,10 +20,11 @@ public final class LifecyclePage implements Component, Lifecycle {
     private final Signal<Integer> pageMounts = Signals.signal(0);
     private final Signal<Integer> pageUnmounts = Signals.signal(0);
     private final Signal<Integer> refreshes = Signals.signal(0);
-    private final LifecycleResourceComponent resourceComponent = new LifecycleResourceComponent();
+    private final LifecycleResourceComponent resourceComponent;
 
     public LifecyclePage(AppTheme theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
+        this.resourceComponent = new LifecycleResourceComponent(theme::darkMode);
     }
 
     @Override
@@ -50,12 +51,12 @@ public final class LifecyclePage implements Component, Lifecycle {
 
     private Node hero() {
         return section()
-            .css("rounded-lg border border-slate-200/80 bg-white p-8 sm:p-10 shadow-sm flex flex-col gap-6")
-            .child(span("Runtime lifecycle").css("text-xs font-semibold uppercase text-indigo-600"))
+            .css(cardClass("p-8 sm:p-10 flex flex-col gap-6"))
+            .child(span("Runtime lifecycle").css(kickerClass()))
             .child(h1("Deterministic mount and cleanup for live server components")
-                .css("text-3xl sm:text-4xl font-extrabold text-slate-900 leading-none"))
-            .child(p("Lifecycle callbacks run on the server and are tied to live session rendering, route transitions, and session shutdown.")
-                .css("text-base text-slate-600 leading-relaxed max-w-3xl"))
+                .css(heroTitleClass()))
+            .child(p("Lifecycle behavior explains when UJFE mounts component instances, when server events trigger re-rendering, and when cleanup runs during route transitions or session shutdown.")
+                .css(bodyClass("text-base max-w-3xl")))
             .child(
                 div()
                     .css("grid grid-cols-1 md:grid-cols-3 gap-4")
@@ -76,14 +77,16 @@ public final class LifecyclePage implements Component, Lifecycle {
 
     private Node pageLifecyclePanel() {
         return div()
-            .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col gap-5")
-            .child(h2("Page lifecycle").css("text-lg font-bold text-slate-900"))
+            .css(cardClass("p-6 flex flex-col gap-5"))
+            .child(h2("Page lifecycle").css(titleClass()))
+            .child(p("Rendering builds the component tree. Stable instances mount once, event handlers update server state, and re-rendering reads the latest state without remounting the same object.")
+                .css(bodyClass("text-sm")))
             .child(
                 div()
-                    .css("flex flex-col gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-4 font-mono text-xs text-slate-600")
+                    .css(codePanelClass())
                     .child(p(() -> "Page mounts   : " + pageMounts.get()).css("font-semibold text-indigo-600"))
-                    .child(p(() -> "Page unmounts : " + pageUnmounts.get()).css("text-slate-500"))
-                    .child(p(() -> "Refresh events: " + refreshes.get()).css("text-slate-500"))
+                    .child(p(() -> "Page unmounts : " + pageUnmounts.get()).css(mutedTextClass()))
+                    .child(p(() -> "Refresh events: " + refreshes.get()).css(mutedTextClass()))
             )
             .child(
                 button("Refresh lifecycle view")
@@ -94,37 +97,87 @@ public final class LifecyclePage implements Component, Lifecycle {
 
     private Node cleanupPatternPanel() {
         return div()
-            .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col gap-5")
-            .child(h2("Cleanup pattern").css("text-lg font-bold text-slate-900"))
+            .css(cardClass("p-6 flex flex-col gap-5"))
+            .child(h2("Cleanup pattern").css(titleClass()))
             .child(p("Use onMount for server resources such as subscriptions, handles, or observers. Use onUnmount to release them when the component leaves the live tree.")
-                .css("text-sm text-slate-600 leading-relaxed"))
+                .css(bodyClass("text-sm")))
             .child(
                 div()
-                    .css("rounded-lg border border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-slate-50/20 p-6")
-                    .child(strong("No browser lifecycle hooks are required.").css("text-sm text-indigo-950"))
+                    .css(theme.darkMode()
+                        ? "rounded-lg border border-indigo-800 bg-slate-950 p-6"
+                        : "rounded-lg border border-indigo-100 bg-indigo-50 p-6")
+                    .child(strong("Avoid long blocking work inside lifecycle callbacks; start resources there and release them predictably in onUnmount.").css(theme.darkMode()
+                        ? "text-sm text-indigo-200"
+                        : "text-sm text-indigo-950"))
             );
     }
 
     private Node routeTransitionPanel() {
         return div()
-            .css("rounded-lg border border-slate-200/60 bg-white p-6 shadow-sm flex flex-col gap-5")
-            .child(h2("Route transition").css("text-lg font-bold text-slate-900"))
+            .css(cardClass("p-6 flex flex-col gap-5"))
+            .child(h2("Route transition").css(titleClass()))
             .child(p("Move to another route to unmount this page and its nested resource component. Return here to mount them again in the same server session.")
-                .css("text-sm text-slate-600 leading-relaxed"))
+                .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css("flex gap-3")
                     .child(a("Open runtime actions").attr("href", "/runtime-actions")
                         .css("px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-all"))
                     .child(a("Open docs").attr("href", "/docs")
-                        .css("px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm transition-all"))
+                        .css(theme.darkMode()
+                            ? "px-4 py-2 rounded-lg border border-slate-700 bg-slate-900 text-slate-100 font-medium text-sm transition-all"
+                            : "px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-sm transition-all"))
             );
     }
 
     private Node metric(String title, String body) {
         return div()
-            .css("rounded-lg border border-slate-100 bg-slate-50/50 p-5 flex flex-col gap-1.5")
-            .child(strong(title).css("text-sm font-semibold text-slate-900"))
-            .child(span(body).css("text-xs text-slate-500 leading-relaxed"));
+            .css(theme.darkMode()
+                ? "rounded-lg border border-slate-800 bg-slate-950 p-5 flex flex-col gap-1.5"
+                : "rounded-lg border border-slate-100 bg-slate-50/50 p-5 flex flex-col gap-1.5")
+            .child(strong(title).css(theme.darkMode()
+                ? "text-sm font-semibold text-slate-100"
+                : "text-sm font-semibold text-slate-900"))
+            .child(span(body).css(bodyClass("text-xs")));
+    }
+
+    private String cardClass(String extra) {
+        return (theme.darkMode()
+            ? "rounded-lg border border-slate-800 bg-slate-900 shadow-sm "
+            : "rounded-lg border border-slate-200/80 bg-white shadow-sm ") + extra;
+    }
+
+    private String kickerClass() {
+        return theme.darkMode()
+            ? "text-xs font-semibold uppercase text-primary-300"
+            : "text-xs font-semibold uppercase text-indigo-600";
+    }
+
+    private String heroTitleClass() {
+        return theme.darkMode()
+            ? "text-3xl sm:text-4xl font-extrabold text-slate-100 leading-none"
+            : "text-3xl sm:text-4xl font-extrabold text-slate-900 leading-none";
+    }
+
+    private String titleClass() {
+        return theme.darkMode()
+            ? "text-lg font-bold text-slate-100"
+            : "text-lg font-bold text-slate-900";
+    }
+
+    private String bodyClass(String size) {
+        return theme.darkMode()
+            ? size + " text-slate-300 leading-relaxed"
+            : size + " text-slate-600 leading-relaxed";
+    }
+
+    private String mutedTextClass() {
+        return theme.darkMode() ? "text-slate-300" : "text-slate-500";
+    }
+
+    private String codePanelClass() {
+        return theme.darkMode()
+            ? "flex flex-col gap-2.5 bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-xs text-slate-300"
+            : "flex flex-col gap-2.5 bg-slate-50 border border-slate-100 rounded-lg p-4 font-mono text-xs text-slate-600";
     }
 }

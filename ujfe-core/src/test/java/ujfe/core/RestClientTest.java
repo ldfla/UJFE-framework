@@ -12,6 +12,8 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class RestClientTest {
@@ -36,6 +40,33 @@ final class RestClientTest {
         assertTrue(response.successful());
         assertEquals("application/json", response.firstHeader("content-type")
             .orElseThrow());
+    }
+
+    @Test
+    void restResponseDefensivelyCopiesHeadersAndReportsFailures() {
+        Map<String, List<String>> headers = new LinkedHashMap<>();
+        headers.put("X-Test", new ArrayList<>(List.of("one", "two")));
+        RestResponse response = new RestResponse(503, "down", headers);
+        headers.put("X-Test", List.of("changed"));
+
+        assertFalse(response.successful());
+        assertEquals("one", response.firstHeader("x-test").orElseThrow());
+        assertThrows(UnsupportedOperationException.class, () -> putHeader(response.headers()));
+        assertThrows(IllegalStateException.class, response::requireSuccessful);
+        assertThrows(NullPointerException.class, () -> response.firstHeader(null));
+    }
+
+    @Test
+    void restClientRejectsNullInputsAndWrapsIoFailures() {
+        assertThrows(NullPointerException.class, () -> new RestClient(null, Duration.ofSeconds(1)));
+        assertThrows(NullPointerException.class, () -> new RestClient(new FakeHttpClient(200, "{}"), null));
+        assertThrows(NullPointerException.class, () -> RestClient.create(null));
+
+        RestClient client = new RestClient(new FailingHttpClient(), Duration.ofSeconds(1));
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+            () -> client.get(URI.create("https://example.test/fail")));
+
+        assertEquals("REST request failed", failure.getMessage());
     }
 
     private static final class FakeHttpClient extends HttpClient {
@@ -93,8 +124,7 @@ final class RestClientTest {
         }
 
         @Override
-        public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
-            throws IOException, InterruptedException {
+        public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) {
             @SuppressWarnings("unchecked")
             T typedBody = (T) body;
             return new FakeHttpResponse<>(request, statusCode, typedBody);
@@ -117,10 +147,81 @@ final class RestClientTest {
             throw new UnsupportedOperationException();
         }
 
+    }
+
+    private static final class FailingHttpClient extends HttpClient {
         @Override
-        public WebSocket.Builder newWebSocketBuilder() {
+        public Optional<CookieHandler> cookieHandler() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Duration> connectTimeout() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Redirect followRedirects() {
+            return Redirect.NEVER;
+        }
+
+        @Override
+        public Optional<ProxySelector> proxy() {
+            return Optional.empty();
+        }
+
+        @Override
+        public SSLContext sslContext() {
+            return null;
+        }
+
+        @Override
+        public SSLParameters sslParameters() {
+            return null;
+        }
+
+        @Override
+        public Optional<Authenticator> authenticator() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Version version() {
+            return Version.HTTP_1_1;
+        }
+
+        @Override
+        public Optional<Executor> executor() {
+            return Optional.empty();
+        }
+
+        @Override
+        public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
+            throws IOException {
+            throw new IOException("network unavailable");
+        }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(
+            HttpRequest request,
+            HttpResponse.BodyHandler<T> responseBodyHandler
+        ) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(
+            HttpRequest request,
+            HttpResponse.BodyHandler<T> responseBodyHandler,
+            HttpResponse.PushPromiseHandler<T> pushPromiseHandler
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+    }
+
+    private static void putHeader(Map<String, List<String>> headers) {
+        headers.put("other", List.of("value"));
     }
 
     private static final class FakeHttpResponse<T> implements HttpResponse<T> {

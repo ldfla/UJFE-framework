@@ -1,21 +1,40 @@
 # Changelog
 ## Unreleased
+
+## Version 0.24.0-SNAPSHOT - 18/05/2026
+
+- Updated the Maven project version to `0.24.0-SNAPSHOT`.
+- Adjusted the CHANGELOG.
+- Added JaCoCo module coverage reports, module-level coverage gates, aggregate coverage output, and local report-path logging in the Maven `verify` lifecycle.
+- Established initial coverage thresholds for `ujfe-core`, `ujfe-signals`, `ujfe-router`, `ujfe-live`, and `ujfe-http`.
+- Added focused coverage tests for core REST/theme behavior, router rendering/scanner error paths, example page rendering, dark-mode regressions, and BrasilAPI bank parsing without network calls.
+- Improved Documentation, Signals, Lifecycle, and lifecycle resource examples with clearer developer-oriented copy and dark-mode-compatible panels, cards, code blocks, and shared surfaces.
+- Documented local coverage workflows, CI enforcement, contributor guidance, example page expectations, and example dark-mode styling.
+
+## Version 0.23.0-SNAPSHOT - 18/05/2026
+
+- Updated the Maven project version to `0.23.0-SNAPSHOT`.
 - Improved `ujfe-cli convert` with stricter HTML parsing, doctype handling, entity decoding, comment policies, explicit unsafe fallback, and actionable file/encoding errors.
 - Preserved classes, generic attributes, boolean attributes, forms, tables, media tags, and custom elements in generated UJFE DSL output.
 - Added converter options for `--output`, `--class-name`, `--package`, `--comments`, `--unsafe-fallback`, `--css extract`, `--css-class-name`, `--componentize`, `--encoding`, `--safe-class-name`, and `--debug`.
 - Added generated CSS class output for inline and readable local stylesheet extraction, deterministic componentization for larger pages, and compile coverage for generated Java.
-- Added adapter-independent accessibility and SEO validation helpers in `ujfe-core`.
+
+## Version 0.22.0-SNAPSHOT - 18/05/2026
+
+- Updated the Maven project version to `0.22.0-SNAPSHOT`.
+- - Added adapter-independent accessibility and SEO validation helpers in `ujfe-core`.
 - Added `ValidationMode` support for `OFF`, `WARN`, and `STRICT`, with runtime validation off by default.
 - Added opt-in live runtime validation through `LiveSessionConfig`, Servlet properties, and Spring Boot validation properties.
 - Added stable validation findings with rule ids, severities, categories, messages, suggestions, element names, attributes, and selector-like locations.
 - Added documentation for accessibility validation, SEO validation, shared validation helpers, and strict validation in tests/CI.
 
-## Version 0.21.1 - 18/05/2026
+## Version 0.21.0-SNAPSHOT - 18/05/2026
+
 - Updated the Maven project version to `0.21.1-SNAPSHOT`.
 - Updated Netty to version 4.1.133-Final due DNS Cache Poisoning / Domain Validation Bypass / Denial of Service / Malformed DNS Packets
 - Vulnerability Type: CWE-20: Improper Input Validation / CWE-626: Null Byte Interaction Error / CWE-400: Uncontrolled Resource Consumption
 
-## Version 0.21.0 - 18/05/2026
+## Version 0.21.0-SNAPSHOT - 18/05/2026
 
 - Updated the Maven project version to `0.21.0-SNAPSHOT`.
 - Consolidated the HTML DSL, element model, safe URL handling, utility CSS renderer, and HTML tests into `ujfe-core`; removed the separate HTML Maven module from the reactor.
@@ -27,7 +46,7 @@
 - Added tests for CSS mode behavior, static asset routing, adapter behavior, and the HTML/core consolidation.
 - Documented CSS modes, static asset routing, runtime routing order, and the canonical core HTML APIs.
 
-## Version 0.20.0 - 18/05/2026
+## Version 0.20.0-SNAPSHOT - 18/05/2026
 
 - Updated the Maven project version to `0.20.0-SNAPSHOT`.
 - Added explicit `ClientStatePolicy` allowlists for cookies, local storage keys, and session storage keys.
@@ -38,7 +57,7 @@
 - Added direct tests for allowed/disallowed client state and documented merge semantics for `ClientState`.
 - Documented client state synchronization and security guidance in `docs/client-state.md` and `docs/security/client-state.md`.
 
-## Version 0.19.0 - 17/05/2026
+## Version 0.19.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.19.0-SNAPSHOT`.
 - Added typed `onInput(Consumer<String>)` and `onChange(Consumer<String>)` live event handlers while preserving existing runnable handlers.
@@ -48,7 +67,7 @@
 - Added live event tests for click, input, change, submit, value payloads, missing ids, and handler failures.
 - Added a runnable forms example under `/forms` and documented live form event semantics in `docs/live-events.md`.
 
-## Version 0.18.0 - 17/05/2026
+## Version 0.18.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.18.0-SNAPSHOT`.
 - Replaced `LiveSession` method-level `synchronized` locking with an explicit per-session `ReentrantReadWriteLock`.
@@ -57,7 +76,7 @@
 - Added stress-style concurrency tests for same-session events, independent sessions, signal update consistency, and coherent HTML output under contention.
 - Documented the live runtime concurrency model in `docs/runtime/concurrency.md`.
 
-## Version 0.17.0 - 17/05/2026
+## Version 0.17.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.17.0-SNAPSHOT`.
 - Added `SecurityHeadersConfig` for configurable secure HTTP headers across UJFE runtime adapters.
@@ -67,7 +86,7 @@
 - Updated the Spring adapter to avoid overwriting headers already set by Spring Security.
 - Documented secure HTTP header behavior in `docs/security/headers.md`.
 
-## Version 0.16.0 - 17/05/2026
+## Version 0.16.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.16.0-SNAPSHOT`.
 - Added shared safe error response rendering through `ErrorResponseRenderer`, `UjfeErrorCode`, and JSON error response bodies.
@@ -77,7 +96,7 @@
 - Routed safe error metadata through runtime `onError(...)` hooks without leaking details to clients.
 - Documented the shared safe error response policy in `docs/security/error-handling.md`.
 
-## Version 0.15.0 - 17/05/2026
+## Version 0.15.0-SNAPSHOT - 17/05/2026
 
 - Added application-level token bucket rate limiting for `/_ujfe/event` and `/_ujfe/state`.
 - Added session-based rate limit keys with safe IP fallback and explicit trusted proxy handling.
@@ -85,7 +104,7 @@
 - Added safe structured logging and runtime-neutral counters for allowed and rejected internal endpoint requests.
 - Documented internal endpoint rate limiting in `docs/security/rate-limiting.md`.
 
-## Version 0.14.0 - 17/05/2026
+## Version 0.14.0-SNAPSHOT - 17/05/2026
 
 - Standardized live HTTP JSON parsing, validation, serialization, payload limits, safe errors, and rejected-payload logging in `LiveHttpCodec`.
 - Updated Netty, Jakarta Servlet, and Spring MVC runtime adapters to reuse the shared live codec for `/_ujfe/event` and `/_ujfe/state`.
@@ -100,11 +119,11 @@
 - Added configuration option `disableCsrfProtectionForDevelopmentUnsafe` for local development.
 - Documented CSRF protection architecture in `docs/security/csrf.md`.
 
-## Version 0.13.0 - 17/05/2026
+## Version 0.13.0-SNAPSHOT - 17/05/2026
 
 - Fixed Live HTTP JSON Codec issues under [UJFE-013].
 
-## Version 0.12.0 - 17/05/2026
+## Version 0.12.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.12.0-SNAPSHOT`.
 - Added the `ujfe-servlet` module with `UjfeServlet` for standalone Jakarta Servlet deployments without Spring Boot or Netty.
@@ -118,7 +137,7 @@
 - Documented the standalone Servlet runtime in `docs/runtime/servlet.md` with setup, route ownership, configuration, endpoint behavior, security notes, and troubleshooting guidance.
 - Added a plain Servlet/Tomcat example under `examples/servlet-tomcat`.
 
-## Version 0.11.0 - 17/05/2026
+## Version 0.11.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.11.0-SNAPSHOT`.
 - Added the `RouteSource` abstraction for deterministic route metadata sources.
@@ -131,7 +150,7 @@
 - Documented router behavior in `docs/router.md` and the AOT route metadata direction in `docs/aot-roadmap.md`.
 - Added router source examples under `examples/router` and updated the example app to wire routes through `ManualRouteSource`.
 
-## Version 0.10.0 - 17/05/2026
+## Version 0.10.0-SNAPSHOT - 17/05/2026
 
 - Updated the Maven project version to `0.10.0-SNAPSHOT`.
 - Defined computed signal semantics for lazy evaluation, caching, dependency tracking, invalidation, subscribers, exceptions, circular dependencies, and concurrency.
@@ -143,7 +162,7 @@
 - Documented the signal model in `docs/signals.md`.
 - Added a runnable signals example route at `/signals` and documented it under `examples/signals`.
 
-## Version 0.9.0 - 16/05/2026
+## Version 0.9.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.9.0-SNAPSHOT`.
 - Added the `ujfe.runtime.lifecycle` package with `LifecycleRuntime`, `LifecycleRegistry`, `LifecycleTracker`, `MountedComponent`, lifecycle state, context, and event classes.
@@ -156,7 +175,7 @@
 - Added a runnable lifecycle example route at `/lifecycle` and documented it under `examples/lifecycle`.
 - Documented the server-side lifecycle model in `docs/lifecycle.md`.
 
-## Version 0.8.0 - 16/05/2026
+## Version 0.8.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.8.0-SNAPSHOT`.
 - Introduced server-side runtime extension points in the new `ujfe.runtime.action` package.
@@ -179,7 +198,7 @@
 - Added `RuntimeActionsPage` example page at `/runtime-actions`.
 
 
-## Version 0.7.0 - 16/05/2026
+## Version 0.7.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.7.0-SNAPSHOT`.
 - Introduced `UrlPolicy` for configurable URL scheme handling with secure defaults.
@@ -191,7 +210,7 @@
 - Documented the `data:image/*` MIME prefix validation limitation.
 - Documented the SafeUrl policy in `docs/security/safe-url.md`.
 
-## Version 0.6.0 - 16/05/2026
+## Version 0.6.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.6.0-SNAPSHOT`.
 - Hardened the generic attribute model with inline event handler blocking.
@@ -201,7 +220,7 @@
 - Documented the attribute validation rules in `docs/html/attributes.md`.
 - Documented the security rationale for inline event handler blocking in `docs/security/attribute-validation.md`.
 
-## Version 0.5.0 - 16/05/2026
+## Version 0.5.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.5.0-SNAPSHOT`.
 - Added the explicit unsafe raw HTML APIs `unsafeHtml(...)` and `UnsafeHtml.of(...)`.
@@ -209,7 +228,7 @@
 - Added tests proving safe text remains escaped and unsafe HTML renders raw content only through unsafe-named APIs.
 - Refined the example documentation page with stronger security guidance and a cleaner visual structure.
 
-## Version 0.4.0 - 16/05/2026
+## Version 0.4.0-SNAPSHOT - 16/05/2026
 
 - Updated the Maven project version to `0.4.0-SNAPSHOT`.
 - Added reusable `HtmlElementMetadata` for standard HTML void element behavior.
@@ -217,7 +236,7 @@
 - Reused centralized void element metadata in the CLI HTML parser.
 - Documented HTML void element rendering rules in `docs/html/void-elements.md`.
 
-## Version 0.3.0 - 16/05/2024
+## Version 0.3.0-SNAPSHOT - 16/05/2024
 
 - Updated the Maven project version to `0.3.0-SNAPSHOT`.
 - Added standard HTML helper coverage tests for required tags, void rendering, normal closing tags, text escaping, and nested children.
@@ -225,14 +244,15 @@
 - Updated Netty to `4.1.132.Final` to keep the HTTP runtime on the current non-vulnerable Netty line.
 - Removed empty-string snippet concatenation patterns from example pages.
 
-## Version 0.2.0 - 16/05/2024
+## Version 0.2.0-SNAPSHOT - 16/05/2024
 
 - Updated the Maven project version to `0.2.0-SNAPSHOT`.
 - Added centralized HTML tag-name validation for `Element.of(...)`.
 - Added generic SVG and MathML namespace factories through `Element.svg(...)` and `Element.mathMl(...)`.
 - Documented generic element compatibility for current HTML, future HTML, custom elements, Web Components, SVG, and MathML.
 
-## Version 0.1.0 - 16/05/2024
+## Version 0.1.0-SNAPSHOT - 16/05/2024
+
 - Consolidated the UJFE project identity around the tagline "Modern Reactive UI Framework for the JVM".
 - Documented UJFE's core principles: HTML-first, standards-first, Java-first, server-first, safe by default, CSS agnostic, and no required Node.js toolchain.
 - Documented UJFE's non-goals in the README, vision, and principles documentation.
