@@ -6,11 +6,15 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.23.0-SNAPSHOT</version>
+        <version>0.24.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-http</artifactId>
     <name>UJFE HTTP Runtime</name>
+
+    <properties>
+        <jacoco.minimum.line.coverage>0.70</jacoco.minimum.line.coverage>
+    </properties>
 
     <dependencies>
         <dependency>

@@ -6,11 +6,15 @@
     <parent>
         <groupId>dev.ujfe</groupId>
         <artifactId>ujfe</artifactId>
-        <version>0.23.0-SNAPSHOT</version>
+        <version>0.24.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>ujfe-examples</artifactId>
     <name>UJFE Examples</name>
+
+    <properties>
+        <jacoco.minimum.line.coverage>0.00</jacoco.minimum.line.coverage>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -37,6 +41,11 @@
             <groupId>dev.ujfe</groupId>
             <artifactId>ujfe-http</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

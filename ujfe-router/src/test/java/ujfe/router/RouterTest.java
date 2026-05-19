@@ -9,6 +9,7 @@ import ujfe.router.source.ManualRouteSource;
 import ujfe.router.source.ReflectionPageScanner;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -235,6 +236,42 @@ final class RouterTest {
             .contains("render() must return ujfe.core.Node"));
     }
 
+    @Test
+    void pageRendererRejectsInvalidPagesWithActionableMessages() {
+        PageRenderer renderer = new PageRenderer();
+
+        IllegalStateException missing = assertThrows(IllegalStateException.class,
+            () -> renderer.render(new NoRenderPage()));
+        assertTrue(missing.getMessage().contains("public render()"));
+
+        IllegalStateException invalidReturn = assertThrows(IllegalStateException.class,
+            () -> renderer.render(new InvalidRenderPage()));
+        assertTrue(invalidReturn.getMessage().contains("render() must return ujfe.core.Node"));
+    }
+
+    @Test
+    void pageRendererPropagatesRuntimeFailuresAndWrapsCheckedFailures() {
+        PageRenderer renderer = new PageRenderer();
+
+        IllegalArgumentException runtime = assertThrows(IllegalArgumentException.class,
+            () -> renderer.render(new RuntimeFailingPage()));
+        assertEquals("bad page", runtime.getMessage());
+
+        IllegalStateException checked = assertThrows(IllegalStateException.class,
+            () -> renderer.render(new CheckedFailingPage()));
+        assertTrue(checked.getMessage().contains("render() failed"));
+        assertEquals("checked page", checked.getCause().getMessage());
+    }
+
+    @Test
+    void scannerRejectsNullAndBlankPackageInputs() {
+        assertThrows(NullPointerException.class, () -> ReflectionPageScanner.forPackages((String[]) null));
+        assertThrows(NullPointerException.class, () -> ReflectionPageScanner.forPackages("ujfe.router", null));
+        assertThrows(IllegalArgumentException.class, () -> ReflectionPageScanner.forPackages(" "));
+        assertThrows(NullPointerException.class, () -> new ReflectionPageScanner((Class<?>[]) null));
+        assertThrows(NullPointerException.class, () -> new ReflectionPageScanner(AboutPage.class, null));
+    }
+
     private static List<String> routePaths(Router router) {
         return router.routes()
             .stream()
@@ -294,6 +331,7 @@ final class RouterTest {
     @Page("/constructor")
     public static final class ConstructorOnlyPage {
         ConstructorOnlyPage(String name) {
+            Objects.requireNonNull(name, "name");
         }
 
         public Node render() {
@@ -317,6 +355,18 @@ final class RouterTest {
         @Override
         public Node render() {
             return p("Component");
+        }
+    }
+
+    public static final class RuntimeFailingPage {
+        public Node render() {
+            throw new IllegalArgumentException("bad page");
+        }
+    }
+
+    public static final class CheckedFailingPage {
+        public Node render() throws Exception {
+            throw new Exception("checked page");
         }
     }
 }

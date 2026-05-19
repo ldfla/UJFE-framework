@@ -53,14 +53,16 @@ public final class DocumentationPage implements Component {
 
     private Node sidebar() {
         return aside()
-            .css("rounded-lg border border-slate-200 bg-white p-4 shadow-sm")
+            .css(panelClass("p-4"))
             .child(nav()
                 .css("flex flex-col gap-3")
-                .child(h2("Documentation map").css("text-xl font-bold text-primary-700"))
-                .child(p("Visual API reference for elements, forms, CSS, integrations, and security behavior.")
-                    .css("text-sm text-slate-700 leading-relaxed"))
+                .child(h2("Documentation map").css(sectionTitleClass("text-xl")))
+                .child(p("Use this page as a guided map through UJFE concepts: page declaration, routing, CSS modes, live endpoints, runtime lifecycle, and security defaults.")
+                    .css(bodyTextClass("text-sm")))
                 .child(ul()
-                    .css("flex flex-col gap-2 text-sm text-slate-700")
+                    .css(theme.darkMode()
+                        ? "flex flex-col gap-2 text-sm text-slate-300"
+                        : "flex flex-col gap-2 text-sm text-slate-700")
                     .child(le().child(strong("Theme"))
                         .child(" with dynamic primary/secondary palettes"))
                     .child(le().child(strong("Modern Java"))
@@ -93,10 +95,12 @@ public final class DocumentationPage implements Component {
 
     private Node introSection() {
         return section()
-            .css("rounded-lg border border-primary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("How to read this page").css("text-2xl font-bold text-primary-700"))
-            .child(p("Each block shows the rendered result and the equivalent Java code. The DSL uses Element.of(...) as universal support for HTML and Web Components, Element.svg(...) and Element.mathMl(...) for namespaced generic tags, helpers as convenience methods, and generic attributes through attr(...).")
-                .css("text-base text-slate-700 leading-relaxed"))
+            .css(panelClass("p-6 flex flex-col gap-4"))
+            .child(h2("How to use UJFE documentation").css(sectionTitleClass("text-2xl")))
+            .child(p("UJFE is a server-rendered Java UI framework. Declare pages with @Page, register them in a Router, render standard HTML through the DSL, and use live endpoints when server-side events need to update the browser.")
+                .css(bodyTextClass("text-base")))
+            .child(p("Each block shows the rendered result and the equivalent Java code. The examples favor the current public API: helpers from ujfe.core.UI, Element.of(...) for generic tags, Signals.signal(...) for live state, and LiveSession for routing plus event dispatch.")
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -109,10 +113,10 @@ public final class DocumentationPage implements Component {
 
     private Node themeSection() {
         return section()
-            .css("rounded-lg border border-primary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Dynamic theme").css("text-2xl font-bold text-primary-700"))
+            .css(panelClass("p-6 flex flex-col gap-4"))
+            .child(h2("CSS modes and dynamic theme").css(sectionTitleClass("text-2xl")))
             .child(p(() -> "Primary: " + theme.primaryColor() + " | Secondary: " + theme.secondaryColor())
-                .css("text-sm font-mono text-slate-700"))
+                .css(theme.darkMode() ? "text-sm font-mono text-slate-300" : "text-sm font-mono text-slate-700"))
             .child(
                 div()
                     .css("flex flex-wrap gap-2")
@@ -137,17 +141,17 @@ public final class DocumentationPage implements Component {
 
     private Node modernJavaSection() {
         return section()
-            .css("rounded-lg border border-secondary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Modern Java examples").css("text-2xl font-bold text-secondary-700"))
+            .css(panelClass("p-6 flex flex-col gap-4"))
+            .child(h2("Modern Java examples").css(sectionTitleClass("text-2xl")))
             .child(p("UJFE examples prefer modern Java syntax where it improves clarity: var for local values, records for small immutable view models, streams and lambdas for declarative collection mapping, and switch expressions for compact branching.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(codeBlock(modernJavaCode()));
     }
 
     private Node colorScale(String title, String palette) {
         return div()
-            .css("rounded-lg border border-slate-200 bg-white p-3 flex flex-col gap-2")
-            .child(h3(title).css("text-lg font-bold text-slate-900"))
+            .css(panelClass("p-3 flex flex-col gap-2"))
+            .child(h3(title).css(theme.darkMode() ? "text-lg font-bold text-slate-100" : "text-lg font-bold text-slate-900"))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-2")
@@ -473,25 +477,47 @@ public final class DocumentationPage implements Component {
 
     private Node docCard(String title, String description, String code, Node preview) {
         return div()
-            .css("rounded-lg border border-slate-200 bg-white p-5 shadow-sm flex flex-col gap-3")
-            .child(h3(title).css("text-xl font-bold text-primary-700"))
-            .child(p(description).css("text-sm text-slate-700 leading-relaxed"))
-            .child(div().css("rounded-md border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2")
+            .css(panelClass("p-5 flex flex-col gap-3"))
+            .child(h3(title).css(sectionTitleClass("text-xl")))
+            .child(p(description).css(bodyTextClass("text-sm")))
+            .child(div().css(theme.darkMode()
+                ? "rounded-md border border-slate-800 bg-slate-950 p-3 flex flex-col gap-2"
+                : "rounded-md border border-slate-200 bg-slate-50 p-3 flex flex-col gap-2")
                 .child(preview))
             .child(codeBlock(code));
     }
 
     private Node cssPill(String title, String body) {
         return div()
-            .css("rounded-lg border border-primary-200 bg-white p-3 flex flex-col gap-1")
-            .child(strong(title).css("text-primary-700"))
-            .child(span(body).css("text-xs text-slate-600 font-mono"));
+            .css(theme.darkMode()
+                ? "rounded-lg border border-primary-800 bg-slate-950 p-3 flex flex-col gap-1"
+                : "rounded-lg border border-primary-200 bg-white p-3 flex flex-col gap-1")
+            .child(strong(title).css(theme.darkMode() ? "text-primary-200" : "text-primary-700"))
+            .child(span(body).css(theme.darkMode() ? "text-xs text-slate-300 font-mono" : "text-xs text-slate-600 font-mono"));
     }
 
     private Node codeBlock(String codeSample) {
         return pre()
-            .css("overflow-x-auto rounded-lg bg-zinc-950 text-zinc-50 p-4 text-sm font-mono")
+            .css("overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950 text-zinc-50 p-4 text-sm font-mono")
             .child(code(codeSample).css("font-mono"));
+    }
+
+    private String panelClass(String extra) {
+        return (theme.darkMode()
+            ? "rounded-lg border border-slate-800 bg-slate-900 shadow-sm "
+            : "rounded-lg border border-slate-200 bg-white shadow-sm ") + extra;
+    }
+
+    private String sectionTitleClass(String size) {
+        return theme.darkMode()
+            ? size + " font-bold text-primary-200"
+            : size + " font-bold text-primary-700";
+    }
+
+    private String bodyTextClass(String size) {
+        return theme.darkMode()
+            ? size + " text-slate-300 leading-relaxed"
+            : size + " text-slate-700 leading-relaxed";
     }
 
     private Node layoutPreview() {
