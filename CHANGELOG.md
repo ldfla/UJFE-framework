@@ -1,6 +1,9 @@
 # Changelog
 ## Unreleased
 
+## Version 0.25.0-SNAPSHOT - 18/05/2026
+
+- Updated the Maven project version to `0.25.0-SNAPSHOT`.
 - Added dependency-free observability traces for render and live event operations, including safe status, duration, route, response size, adapter, request id, and error metadata.
 - Added `TraceSink`, `ObservabilityConfig`, no-op/composite sinks, and runtime action integration through `renderTrace(...)` and `eventTrace(...)`.
 - Documented trace privacy boundaries, cardinality guidance, testing patterns, and the future Spring/Micrometer adapter path without adding metrics dependencies to `ujfe-core`.
