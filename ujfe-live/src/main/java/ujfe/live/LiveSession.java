@@ -272,8 +272,13 @@ public final class LiveSession implements AutoCloseable {
         LiveRenderResult result;
         try {
             clientState = eventClientState;
-            componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId, eventValue));
-            result = renderPathLocked(currentPath, eventId);
+            if (eventRegistry.find(eventId)
+                .isEmpty()) {
+                result = renderPathLocked(currentPath, eventId);
+            } else {
+                componentRenderer.handleWithClientState(clientState, () -> eventRegistry.handle(eventId, eventValue));
+                result = renderPathLocked(currentPath, eventId);
+            }
         } catch (Exception exception) {
             runtimeActions.executeOnError(new RuntimeErrorContext(
                 exception, RuntimePhase.EVENT, currentPath, eventId, traceId,

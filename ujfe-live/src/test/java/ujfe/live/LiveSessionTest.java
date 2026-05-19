@@ -46,6 +46,30 @@ final class LiveSessionTest {
     }
 
     @Test
+    void staleEventIdRendersCurrentPathWithoutServerError() {
+        Router router = new Router()
+            .register(new CounterPage())
+            .register(new SecondCssPage());
+
+        try (LiveSession session = new LiveSession(router)) {
+            String document = session.renderDocument("/", ClientState.empty());
+            String staleEventId = extractEventId(document);
+            session.renderPath("/two");
+
+            LiveRenderResult result = session.handleEvent(
+                staleEventId,
+                ClientState.empty(),
+                new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")
+            );
+
+            assertTrue(result.html()
+                .contains("Two"));
+            assertFalse(result.html()
+                .contains("Counter: 1"));
+        }
+    }
+
+    @Test
     void rejectsEventDispatchWithoutHttpMetadataWhenCsrfIsEnabled() {
         try (LiveSession session = new LiveSession(new Router().register(new CounterPage()))) {
             String document = session.renderDocument("/", ClientState.empty());

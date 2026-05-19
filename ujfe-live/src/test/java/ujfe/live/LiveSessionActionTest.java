@@ -161,12 +161,17 @@ final class LiveSessionActionTest {
                 .name()))
             .build();
 
-        try (LiveSession session = sessionWithActions(actions)) {
-            assertThrows(IllegalArgumentException.class,
-                () -> session.handleEvent("nonexistent-event", ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
+        LiveSessionConfig config = LiveSessionConfig.builder()
+            .runtimeActions(actions)
+            .build();
+        try (LiveSession session = new LiveSession(new Router().register(new FailingClickablePage()), config)) {
+            String eventId = extractEventId(session.renderDocument("/", ClientState.empty()));
+
+            assertThrows(IllegalStateException.class,
+                () -> session.handleEvent(eventId, ClientState.empty(), new LiveHttpRequestMetadata(session.csrfToken(), "http://localhost", null, "localhost", "http")));
         }
         assertTrue(errors.stream()
-            .anyMatch(e -> e.contains("EVENT") || e.contains("RENDER")));
+            .anyMatch(e -> e.contains("EVENT")));
     }
 
     // --- Head contributions ---
@@ -289,6 +294,18 @@ final class LiveSessionActionTest {
             return div()
                 .child(p("Hello"))
                 .child(button("Click").onClick(() -> {
+                }));
+        }
+    }
+
+    @Page("/")
+    public static final class FailingClickablePage implements Component {
+        @Override
+        public Node render() {
+            return div()
+                .child(p("Hello"))
+                .child(button("Click").onClick(() -> {
+                    throw new IllegalStateException("event failed");
                 }));
         }
     }
