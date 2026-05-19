@@ -4,7 +4,7 @@ Use UJFE validation helpers in tests when rendered HTML structure is part of the
 
 ## Coverage
 
-`mvn clean verify` runs the full test suite, generates JaCoCo reports, and enforces the module-level coverage gates used by CI. The GitHub workflow also runs `./mvnw -B verify --file pom.xml`, so a local coverage failure is expected to fail pull requests in the same way.
+`./mvnw clean verify` runs the full test suite, generates JaCoCo reports, and enforces the module-level coverage gates used by CI. The GitHub workflow also runs `./mvnw -B verify --file pom.xml`, so a local coverage failure is expected to fail pull requests in the same way. Use the project Maven wrapper for contributor verification instead of a globally installed Maven.
 
 Module reports are written to:
 
@@ -33,6 +33,18 @@ Current line coverage thresholds:
 Additional modules currently inherit the default coverage check and generate reports, but they do not set a non-zero gate until their API surface stabilizes enough for a meaningful baseline. This includes adapter/example/CLI modules where coverage is still being shaped by integration behavior and example-only rendering code. Do not exclude production code to pass a threshold. Acceptable exclusions should be narrow, documented in the POM near the JaCoCo configuration, and limited to generated code, build metadata, pure constants-only classes, CLI launcher boilerplate, or explicitly example-only code.
 
 When coverage fails, open the module report, identify untested behavior that matters, and add deterministic tests. Prefer behavior assertions over tests that only execute lines. Tests must not call external services, depend on current dates, require credentials, or rely on machine-specific paths.
+
+## Concurrency Stress Tests
+
+`ujfe-live` uses deterministic stress-style tests as the CI baseline for session concurrency. They cover same-session event serialization, independent-session overlap, signal update consistency under contention, and coherent HTML output after concurrent event handling.
+
+Run the focused concurrency checks with:
+
+```bash
+./mvnw -pl ujfe-live -Dtest=LiveSessionConcurrencyTest test
+```
+
+These tests intentionally avoid wall-clock performance thresholds because timing-sensitive microbenchmarks are noisy across developer machines and CI runners. A regression is a lost update, inconsistent rendered output, blocked independent-session overlap, or a deadlock/timeout in the deterministic stress scenario. Dedicated benchmark comparisons should live in a separate non-gating benchmark task if the project needs performance trend data.
 
 ## Strict Validation
 

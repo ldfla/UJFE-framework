@@ -83,12 +83,20 @@ final class SafeUrlPolicyTest {
     }
 
     @Test
+    void allowsDataImageJpeg() {
+        assertDoesNotThrow(() -> img().src("data:image/jpeg;base64,/9j/"));
+    }
+
+    @Test
     void allowsDataImageWebp() {
         assertDoesNotThrow(() -> img().src("data:image/webp;base64,UklGR"));
     }
 
     @Test
     void allowsDataImageSvgXml() {
+        // SVG data URLs remain allowed by the current default policy for
+        // compatibility, but docs flag them as a separate hardening concern
+        // because SVG is markup rather than a raster image format.
         assertDoesNotThrow(() -> img().src("data:image/svg+xml;base64,PHN2Zw=="));
     }
 
@@ -127,6 +135,12 @@ final class SafeUrlPolicyTest {
     void blocksDataApplicationJavascript() {
         assertThrows(IllegalArgumentException.class,
             () -> img().src("data:application/javascript,alert(1)"));
+    }
+
+    @Test
+    void blocksMalformedDataImageWithoutMimeSeparator() {
+        assertThrows(IllegalArgumentException.class,
+            () -> img().src("data:image/pngbase64,iVBOR"));
     }
 
     @Test

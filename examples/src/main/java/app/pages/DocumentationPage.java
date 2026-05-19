@@ -15,10 +15,11 @@ import static ujfe.core.UI.*;
 @Page("/docs")
 public final class DocumentationPage implements Component {
     private final AppTheme theme;
-    private final BankSelectComponent bankSelect = new BankSelectComponent();
+    private final BankSelectComponent bankSelect;
 
     public DocumentationPage(AppTheme theme) {
         this.theme = Objects.requireNonNull(theme, "theme");
+        this.bankSelect = new BankSelectComponent(theme::darkMode);
     }
 
     @Override
@@ -124,10 +125,10 @@ public final class DocumentationPage implements Component {
                         .css("px-4 py-2 rounded bg-primary-700 text-white font-semibold")
                         .onClick(theme::useBlueEmerald))
                     .child(button("Rose + Amber")
-                        .css("px-4 py-2 rounded border border-primary-200 bg-primary-50 text-primary-700 font-semibold")
+                        .css(themeButtonClass("primary"))
                         .onClick(theme::useRoseAmber))
                     .child(button("Indigo + Cyan")
-                        .css("px-4 py-2 rounded border border-secondary-200 bg-secondary-50 text-secondary-700 font-semibold")
+                        .css(themeButtonClass("secondary"))
                         .onClick(theme::useIndigoCyan))
             )
             .child(
@@ -209,54 +210,50 @@ public final class DocumentationPage implements Component {
 
     private Node formSection() {
         return section()
-            .css("rounded-lg border border-secondary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Forms").css("text-2xl font-bold text-secondary-700"))
+            .css(tonePanelClass("secondary", "p-6 flex flex-col gap-4"))
+            .child(h2("Forms").css(toneTitleClass("secondary", "text-2xl")))
             .child(p("The DSL covers form elements with helpers, but attributes such as required, placeholder, min, and max can also be declared directly with attr(...).")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 form()
                     .css("grid grid-cols-2 gap-3")
                     .onSubmit(() -> {
                     })
-                    .child(label("Text").forId("doc-text")
-                        .css("text-sm font-semibold text-slate-700"))
+                    .child(label("Text").forId("doc-text").css(labelClass()))
                     .child(inputText().id("doc-text")
                         .name("text")
                         .placeholder("inputText()")
-                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Number").forId("doc-number")
-                        .css("text-sm font-semibold text-slate-700"))
+                        .css(inputClass()))
+                    .child(label("Number").forId("doc-number").css(labelClass()))
                     .child(inputNumber().id("doc-number")
                         .name("number")
                         .min("0")
                         .max("99")
-                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Password").forId("doc-password")
-                        .css("text-sm font-semibold text-slate-700"))
+                        .css(inputClass()))
+                    .child(label("Password").forId("doc-password").css(labelClass()))
                     .child(inputPassword().id("doc-password")
                         .name("password")
                         .placeholder("inputPassword()")
-                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
-                    .child(label("Select").forId("doc-select")
-                        .css("text-sm font-semibold text-slate-700"))
+                        .css(inputClass()))
+                    .child(label("Select").forId("doc-select").css(labelClass()))
                     .child(select().id("doc-select")
                         .name("select")
-                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm")
+                        .css(inputClass())
                         .child(option("Java").value("java"))
                         .child(option("UJFE").value("ujfe")
                             .selected(true)))
-                    .child(label().css("flex items-center gap-2 text-sm text-slate-700")
+                    .child(label().css(checkLabelClass())
                         .child(checkbox().name("check")
                             .checked(true))
                         .child("checkbox()"))
-                    .child(label().css("flex items-center gap-2 text-sm text-slate-700")
+                    .child(label().css(checkLabelClass())
                         .child(radio().name("radio")
                             .value("a")
                             .checked(true))
                         .child("radio()"))
                     .child(textarea("textarea()").name("message")
                         .rows(3)
-                        .css("w-full rounded border border-slate-200 bg-white p-2 text-sm"))
+                        .css(inputClass()))
                     .child(button("Submit live").type("submit")
                         .css("px-4 py-2 rounded bg-secondary-700 text-white font-semibold"))
             )
@@ -265,10 +262,10 @@ public final class DocumentationPage implements Component {
 
     private Node cssSection() {
         return section()
-            .css("rounded-lg border border-primary-200 bg-primary-50 p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Internal or external CSS").css("text-2xl font-bold text-primary-700"))
+            .css(tonePanelClass("primary", "p-6 flex flex-col gap-4"))
+            .child(h2("Internal or external CSS").css(toneTitleClass("primary", "text-2xl")))
             .child(p("INTERNAL mode keeps the current server-side utility renderer. EXTERNAL mode disables UJFE CSS generation and lets teams use Tailwind, Bootstrap, plain CSS, or design systems through regular head links.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -284,10 +281,10 @@ public final class DocumentationPage implements Component {
 
     private Node springSection() {
         return section()
-            .css("rounded-lg border border-secondary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Spring Boot on the same port").css("text-2xl font-bold text-secondary-700"))
+            .css(tonePanelClass("secondary", "p-6 flex flex-col gap-4"))
+            .child(h2("Spring Boot on the same port").css(toneTitleClass("secondary", "text-2xl")))
             .child(p("Use ujfe-spring when the Spring Boot application must serve UJFE pages, live events, and internal assets through the same DispatcherServlet/Tomcat port. The ujfe-http module remains available for standalone Netty mode.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -300,10 +297,10 @@ public final class DocumentationPage implements Component {
 
     private Node securitySection() {
         return section()
-            .css("rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Security by default").css("text-2xl font-bold text-rose-700"))
+            .css(tonePanelClass("rose", "p-6 flex flex-col gap-4"))
+            .child(h2("Security by default").css(toneTitleClass("rose", "text-2xl")))
             .child(p("Text and attributes are escaped during SSR. Attribute names are validated to block inline event handlers and malformed names. URL attributes are sanitized through a configurable UrlPolicy that blocks dangerous schemes. Trusted raw HTML has a deliberately unsafe name so security review can find it.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -319,26 +316,26 @@ public final class DocumentationPage implements Component {
                     .css("grid grid-cols-3 gap-3")
                     .child(
                         div()
-                            .css("rounded-lg border border-emerald-200 bg-white p-4 flex flex-col gap-2")
-                            .child(h3("Escaped path").css("text-lg font-bold text-emerald-700"))
+                            .css(tonePanelClass("emerald", "p-4 flex flex-col gap-2"))
+                            .child(h3("Escaped path").css(toneTitleClass("emerald", "text-lg")))
                             .child(p("Use normal text and element helpers for application UI, user content, and request data.")
-                                .css("text-sm text-slate-700 leading-relaxed"))
+                                .css(bodyTextClass("text-sm")))
                             .child(codeBlock("p(\"<script>\")\n// <p>&lt;script&gt;</p>\n"))
                     )
                     .child(
                         div()
-                            .css("rounded-lg border border-rose-200 bg-white p-4 flex flex-col gap-2")
-                            .child(h3("Blocked attributes").css("text-lg font-bold text-rose-700"))
+                            .css(tonePanelClass("rose", "p-4 flex flex-col gap-2"))
+                            .child(h3("Blocked attributes").css(toneTitleClass("rose", "text-lg")))
                             .child(p("Inline event handlers and malformed attribute names are rejected before rendering.")
-                                .css("text-sm text-slate-700 leading-relaxed"))
+                                .css(bodyTextClass("text-sm")))
                             .child(codeBlock("// Throws IllegalArgumentException:\ndiv().attr(\"onclick\", \"alert(1)\")\ndiv().attr(\"my attr\", \"value\")\n"))
                     )
                     .child(
                         div()
-                            .css("rounded-lg border border-rose-200 bg-white p-4 flex flex-col gap-2")
-                            .child(h3("Unsafe path").css("text-lg font-bold text-rose-700"))
+                            .css(tonePanelClass("rose", "p-4 flex flex-col gap-2"))
+                            .child(h3("Unsafe path").css(toneTitleClass("rose", "text-lg")))
                             .child(p("Use only for trusted, pre-sanitized fragments where escaping would be incorrect.")
-                                .css("text-sm text-slate-700 leading-relaxed"))
+                                .css(bodyTextClass("text-sm")))
                             .child(codeBlock("unsafeHtml(\"<strong>trusted</strong>\")\n// <strong>trusted</strong>\n"))
                     )
             )
@@ -347,10 +344,10 @@ public final class DocumentationPage implements Component {
 
     private Node signalsSection() {
         return section()
-            .css("rounded-lg border border-emerald-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Signals and computed values").css("text-2xl font-bold text-emerald-700"))
+            .css(tonePanelClass("emerald", "p-6 flex flex-col gap-4"))
+            .child(h2("Signals and computed values").css(toneTitleClass("emerald", "text-2xl")))
             .child(p("Mutable signals hold live server state. Computed signals derive read-only values lazily, cache successful evaluations, and invalidate through tracked dependencies.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -369,10 +366,10 @@ public final class DocumentationPage implements Component {
 
     private Node routerSection() {
         return section()
-            .css("rounded-lg border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Route sources and AOT metadata").css("text-2xl font-bold text-slate-900"))
+            .css(panelClass("p-6 flex flex-col gap-4"))
+            .child(h2("Route sources and AOT metadata").css(theme.darkMode() ? "text-2xl font-bold text-slate-100" : "text-2xl font-bold text-slate-900"))
             .child(p("Routes can come from reflection-based scanning or explicit RouteSource implementations. ManualRouteSource is the runtime shape future generated AOT metadata will target.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -388,10 +385,10 @@ public final class DocumentationPage implements Component {
 
     private Node runtimeActionsSection() {
         return section()
-            .css("rounded-lg border border-indigo-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Runtime extension points").css("text-2xl font-bold text-indigo-700"))
+            .css(tonePanelClass("indigo", "p-6 flex flex-col gap-4"))
+            .child(h2("Runtime extension points").css(toneTitleClass("indigo", "text-2xl")))
             .child(p("Register server-side Java actions for rendering, live events, errors, and document head contributions without introducing Spring, Servlet, or Netty coupling into the core API.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -410,10 +407,10 @@ public final class DocumentationPage implements Component {
 
     private Node lifecycleSection() {
         return section()
-            .css("rounded-lg border border-indigo-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Server-side lifecycle").css("text-2xl font-bold text-indigo-700"))
+            .css(tonePanelClass("indigo", "p-6 flex flex-col gap-4"))
+            .child(h2("Server-side lifecycle").css(toneTitleClass("indigo", "text-2xl")))
             .child(p("Lifecycle callbacks are integrated into LiveSession rendering. Stable component instances mount once, route transitions unmount removed instances, and session shutdown cleans up mounted components.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-3 gap-3")
@@ -432,46 +429,46 @@ public final class DocumentationPage implements Component {
 
     private Node restSection() {
         return section()
-            .css("rounded-lg border border-secondary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Components with REST APIs").css("text-2xl font-bold text-secondary-700"))
+            .css(tonePanelClass("secondary", "p-6 flex flex-col gap-4"))
+            .child(h2("Components with REST APIs").css(toneTitleClass("secondary", "text-2xl")))
             .child(p("The core module includes RestClient, based on Java HttpClient. The component below queries BrasilAPI and uses the result to populate a select.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(bankSelect.render())
             .child(codeBlock(restCode()));
     }
 
     private Node cliSection() {
         return section()
-            .css("rounded-lg border border-primary-200 bg-primary-50 p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("CLI").css("text-2xl font-bold text-primary-700"))
+            .css(tonePanelClass("primary", "p-6 flex flex-col gap-4"))
+            .child(h2("CLI").css(toneTitleClass("primary", "text-2xl")))
             .child(p("The convert command migrates plain HTML into UJFE Java DSL pages with preserved classes and attributes, strict malformed HTML errors, optional unsafe fallback, CSS extraction, and deterministic component methods for larger pages.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(
                 div()
                     .css("grid grid-cols-2 gap-3")
                     .child(
                         div()
-                            .css("rounded-lg border border-primary-200 bg-white p-3 flex flex-col gap-2")
-                            .child(h3("Command").css("text-lg font-bold text-primary-700"))
+                            .css(tonePanelClass("primary", "p-3 flex flex-col gap-2"))
+                            .child(h3("Command").css(toneTitleClass("primary", "text-lg")))
                             .child(codeBlock(cliCommandCode()))
                     )
                     .child(
                         div()
-                            .css("rounded-lg border border-primary-200 bg-white p-3 flex flex-col gap-2")
-                            .child(h3("HTML input").css("text-lg font-bold text-primary-700"))
+                            .css(tonePanelClass("primary", "p-3 flex flex-col gap-2"))
+                            .child(h3("HTML input").css(toneTitleClass("primary", "text-lg")))
                             .child(codeBlock(cliInputCode()))
                     )
             )
-            .child(h3("Generated output").css("text-lg font-bold text-primary-700"))
+            .child(h3("Generated output").css(toneTitleClass("primary", "text-lg")))
             .child(codeBlock(cliOutputCode()));
     }
 
     private Node devPreviewSection() {
         return section()
-            .css("rounded-lg border border-primary-200 bg-white p-6 shadow-sm flex flex-col gap-4")
-            .child(h2("Visual Dev Preview").css("text-2xl font-bold text-primary-700"))
+            .css(tonePanelClass("primary", "p-6 flex flex-col gap-4"))
+            .child(h2("Visual Dev Preview").css(toneTitleClass("primary", "text-2xl")))
             .child(p("In the example app, the Dev Preview script is loaded but the panel starts disabled behind an explicit feature toggle. When the toggle is enabled, the floating panel lets developers select elements, inspect tag/id, and test CSS classes directly in the browser without changing Java.")
-                .css("text-base text-slate-700 leading-relaxed"))
+                .css(bodyTextClass("text-base")))
             .child(codeBlock(devPreviewCode()));
     }
 
@@ -508,16 +505,52 @@ public final class DocumentationPage implements Component {
             : "rounded-lg border border-slate-200 bg-white shadow-sm ") + extra;
     }
 
+    private String tonePanelClass(String tone, String extra) {
+        return (theme.darkMode()
+            ? "rounded-lg border border-" + tone + "-900 bg-slate-900 shadow-sm "
+            : "rounded-lg border border-" + tone + "-200 bg-white shadow-sm ") + extra;
+    }
+
+    private String themeButtonClass(String tone) {
+        return theme.darkMode()
+            ? "px-4 py-2 rounded border border-" + tone + "-800 bg-slate-950 text-" + tone + "-200 font-semibold"
+            : "px-4 py-2 rounded border border-" + tone + "-200 bg-" + tone + "-50 text-" + tone + "-700 font-semibold";
+    }
+
     private String sectionTitleClass(String size) {
         return theme.darkMode()
             ? size + " font-bold text-primary-200"
             : size + " font-bold text-primary-700";
     }
 
+    private String toneTitleClass(String tone, String size) {
+        return theme.darkMode()
+            ? size + " font-bold text-" + tone + "-200"
+            : size + " font-bold text-" + tone + "-700";
+    }
+
     private String bodyTextClass(String size) {
         return theme.darkMode()
             ? size + " text-slate-300 leading-relaxed"
             : size + " text-slate-700 leading-relaxed";
+    }
+
+    private String labelClass() {
+        return theme.darkMode()
+            ? "text-sm font-semibold text-slate-200"
+            : "text-sm font-semibold text-slate-700";
+    }
+
+    private String checkLabelClass() {
+        return theme.darkMode()
+            ? "flex items-center gap-2 text-sm text-slate-300"
+            : "flex items-center gap-2 text-sm text-slate-700";
+    }
+
+    private String inputClass() {
+        return theme.darkMode()
+            ? "w-full rounded border border-slate-700 bg-slate-950 p-2 text-sm text-slate-100"
+            : "w-full rounded border border-slate-200 bg-white p-2 text-sm text-slate-900";
     }
 
     private Node layoutPreview() {
@@ -553,7 +586,9 @@ public final class DocumentationPage implements Component {
             .child(canvas().width(240)
                 .height(72)
                 .ariaLabel("Empty canvas")
-                .css("border border-slate-200 rounded bg-white"))
+                .css(theme.darkMode()
+                    ? "border border-slate-700 rounded bg-slate-950"
+                    : "border border-slate-200 rounded bg-white"))
             .child(video().src("/demo.mp4")
                 .poster("/poster.png")
                 .controls(true)

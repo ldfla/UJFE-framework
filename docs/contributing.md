@@ -3,10 +3,10 @@
 Run the full verification build before opening a pull request:
 
 ```bash
-mvn clean verify
+./mvnw clean verify
 ```
 
-This compiles every module, runs unit tests, generates JaCoCo module reports, creates the aggregate coverage report, and enforces configured coverage thresholds. CI runs the same Maven `verify` lifecycle.
+This compiles every module, runs unit tests, generates JaCoCo module reports, creates the aggregate coverage report, and enforces configured coverage thresholds. CI runs the same Maven `verify` lifecycle through the project Maven wrapper, so local verification should use `./mvnw` instead of a globally installed Maven.
 
 Coverage reports are local HTML files under each module:
 

@@ -35,6 +35,7 @@ The default `UrlPolicy` is secure out of the box:
 | `javascript:`   | 🚫 Always blocked | Cannot be allowed, even through configuration   |
 | `vbscript:`     | 🚫 Always blocked | Cannot be allowed, even through configuration   |
 | `data:image/*`  | ✅ Allowed         | Can be disabled via `allowDataImageUrls(false)` |
+| `data:image/svg+xml` | ✅ Allowed by current default | Reviewed as a separate hardening follow-up because SVG is active markup, not a raster format |
 | `data:*` (other)| ❌ Blocked         | Only image MIME types are allowed               |
 
 ### Relative references
@@ -107,6 +108,19 @@ All other `data:` URLs are blocked, including `data:text/html` and
 > image. A `data:image/gif;base64,...` URL could contain arbitrary bytes
 > after decoding. Stricter validation such as image-byte inspection is
 > an explicit future hardening option.
+
+### SVG data URL hardening note
+
+`data:image/svg+xml` remains allowed by the current default policy for
+compatibility with existing image data URL handling. Treat SVG differently
+from raster image formats during security review: SVG is XML markup and may
+interact with browser behavior, embedding context, and CSP differently than
+PNG, JPEG, GIF, or WebP.
+
+Future hardening should split SVG data URL support from raster image data URL
+support so applications can opt into SVG explicitly. Until then, do not pass
+untrusted SVG data URLs to URL-bearing attributes without an application-level
+sanitization decision.
 
 ## Examples
 

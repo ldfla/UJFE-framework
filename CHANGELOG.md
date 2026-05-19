@@ -1,6 +1,13 @@
 # Changelog
 ## Unreleased
 
+## Version 0.24.1-SNAPSHOT - 18/05/2026
+
+- Fixed remaining dark-mode gaps in the documentation example page and added targeted render tests for obvious light-only class regressions.
+- Removed redundant JaCoCo plugin configuration from `ujfe-spring` so coverage setup is inherited consistently from the parent build.
+- Aligned roadmap cards and contributing/testing docs with the current coverage baseline, Maven wrapper workflow, runtime actions API, and deterministic concurrency stress-test decision.
+- Updated SafeUrl documentation and tests to explicitly cover the current `data:image/svg+xml` behavior and document SVG data URLs as a hardening follow-up.
+
 ## Version 0.24.0-SNAPSHOT - 18/05/2026
 
 - Updated the Maven project version to `0.24.0-SNAPSHOT`.
