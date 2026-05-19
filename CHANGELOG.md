@@ -1,6 +1,10 @@
 # Changelog
 ## Unreleased
 
+- Added dependency-free observability traces for render and live event operations, including safe status, duration, route, response size, adapter, request id, and error metadata.
+- Added `TraceSink`, `ObservabilityConfig`, no-op/composite sinks, and runtime action integration through `renderTrace(...)` and `eventTrace(...)`.
+- Documented trace privacy boundaries, cardinality guidance, testing patterns, and the future Spring/Micrometer adapter path without adding metrics dependencies to `ujfe-core`.
+
 ## Version 0.24.1-SNAPSHOT - 18/05/2026
 
 - Fixed remaining dark-mode gaps in the documentation example page and added targeted render tests for obvious light-only class regressions.

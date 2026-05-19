@@ -19,19 +19,20 @@ import static ujfe.core.UI.*;
 @Page("/signals")
 public final class SignalsPage implements Component {
     private final AppTheme theme;
-    private final Signal<Integer> count = Signals.signal(1);
-    private final Signal<Integer> multiplier = Signals.signal(2);
-    private final Signal<String> cacheReadLog = Signals.signal("No explicit cache read has run yet.");
-    private final Signal<String> subscriberLog = Signals.signal("Subscriber sample has not run yet.");
-    private final AtomicInteger doubledEvaluations = new AtomicInteger();
-    private final AtomicInteger totalEvaluations = new AtomicInteger();
-    private final Computed<Integer> doubled = Signals.computed(() -> {
-        doubledEvaluations.incrementAndGet();
-        return count.get() * 2;
+    private final Signal<Integer> tickets = Signals.signal(1);
+    private final Signal<Integer> ticketPrice = Signals.signal(79);
+    private final Signal<String> cacheReadLog = Signals.signal("No cart total has been checked yet.");
+    private final Signal<String> subscriberLog = Signals.signal("No stock alert sample has run yet.");
+    private final AtomicInteger subtotalEvaluations = new AtomicInteger();
+    private final AtomicInteger checkoutEvaluations = new AtomicInteger();
+    private final Computed<Integer> subtotal = Signals.computed(() -> {
+        subtotalEvaluations.incrementAndGet();
+        return tickets.get() * ticketPrice.get();
     });
-    private final Computed<Integer> total = Signals.computed(() -> {
-        totalEvaluations.incrementAndGet();
-        return doubled.get() * multiplier.get();
+    private final Computed<Integer> checkoutTotal = Signals.computed(() -> {
+        checkoutEvaluations.incrementAndGet();
+        int serviceFee = tickets.get() >= 3 ? 15 : 9;
+        return subtotal.get() + serviceFee;
     });
 
     public SignalsPage(AppTheme theme) {
@@ -55,16 +56,16 @@ public final class SignalsPage implements Component {
         return section()
             .css(cardClass("p-8 sm:p-10 flex flex-col gap-6"))
             .child(span("Signals runtime").css(kickerClass()))
-            .child(h1("Lazy computed state with deterministic invalidation")
+            .child(h1("Signals for checkout state people actually change")
                 .css(heroTitleClass()))
-            .child(p("Signals are the state primitive for live UJFE components. Use them for values that change because of server-side events, form input, or browser state; keep static content as plain Java values.")
+            .child(p("Signals are useful when a page has values that keep changing: cart quantity, selected plan, filters, form drafts, preview text, and totals. Static headings and copy do not need signals.")
                 .css(bodyClass("text-base max-w-3xl")))
             .child(
                 div()
                     .css("grid grid-cols-1 md:grid-cols-3 gap-4")
-                    .child(metric("Lazy", "Computed suppliers run only when get() is called."))
-                    .child(metric("Cached", "Repeated reads reuse the last successful result."))
-                    .child(metric("Deterministic", "Dependency invalidation is explicit and tested."))
+                    .child(metric("Lazy", "Only calculate totals when the page needs to show them."))
+                    .child(metric("Cached", "Use the same total in summary, badge, and receipt without recalculating."))
+                    .child(metric("Deterministic", "Changing quantity or price invalidates exactly the derived values that depend on them."))
             );
     }
 
@@ -80,43 +81,43 @@ public final class SignalsPage implements Component {
     private Node valuesPanel() {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
-            .child(h2("Mutable inputs").css(titleClass()))
-            .child(p("Counter and multiplier are mutable signals. The derived values below update after the next render reads their computed graph.")
+            .child(h2("Checkout estimator").css(titleClass()))
+            .child(p("A real product page changes quantity and selected price tier. The subtotal and checkout total are computed from those signals instead of being hand-updated in multiple places.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css(codePanelClass())
-                    .child(p(() -> "count      : " + count.get()).css("font-semibold text-indigo-600"))
-                    .child(p(() -> "multiplier : " + multiplier.get()).css(mutedTextClass()))
-                    .child(p(() -> "doubled    : " + doubled.get()).css(mutedTextClass()))
-                    .child(p(() -> "total      : " + total.get()).css(mutedTextClass()))
+                    .child(p(() -> "tickets       : " + tickets.get()).css("font-semibold text-indigo-600"))
+                    .child(p(() -> "ticket price  : $" + ticketPrice.get()).css(mutedTextClass()))
+                    .child(p(() -> "subtotal      : $" + subtotal.get()).css(mutedTextClass()))
+                    .child(p(() -> "checkout total: $" + checkoutTotal.get()).css(mutedTextClass()))
             )
             .child(
                 div()
                     .css("grid grid-cols-2 gap-3")
-                    .child(button("Increment count")
+                    .child(button("Add ticket")
                         .css("px-4 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm")
-                        .onClick(() -> count.update(value -> value + 1)))
-                    .child(button("Increment multiplier")
+                        .onClick(() -> tickets.update(value -> value + 1)))
+                    .child(button("Upgrade tier")
                         .css("px-4 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm")
-                        .onClick(() -> multiplier.update(value -> value + 1)))
+                        .onClick(() -> ticketPrice.update(value -> value + 20)))
             );
     }
 
     private Node cachePanel() {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
-            .child(h2("Cache behavior").css(titleClass()))
-            .child(p("Read the nested computed value twice. Without invalidation, the second read reuses the same cache entry.")
+            .child(h2("Cached derived values").css(titleClass()))
+            .child(p("Checkout pages often show the same total in more than one place: order summary, sticky button, and final receipt. A computed value can be read repeatedly after one calculation.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css(codePanelClass())
-                    .child(p(() -> "doubled evaluations : " + doubledEvaluations.get()).css(mutedTextClass()))
-                    .child(p(() -> "total evaluations   : " + totalEvaluations.get()).css(mutedTextClass()))
-                    .child(p(() -> "last cache read     : " + cacheReadLog.get()).css("text-slate-400 italic"))
+                    .child(p(() -> "subtotal calculations : " + subtotalEvaluations.get()).css(mutedTextClass()))
+                    .child(p(() -> "checkout calculations : " + checkoutEvaluations.get()).css(mutedTextClass()))
+                    .child(p(() -> "last repeated read    : " + cacheReadLog.get()).css("text-slate-400 italic"))
             )
-            .child(button("Read computed twice")
+            .child(button("Read total twice")
                 .css("w-full px-4 h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm shadow-sm")
                 .onClick(this::readComputedTwice));
     }
@@ -124,12 +125,12 @@ public final class SignalsPage implements Component {
     private Node subscriberPanel() {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
-            .child(h2("Subscriber semantics").css(titleClass()))
-            .child(p("The sample invalidates a computed value multiple times and reads it once. The subscriber receives only the latest successful value.")
+            .child(h2("Predictable updates").css(titleClass()))
+            .child(p("A stock badge, availability notice, or checkout warning should not flash through stale intermediate values. Signals let the UI publish the latest derived value after related changes settle.")
                 .css(bodyClass("text-sm")))
             .child(p(subscriberLog::get)
                 .css(codePanelClass()))
-            .child(button("Run subscriber sample")
+            .child(button("Run stock alert sample")
                 .css("w-full px-4 h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm")
                 .onClick(this::runSubscriberSample));
     }
@@ -137,14 +138,14 @@ public final class SignalsPage implements Component {
     private Node nestedPanel() {
         return div()
             .css(cardClass("p-6 flex flex-col gap-5"))
-            .child(h2("Nested computed graph").css(titleClass()))
-            .child(p("total depends on doubled, and doubled depends on count. A count update invalidates both values without recomputing until render reads them.")
+            .child(h2("When to use signals").css(titleClass()))
+            .child(p("Use signals for state that changes while the user stays on the page. Use plain Java values for labels, headings, static documentation, and layout constants.")
                 .css(bodyClass("text-sm")))
             .child(
                 div()
                     .css("grid grid-cols-2 gap-3")
-                    .child(metric("doubled", "count * 2"))
-                    .child(metric("total", "doubled * multiplier"))
+                    .child(metric("Good fit", "cart, filters, form drafts, live previews"))
+                    .child(metric("Avoid", "static copy, fixed nav labels, one-time constants"))
             );
     }
 
@@ -165,7 +166,7 @@ public final class SignalsPage implements Component {
             .child(h2("Computed signal contract").css(theme.darkMode()
                 ? "text-xl font-bold text-slate-100"
                 : "text-xl font-bold text-slate-900"))
-            .child(p("The snippet uses the current UJFE signals API: create mutable state with Signals.signal(...) and derive read-only state with Signals.computed(...).")
+            .child(p("The snippet models a checkout summary with the current UJFE signals API: mutable page inputs with Signals.signal(...) and read-only totals with Signals.computed(...).")
                 .css(bodyClass("text-sm")))
             .child(pre()
                 .css("overflow-x-auto rounded-lg bg-zinc-950 text-zinc-50 p-5 text-xs font-mono leading-relaxed")
@@ -213,16 +214,16 @@ public final class SignalsPage implements Component {
     }
 
     private void readComputedTwice() {
-        int before = totalEvaluations.get();
-        int first = total.get();
-        int second = total.get();
-        int after = totalEvaluations.get();
-        cacheReadLog.set("first=" + first + ", second=" + second + ", new evaluations=" + (after - before));
+        int before = checkoutEvaluations.get();
+        int first = checkoutTotal.get();
+        int second = checkoutTotal.get();
+        int after = checkoutEvaluations.get();
+        cacheReadLog.set("summary=$" + first + ", receipt=$" + second + ", new calculations=" + (after - before));
     }
 
     private void runSubscriberSample() {
         Signal<Integer> base = Signals.signal(1);
-        Computed<Integer> sample = Signals.computed(() -> base.get() * 10);
+        Computed<Integer> sample = Signals.computed(() -> base.get() < 3 ? 1 : 0);
         List<Integer> updates = new ArrayList<>();
 
         try {
@@ -232,22 +233,27 @@ public final class SignalsPage implements Component {
             base.set(3);
             sample.get();
             subscription.close();
-            subscriberLog.set("subscriber updates: " + updates);
+            subscriberLog.set("low-stock alert updates: " + updates + " (latest state only)");
         } catch (Exception exception) {
             subscriberLog.set("subscriber sample failed: " + exception.getMessage());
         }
     }
 
     private String snippet() {
-        return "Signal<Integer> count = Signals.signal(1);\n"
-            + "Computed<Integer> doubled = Signals.computed(() -> count.get() * 2);\n"
-            + "Computed<Integer> total = Signals.computed(() -> doubled.get() * multiplier.get());\n\n"
-            + "// Lazy: no evaluation until get().\n"
-            + "total.get();\n"
-            + "total.get(); // cached\n\n"
-            + "// Invalidation does not recompute immediately.\n"
-            + "count.set(2);\n"
-            + "count.set(3);\n"
-            + "total.get(); // one recomputation with the latest count\n";
+        return "Signal<Integer> tickets = Signals.signal(1);\n"
+            + "Signal<Integer> ticketPrice = Signals.signal(79);\n\n"
+            + "Computed<Integer> subtotal = Signals.computed(() ->\n"
+            + "    tickets.get() * ticketPrice.get());\n\n"
+            + "Computed<Integer> checkoutTotal = Signals.computed(() -> {\n"
+            + "    int serviceFee = tickets.get() >= 3 ? 15 : 9;\n"
+            + "    return subtotal.get() + serviceFee;\n"
+            + "});\n\n"
+            + "// Lazy: no total is calculated until the UI reads it.\n"
+            + "checkoutTotal.get();\n"
+            + "checkoutTotal.get(); // cached for another part of the page\n\n"
+            + "// Deterministic: changing either input invalidates the right totals.\n"
+            + "tickets.set(2);\n"
+            + "ticketPrice.set(99);\n"
+            + "checkoutTotal.get(); // recalculates from the latest page state\n";
     }
 }

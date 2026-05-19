@@ -115,6 +115,7 @@ public final class UjfeServlet extends HttpServlet {
 
             if (router.resolve(path)
                 .isEmpty()) {
+                liveSession.reportRouteNotFound(path, createMetadata(request));
                 writeError(response, errorRenderer().routeNotFound(errorContext(request, path)));
                 return;
             }
@@ -125,7 +126,7 @@ public final class UjfeServlet extends HttpServlet {
             }
 
             Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
-            String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
+            String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()), createMetadata(request));
             write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
         } catch (LiveRateLimitException exception) {
             LiveHttpCodec.logRejectedRateLimit(exception, "servlet", correlationId(request));
@@ -314,7 +315,10 @@ public final class UjfeServlet extends HttpServlet {
             request.getRemoteAddr(),
             request.getHeader("Forwarded"),
             request.getHeader("X-Forwarded-For"),
-            request.getHeader("X-Real-IP")
+            request.getHeader("X-Real-IP"),
+            "servlet",
+            request.getMethod(),
+            correlationId(request)
         );
     }
 

@@ -34,6 +34,27 @@ Additional modules currently inherit the default coverage check and generate rep
 
 When coverage fails, open the module report, identify untested behavior that matters, and add deterministic tests. Prefer behavior assertions over tests that only execute lines. Tests must not call external services, depend on current dates, require credentials, or rely on machine-specific paths.
 
+## Observability Trace Tests
+
+Use `ObservabilityConfig.builder().clock(...)` with a fixed `Clock` when trace
+timestamps or durations are part of the assertion. Prefer a recording
+`TraceSink` over log assertions:
+
+```java
+LiveSessionConfig config = LiveSessionConfig.builder()
+        .observability(ObservabilityConfig.builder()
+                .clock(fixedClock)
+                .traceSink(recordingSink)
+                .build())
+        .build();
+```
+
+Trace tests should assert operational fields such as route, status, duration,
+response size, adapter name, request id, safe error code, and opaque event id.
+They should also assert privacy boundaries: traces must not contain request
+bodies, cookies, CSRF tokens, authorization headers, raw browser state, form
+values, rendered HTML, raw exception messages, or stack traces.
+
 ## Concurrency Stress Tests
 
 `ujfe-live` uses deterministic stress-style tests as the CI baseline for session concurrency. They cover same-session event serialization, independent-session overlap, signal update consistency under contention, and coherent HTML output after concurrent event handling.

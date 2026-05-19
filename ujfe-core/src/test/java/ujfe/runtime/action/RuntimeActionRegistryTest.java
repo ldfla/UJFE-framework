@@ -3,6 +3,8 @@ package ujfe.runtime.action;
 import org.junit.jupiter.api.Test;
 import ujfe.core.ClientState;
 import ujfe.core.Node;
+import ujfe.observability.EventTrace;
+import ujfe.observability.RenderTrace;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -85,6 +87,32 @@ final class RuntimeActionRegistryTest {
 
         registry.executeAfterEvent(eventResult());
         assertEquals(List.of("afterEvent:evt-1"), log);
+    }
+
+    @Test
+    void renderTraceActionExecutes() {
+        List<String> log = new ArrayList<>();
+        RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
+            .renderTrace(trace -> log.add("renderTrace:" + trace.route()))
+            .build();
+
+        registry.executeRenderTrace(RenderTrace.builder()
+            .route("/docs")
+            .build());
+        assertEquals(List.of("renderTrace:/docs"), log);
+    }
+
+    @Test
+    void eventTraceActionExecutes() {
+        List<String> log = new ArrayList<>();
+        RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
+            .eventTrace(trace -> log.add("eventTrace:" + trace.eventId()))
+            .build();
+
+        registry.executeEventTrace(EventTrace.builder()
+            .eventId("evt-1")
+            .build());
+        assertEquals(List.of("eventTrace:evt-1"), log);
     }
 
     @Test
@@ -172,6 +200,8 @@ final class RuntimeActionRegistryTest {
         assertDoesNotThrow(() -> registry.executeAfterRender(renderResult()));
         assertDoesNotThrow(() -> registry.executeBeforeEvent(eventContext()));
         assertDoesNotThrow(() -> registry.executeAfterEvent(eventResult()));
+        assertDoesNotThrow(() -> registry.executeRenderTrace(RenderTrace.builder().build()));
+        assertDoesNotThrow(() -> registry.executeEventTrace(EventTrace.builder().build()));
         assertDoesNotThrow(() -> registry.executeOnError(new RuntimeErrorContext(
             new RuntimeException(), RuntimePhase.INTERNAL, null, null, "t", null)));
         assertTrue(registry.executeHeadContributions()
@@ -181,11 +211,35 @@ final class RuntimeActionRegistryTest {
     @Test
     void registryWithActionsIsNotEmpty() {
         RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
-            .beforeRender(ctx -> {
+            .renderTrace(trace -> {
             })
             .build();
 
         assertFalse(registry.isEmpty());
+    }
+
+    @Test
+    void traceActionFailuresDoNotFailRuntimeActionExecution() {
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(captured));
+        try {
+            RuntimeActionRegistry registry = RuntimeActionRegistry.builder()
+                .renderTrace(trace -> {
+                    throw new IllegalStateException("render trace failed");
+                })
+                .eventTrace(trace -> {
+                    throw new IllegalStateException("event trace failed");
+                })
+                .build();
+
+            assertDoesNotThrow(() -> registry.executeRenderTrace(RenderTrace.builder().build()));
+            assertDoesNotThrow(() -> registry.executeEventTrace(EventTrace.builder().build()));
+            assertTrue(captured.toString()
+                .contains("trace failed"));
+        } finally {
+            System.setErr(originalErr);
+        }
     }
 
     // --- Error routing ---

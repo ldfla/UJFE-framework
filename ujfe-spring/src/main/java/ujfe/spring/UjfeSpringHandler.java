@@ -85,11 +85,12 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
 
             if ("GET".equals(method)) {
                 if (!liveSession.hasRoute(path)) {
+                    liveSession.reportRouteNotFound(path, createMetadata(request));
                     writeError(response, errorRenderer().routeNotFound(errorContext(request, path)));
                     return;
                 }
                 Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
-                String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()));
+                String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()), createMetadata(request));
                 write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
                 return;
             }
@@ -135,7 +136,10 @@ public final class UjfeSpringHandler implements HttpRequestHandler {
             request.getRemoteAddr(),
             request.getHeader("Forwarded"),
             request.getHeader("X-Forwarded-For"),
-            request.getHeader("X-Real-IP")
+            request.getHeader("X-Real-IP"),
+            "spring",
+            request.getMethod(),
+            correlationId(request)
         );
     }
 

@@ -12,6 +12,9 @@ public final class LiveHttpRequestMetadata {
     private final String forwarded;
     private final String xForwardedFor;
     private final String xRealIp;
+    private final String adapterName;
+    private final String method;
+    private final String requestId;
 
     public LiveHttpRequestMetadata(String csrfToken, String origin, String referer, String host) {
         this(csrfToken, origin, referer, host, null);
@@ -32,6 +35,23 @@ public final class LiveHttpRequestMetadata {
         String xForwardedFor,
         String xRealIp
     ) {
+        this(csrfToken, origin, referer, host, scheme, remoteAddress, forwarded, xForwardedFor, xRealIp, null, null, null);
+    }
+
+    public LiveHttpRequestMetadata(
+        String csrfToken,
+        String origin,
+        String referer,
+        String host,
+        String scheme,
+        String remoteAddress,
+        String forwarded,
+        String xForwardedFor,
+        String xRealIp,
+        String adapterName,
+        String method,
+        String requestId
+    ) {
         this.csrfToken = csrfToken; // nullable
         this.origin = origin; // nullable
         this.referer = referer; // nullable
@@ -41,6 +61,9 @@ public final class LiveHttpRequestMetadata {
         this.forwarded = forwarded; // nullable
         this.xForwardedFor = xForwardedFor; // nullable
         this.xRealIp = xRealIp; // nullable
+        this.adapterName = adapterName; // nullable
+        this.method = method; // nullable
+        this.requestId = requestId; // nullable
     }
 
     public Optional<String> csrfToken() {
@@ -77,6 +100,18 @@ public final class LiveHttpRequestMetadata {
 
     public Optional<String> xRealIp() {
         return Optional.ofNullable(xRealIp);
+    }
+
+    public Optional<String> adapterName() {
+        return Optional.ofNullable(adapterName);
+    }
+
+    public Optional<String> method() {
+        return Optional.ofNullable(method);
+    }
+
+    public Optional<String> requestId() {
+        return Optional.ofNullable(requestId);
     }
 
     public boolean hasOrigin() {

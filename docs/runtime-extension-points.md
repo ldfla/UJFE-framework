@@ -151,6 +151,20 @@ The `RuntimePhase` enum identifies where the error occurred:
 Supported nodes: `meta`, `link`, `style`, `script`, `base`, and any
 custom tags. Insertion order is preserved.
 
+### Observability traces
+
+| Action | When | Context |
+|--------|------|---------|
+| `renderTrace` | After a render attempt completes, fails, or produces a safe route-not-found response | `RenderTrace`: safe route, method, status, duration, response size, adapter, request id, and error metadata |
+| `eventTrace` | After a live event completes, fails, is rejected, or references a missing handler | `EventTrace`: safe route, opaque event id, method, status, duration, response size, adapter, request id, and handler outcome |
+
+Trace actions are completion notifications. They are isolated from the user
+request path: if a trace action throws, rendering or event handling continues.
+Trace objects intentionally omit request bodies, cookies, authorization
+headers, CSRF tokens, session secrets, browser state, submitted values, full
+HTML, raw exception messages, and stack traces. See
+[Observability](./observability.md) for the field and privacy policy.
+
 ## Error handling
 
 If an action throws an exception:

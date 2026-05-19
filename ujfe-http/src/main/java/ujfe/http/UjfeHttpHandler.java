@@ -105,11 +105,16 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             if (request.method()
                 .equals(HttpMethod.GET)) {
                 if (!liveSession.hasRoute(path)) {
+                    liveSession.reportRouteNotFound(path, createMetadata(context, request));
                     return errorResponse(errorRenderer().routeNotFound(errorContext(request, path)));
                 }
                 String cookieHeader = request.headers()
                     .get(HttpHeaderNames.COOKIE);
-                String document = liveSession.renderDocument(path, ClientState.of(LiveHttpCodec.parseCookies(cookieHeader), Map.of()));
+                String document = liveSession.renderDocument(
+                    path,
+                    ClientState.of(LiveHttpCodec.parseCookies(cookieHeader), Map.of()),
+                    createMetadata(context, request)
+                );
                 return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
             }
 
@@ -219,7 +224,11 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
             request.headers()
                 .get("X-Forwarded-For"),
             request.headers()
-                .get("X-Real-IP")
+                .get("X-Real-IP"),
+            "netty",
+            request.method()
+                .name(),
+            correlationId(request)
         );
     }
 
