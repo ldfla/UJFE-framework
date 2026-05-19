@@ -65,6 +65,7 @@ final class ExamplePageRenderTest {
         assertFalse(documentation.contains("bg-white p-4 shadow-sm"));
         assertFalse(signals.contains("bg-white p-6 shadow-sm"));
         assertFalse(lifecycle.contains("bg-white p-6 shadow-sm"));
+        assertDocumentationDarkModeCompatible(documentation);
     }
 
     private static void assertThemeCompatible(String html) {
@@ -72,5 +73,15 @@ final class ExamplePageRenderTest {
         assertTrue(html.contains("bg-slate-900"));
         assertTrue(html.contains("text-slate-100") || html.contains("text-zinc-50"));
         assertTrue(html.contains("border-slate-800") || html.contains("border-zinc-800"));
+    }
+
+    private static void assertDocumentationDarkModeCompatible(String html) {
+        assertTrue(html.contains("bg-slate-950 p-2 text-sm text-slate-100"));
+        assertTrue(html.contains("border-zinc-800 bg-zinc-950 text-zinc-50"));
+        assertTrue(html.contains("text-primary-200") || html.contains("text-secondary-200"));
+        assertFalse(html.matches("(?s).*class=\"[^\"]*bg-white[^\"]*\".*"));
+        assertFalse(html.matches("(?s).*class=\"[^\"]*text-slate-700[^\"]*\".*"));
+        assertFalse(html.contains("bg-primary-50 p-6 shadow-sm"));
+        assertFalse(html.contains("bg-rose-50 p-6 shadow-sm"));
     }
 }

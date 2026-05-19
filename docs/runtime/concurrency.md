@@ -96,3 +96,14 @@ The runtime test suite covers:
 - no lost signal updates under same-session contention.
 - coherent HTML output after concurrent live events.
 - latch-based overlap checks so independent sessions are verified without relying on fragile timing benchmarks.
+
+Run the focused stress checks with:
+
+```bash
+./mvnw -pl ujfe-live -Dtest=LiveSessionConcurrencyTest test
+```
+
+These checks are the CI baseline for UJFE-018. Wall-clock performance
+comparisons are intentionally not used as a gating build signal because they
+are noisy across machines and runners. If the project needs performance trend
+data, add it as a dedicated non-gating benchmark workflow.
