@@ -222,7 +222,7 @@ final class LiveHttpCodecTest {
         assertEquals(Map.of("ujfe_demo", "ativo", "theme", "dark"),
             LiveHttpCodec.parseCookies("ujfe_demo=ativo; theme=dark"));
         assertEquals(Set.of("p-10", "gap-10", "bg-primary-200"),
-            LiveHttpCodec.parseCssClasses("p-10   gap-10 bg-primary-200"));
+            LiveHttpCodec.parseCssClasses("p-10   gap-10\nbg-primary-200\tp-10"));
     }
 
     @Test

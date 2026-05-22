@@ -1,5 +1,7 @@
 package ujfe.router;
 
+import ujfe.core.RenderMode;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -9,22 +11,38 @@ public final class RouteDefinition {
     private final Supplier<Object> pageFactory;
     private final Class<?> pageType;
     private final String sourceDescription;
+    private final RenderMode renderMode;
 
     public RouteDefinition(String path, Supplier<Object> pageFactory) {
-        this(path, pageFactory, null, "manual route");
+        this(path, pageFactory, null, "manual route", RenderMode.dynamic());
+    }
+
+    public RouteDefinition(String path, Supplier<Object> pageFactory, RenderMode renderMode) {
+        this(path, pageFactory, null, "manual route", renderMode);
     }
 
     public RouteDefinition(String path, Supplier<Object> pageFactory, String sourceDescription) {
-        this(path, pageFactory, null, sourceDescription);
+        this(path, pageFactory, null, sourceDescription, RenderMode.dynamic());
     }
 
-    private RouteDefinition(String path, Supplier<Object> pageFactory, Class<?> pageType, String sourceDescription) {
+    public RouteDefinition(String path, Supplier<Object> pageFactory, String sourceDescription, RenderMode renderMode) {
+        this(path, pageFactory, null, sourceDescription, renderMode);
+    }
+
+    private RouteDefinition(
+        String path,
+        Supplier<Object> pageFactory,
+        Class<?> pageType,
+        String sourceDescription,
+        RenderMode renderMode
+    ) {
         this.path = normalizePath(path);
         this.pageFactory = Objects.requireNonNull(pageFactory, "pageFactory");
         this.pageType = pageType;
         this.sourceDescription = sourceDescription == null || sourceDescription.isBlank()
             ? "route " + this.path
             : sourceDescription;
+        this.renderMode = Objects.requireNonNull(renderMode, "renderMode");
     }
 
     public static RouteDefinition pageClass(String path, Class<?> pageType) {
@@ -34,7 +52,8 @@ public final class RouteDefinition {
             path,
             () -> PageClassValidator.instantiate(pageType),
             pageType,
-            pageType.getName()
+            pageType.getName(),
+            RenderMode.dynamic()
         );
     }
 
@@ -52,6 +71,14 @@ public final class RouteDefinition {
 
     public String sourceDescription() {
         return sourceDescription;
+    }
+
+    public RenderMode renderMode() {
+        return renderMode;
+    }
+
+    public RouteDefinition withRenderMode(RenderMode renderMode) {
+        return new RouteDefinition(path, pageFactory, pageType, sourceDescription, renderMode);
     }
 
     static String normalizePath(String path) {

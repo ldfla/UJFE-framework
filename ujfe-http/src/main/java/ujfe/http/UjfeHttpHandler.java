@@ -55,18 +55,34 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         try {
             if (request.method()
                 .equals(HttpMethod.GET) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
-                return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", LiveClientScript.script());
+                return cacheableResponse(
+                    request,
+                    "application/javascript; charset=utf-8",
+                    LiveClientScript.script(),
+                    LiveHttpCache.clientScriptHeaders()
+                );
             }
 
             if (request.method()
                 .equals(HttpMethod.GET) && LiveHttpPaths.DEV_SCRIPT.equals(path)) {
-                return response(HttpResponseStatus.OK, "application/javascript; charset=utf-8", LiveDevToolsScript.script());
+                return cacheableResponse(
+                    request,
+                    "application/javascript; charset=utf-8",
+                    LiveDevToolsScript.script(),
+                    LiveHttpCache.devScriptHeaders()
+                );
             }
 
             if (request.method()
                 .equals(HttpMethod.GET) && LiveHttpPaths.CSS.equals(path)) {
                 String classes = firstQueryValue(decoder, "classes").orElse("");
-                return response(HttpResponseStatus.OK, "text/css; charset=utf-8", liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
+                String css = liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes));
+                return cacheableResponse(
+                    request,
+                    "text/css; charset=utf-8",
+                    css,
+                    LiveHttpCache.cssHeaders(css)
+                );
             }
 
             if (request.method()
@@ -115,7 +131,10 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                     ClientState.of(LiveHttpCodec.parseCookies(cookieHeader), Map.of()),
                     createMetadata(context, request)
                 );
-                return response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
+                FullHttpResponse page = response(HttpResponseStatus.OK, "text/html; charset=utf-8", document);
+                liveSession.renderMode(path)
+                    .ifPresent(renderMode -> applyHeaders(page, LiveHttpCache.routeHeaders(renderMode)));
+                return page;
             }
 
             return errorResponse(errorRenderer().methodNotAllowed(errorContext(request, path)));
@@ -261,6 +280,30 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         return response;
     }
 
+    private FullHttpResponse cacheableResponse(
+        FullHttpRequest request,
+        String contentType,
+        String content,
+        LiveHttpCache.CacheHeaders cacheHeaders
+    ) {
+        if (cacheHeaders.matches(request.headers()
+            .get(HttpHeaderNames.IF_NONE_MATCH))) {
+            FullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1,
+                HttpResponseStatus.NOT_MODIFIED,
+                Unpooled.EMPTY_BUFFER
+            );
+            response.headers()
+                .setInt(HttpHeaderNames.CONTENT_LENGTH, 0);
+            applySecurityHeaders(response, liveSession.securityHeadersConfig());
+            applyHeaders(response, cacheHeaders.headers());
+            return response;
+        }
+        FullHttpResponse response = response(HttpResponseStatus.OK, contentType, content);
+        applyHeaders(response, cacheHeaders.headers());
+        return response;
+    }
+
     private FullHttpResponse errorResponse(UjfeErrorResponse error) {
         FullHttpResponse response = response(
             HttpResponseStatus.valueOf(error.httpStatus()),
@@ -290,5 +333,10 @@ public final class UjfeHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         LiveHttpSecurity.securityHeaders(config)
             .forEach((name, value) -> response.headers()
                 .set(name, value));
+    }
+
+    private static void applyHeaders(FullHttpResponse response, Map<String, String> headers) {
+        headers.forEach((name, value) -> response.headers()
+            .set(name, value));
     }
 }

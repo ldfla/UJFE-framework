@@ -127,7 +127,7 @@ public final class UjfeServlet extends HttpServlet {
 
             Map<String, String> cookies = LiveHttpCodec.parseCookies(request.getHeader("Cookie"));
             String document = liveSession.renderDocument(path, ClientState.of(cookies, Map.of()), createMetadata(request));
-            write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document);
+            write(response, HttpServletResponse.SC_OK, "text/html; charset=utf-8", document, routeCacheHeaders(path));
         } catch (LiveRateLimitException exception) {
             LiveHttpCodec.logRejectedRateLimit(exception, "servlet", correlationId(request));
             writeError(response, errorRenderer().render(exception, errorContext(request, path)));
@@ -137,8 +137,6 @@ public final class UjfeServlet extends HttpServlet {
         } catch (LiveHttpCodecException exception) {
             LiveHttpCodec.logRejectedPayload(exception, "servlet", correlationId(request));
             reportHttpError(exception, request, path);
-            writeError(response, errorRenderer().render(exception, errorContext(request, path)));
-        } catch (IllegalArgumentException exception) {
             writeError(response, errorRenderer().render(exception, errorContext(request, path)));
         } catch (RuntimeException exception) {
             writeError(response, errorRenderer().render(exception, errorContext(request, path)));
@@ -160,20 +158,21 @@ public final class UjfeServlet extends HttpServlet {
         HttpServletResponse response
     ) throws IOException {
         if ("GET".equals(method) && LiveHttpPaths.CLIENT_SCRIPT.equals(path)) {
-            write(response, HttpServletResponse.SC_OK, "application/javascript; charset=utf-8", LiveClientScript.script());
+            writeCacheable(response, request, "application/javascript; charset=utf-8",
+                LiveClientScript.script(), LiveHttpCache.clientScriptHeaders());
             return;
         }
 
         if ("GET".equals(method) && LiveHttpPaths.DEV_SCRIPT.equals(path)) {
-            write(response, HttpServletResponse.SC_OK, "application/javascript; charset=utf-8", LiveDevToolsScript.script());
+            writeCacheable(response, request, "application/javascript; charset=utf-8",
+                LiveDevToolsScript.script(), LiveHttpCache.devScriptHeaders());
             return;
         }
 
         if ("GET".equals(method) && LiveHttpPaths.CSS.equals(path)) {
             String classes = request.getParameter("classes");
-            write(response, HttpServletResponse.SC_OK,
-                "text/css; charset=utf-8",
-                liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes)));
+            String css = liveSession.renderCss(LiveHttpCodec.parseCssClasses(classes));
+            writeCacheable(response, request, "text/css; charset=utf-8", css, LiveHttpCache.cssHeaders(css));
             return;
         }
 
@@ -239,13 +238,48 @@ public final class UjfeServlet extends HttpServlet {
 
     private void write(HttpServletResponse response, int status, String contentType, String content)
         throws IOException {
+        write(response, status, contentType, content, Map.of());
+    }
+
+    private void write(
+        HttpServletResponse response,
+        int status,
+        String contentType,
+        String content,
+        Map<String, String> headers
+    ) throws IOException {
         response.setStatus(status);
         response.setContentType(contentType);
         response.setCharacterEncoding("UTF-8");
         LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig())
             .forEach(response::setHeader);
+        headers.forEach(response::setHeader);
         response.getWriter()
             .write(content);
+    }
+
+    private void writeCacheable(
+        HttpServletResponse response,
+        HttpServletRequest request,
+        String contentType,
+        String content,
+        LiveHttpCache.CacheHeaders cacheHeaders
+    ) throws IOException {
+        if (cacheHeaders.matches(request.getHeader(LiveHttpCache.IF_NONE_MATCH))) {
+            response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+            LiveHttpSecurity.securityHeaders(liveSession.securityHeadersConfig())
+                .forEach(response::setHeader);
+            cacheHeaders.headers()
+                .forEach(response::setHeader);
+            return;
+        }
+        write(response, HttpServletResponse.SC_OK, contentType, content, cacheHeaders.headers());
+    }
+
+    private Map<String, String> routeCacheHeaders(String path) {
+        return liveSession.renderMode(path)
+            .map(LiveHttpCache::routeHeaders)
+            .orElseGet(Map::of);
     }
 
     private void writeError(HttpServletResponse response, UjfeErrorResponse error) throws IOException {

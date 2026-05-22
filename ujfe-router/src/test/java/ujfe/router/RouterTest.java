@@ -3,11 +3,13 @@ package ujfe.router;
 import org.junit.jupiter.api.Test;
 import ujfe.core.Component;
 import ujfe.core.Node;
+import ujfe.core.RenderMode;
 import ujfe.router.fixtures.ScannedAlphaPage;
 import ujfe.router.fixtures.ScannedBetaPage;
 import ujfe.router.source.ManualRouteSource;
 import ujfe.router.source.ReflectionPageScanner;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -225,6 +227,21 @@ final class RouterTest {
         assertEquals(ComponentPage.class.getName(), route.sourceDescription());
         assertEquals("<p>Component</p>", new PageRenderer().render(route)
             .render());
+    }
+
+    @Test
+    void routeDefinitionCarriesIncrementalRenderModeMetadata() {
+        RouteDefinition route = new RouteDefinition("/dashboard", DashboardPage::new);
+        RouteDefinition cached = route.withRenderMode(RenderMode.staticShell(Duration.ofSeconds(30)));
+
+        assertEquals(RenderMode.Kind.DYNAMIC, route.renderMode()
+            .kind());
+        assertEquals(RenderMode.Kind.STATIC_SHELL, cached.renderMode()
+            .kind());
+        assertEquals("private, max-age=30", cached.renderMode()
+            .cacheControlHeader());
+        assertEquals("/dashboard", cached.path());
+        assertEquals(route.sourceDescription(), cached.sourceDescription());
     }
 
     @Test

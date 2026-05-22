@@ -50,6 +50,8 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Secure HTTP headers](docs/security/headers.md)
 - [Signals](docs/signals.md)
 - [Live events](docs/live-events.md)
+- [Administrative primitives](docs/admin-primitives.md)
+- [LLM framework reference](docs/llm-reference.md)
 - [CSS modes](docs/css.md)
 - [Static assets](docs/static-assets.md)
 - [CLI](docs/cli.md)
@@ -62,6 +64,8 @@ UJFE is built for Java teams that want reactive web interfaces while preserving 
 - [Router](docs/router.md)
 - [AOT route metadata roadmap](docs/aot-roadmap.md)
 - [Standalone Jakarta Servlet runtime](docs/runtime/servlet.md)
+- [Runtime performance](docs/runtime/performance.md)
+- [Spring MVC integration](docs/integrations/spring.md)
 - [Runtime concurrency](docs/runtime/concurrency.md)
 - [Runtime extension points](docs/runtime-extension-points.md)
 - [Lifecycle](docs/lifecycle.md)
@@ -533,7 +537,7 @@ Install UJFE into the local Maven repository from this repository:
 Use the UJFE version installed in `~/.m2`. The current local project version is:
 
 ```xml
-<ujfe.version>0.11.0-SNAPSHOT</ujfe.version>
+<ujfe.version>0.26.0-SNAPSHOT</ujfe.version>
 ```
 
 Add the UJFE Spring dependency to the generated Spring project:
@@ -541,7 +545,7 @@ Add the UJFE Spring dependency to the generated Spring project:
 ```xml
 <properties>
     <java.version>25</java.version>
-    <ujfe.version>0.11.0-SNAPSHOT</ujfe.version>
+    <ujfe.version>0.26.0-SNAPSHOT</ujfe.version>
 </properties>
 
 <dependencies>
@@ -636,7 +640,7 @@ public class UjfeConfig {
 }
 ```
 
-When a `Router` bean exists, `ujfe-spring` auto-configures `LiveSession`, `UjfeSpringHandler`, and `UjfeSpringHandlerMapping`. The handler mapping only claims routes registered in the UJFE `Router` plus internal `/_ujfe/*` endpoints, so regular Spring controllers and static resources keep working normally.
+When a `Router` bean exists, `ujfe-spring` auto-configures `LiveSession`, `UjfeSpringHandler`, and `UjfeSpringHandlerMapping`. The handler mapping only claims routes registered in the UJFE `Router` plus internal `/_ujfe/*` endpoints. Spring MVC controllers, REST APIs, static resources, actuator endpoints, Spring Security filters, and unknown non-UJFE routes keep normal Spring ownership.
 
 Use external CSS the same way when the Spring app owns the stylesheet pipeline:
 

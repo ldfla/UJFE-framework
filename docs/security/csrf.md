@@ -43,9 +43,12 @@ Invalid CSRF requests are handled securely:
 ## Framework Integrations
 
 ### Spring Security
+
 When running UJFE alongside Spring Security, it is recommended to either:
 1. Ignore `/_ujfe/event` and `/_ujfe/state` in Spring Security's CSRF configuration and rely solely on UJFE's native protection (which handles the token lifecycle automatically).
 2. Configure Spring Security to inject its token into UJFE's meta tag or headers manually (not recommended for most setups).
+
+UJFE routes and `/_ujfe/*` endpoints still run through the normal Spring Security filter chain. UJFE does not bypass Spring Security authorization, authentication, or static-resource rules. See [Spring MVC integration](../integrations/spring.md) for route ownership and filter-chain behavior.
 
 ### Standalone Runtime (Servlet / Netty)
 When using the standalone Netty or Servlet runtimes, the built-in CSRF validation works natively without any extra dependencies. 

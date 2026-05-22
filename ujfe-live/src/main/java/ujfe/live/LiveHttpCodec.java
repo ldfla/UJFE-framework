@@ -57,16 +57,23 @@ public final class LiveHttpCodec {
 
     public static Set<String> parseCssClasses(String classes) {
         Set<String> parsedClasses = new LinkedHashSet<>();
-        if (classes == null || classes.trim()
-            .isEmpty()) {
+        if (classes == null || classes.isBlank()) {
             return parsedClasses;
         }
 
-        for (String className : classes.trim()
-            .split("\\s+")) {
-            if (!className.isBlank()) {
-                parsedClasses.add(className);
+        int tokenStart = -1;
+        for (int index = 0; index < classes.length(); index++) {
+            if (Character.isWhitespace(classes.charAt(index))) {
+                if (tokenStart >= 0) {
+                    parsedClasses.add(classes.substring(tokenStart, index));
+                    tokenStart = -1;
+                }
+            } else if (tokenStart < 0) {
+                tokenStart = index;
             }
+        }
+        if (tokenStart >= 0) {
+            parsedClasses.add(classes.substring(tokenStart));
         }
         return parsedClasses;
     }

@@ -186,6 +186,16 @@ public final class LiveSession implements AutoCloseable {
         }
     }
 
+    public Optional<RenderMode> renderMode(String path) {
+        readLock.lock();
+        try {
+            return router.resolve(path)
+                .map(RouteDefinition::renderMode);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
     private LiveRenderResult renderPathLocked(String path, String eventId) {
         return renderPathLocked(path, eventId, NO_HTTP_METADATA);
     }

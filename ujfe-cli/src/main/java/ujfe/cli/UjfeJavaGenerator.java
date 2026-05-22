@@ -1,32 +1,30 @@
 package ujfe.cli;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
 final class UjfeJavaGenerator {
     private static final Set<String> UI_FACTORIES = Set.of(
-        "html", "head", "body", "title", "meta", "link", "style", "script", "base",
-        "div", "figure", "figcaption", "details", "summary", "dialog",
-        "header", "main", "aside", "section", "article", "nav", "footer", "address",
-        "h1", "h2", "h3", "h4", "h5", "h6",
-        "b", "i", "u", "em", "strong", "small", "mark", "abbr", "cite",
-        "p", "pre", "code", "blockquote", "q", "br", "hr",
-        "img", "picture", "source", "track", "audio", "video", "canvas", "svg", "map", "area",
-        "iframe", "object", "embed", "param",
-        "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
-        "form", "label", "input", "button", "a", "select", "option", "optgroup", "textarea",
-        "fieldset", "legend", "datalist", "output", "progress", "meter",
-        "li", "ul", "ol", "dt", "dd", "dl", "span", "template", "slot", "math"
-    );
+            "html", "head", "body", "title", "meta", "link", "style", "script", "base",
+            "div", "figure", "figcaption", "details", "summary", "dialog",
+            "header", "main", "aside", "section", "article", "nav", "footer", "address",
+            "h1", "h2", "h3", "h4", "h5", "h6",
+            "b", "i", "u", "em", "strong", "small", "mark", "abbr", "cite",
+            "p", "pre", "code", "blockquote", "q", "br", "hr",
+            "img", "picture", "source", "track", "audio", "video", "canvas", "svg", "map", "area",
+            "iframe", "object", "embed", "param",
+            "table", "thead", "tbody", "tfoot", "tr", "td", "th", "caption", "colgroup", "col",
+            "form", "label", "input", "button", "a", "select", "option", "optgroup", "textarea",
+            "fieldset", "legend", "datalist", "output", "progress", "meter",
+            "li", "ul", "ol", "dt", "dd", "dl", "span", "template", "slot", "math");
     private static final Set<String> BOOLEAN_ATTRIBUTES = Set.of("autofocus", "autoplay", "checked", "controls",
-        "disabled", "formnovalidate", "hidden", "ismap", "itemscope", "loop", "multiple", "muted",
-        "novalidate", "open", "playsinline", "popover", "readonly", "required", "reversed", "selected");
+            "disabled", "formnovalidate", "hidden", "ismap", "itemscope", "loop", "multiple", "muted",
+            "novalidate", "open", "playsinline", "popover", "readonly", "required", "reversed", "selected");
 
     String generate(HtmlParseResult parseResult, Path outputPath) {
         ConversionOptions options = ConversionOptions.builder(Path.of("input.html"), outputPath)
-            .build();
+                .build();
         return generate(parseResult, options).pageJava();
     }
 
@@ -38,61 +36,62 @@ final class UjfeJavaGenerator {
         CssExtraction cssExtraction = extractCss(parseResult.roots(), options, warnings);
         ComponentPlan componentPlan = ComponentPlan.create(parseResult.roots(), cssExtraction.skippedNodes(), options);
         String expression = renderRoots(parseResult.roots(), 8, cssExtraction.skippedNodes(), componentPlan);
-        ConversionStats stats = stats(parseResult.roots(), cssExtraction.skippedNodes(), componentPlan.methodCount(), cssExtraction.blockCount());
+        ConversionStats stats = stats(parseResult.roots(), cssExtraction.skippedNodes(), componentPlan.methodCount(),
+                cssExtraction.blockCount());
 
         String pageJava = pageJava(options, expression, componentPlan, cssExtraction.hasCss());
         String cssJava = cssExtraction.hasCss() ? cssJava(options, cssExtraction.css()) : null;
         Path cssOutput = cssJava == null
-            ? null
-            : options.output()
-            .resolveSibling(options.cssClassName() + ".java");
+                ? null
+                : options.output()
+                        .resolveSibling(options.cssClassName() + ".java");
         return new GeneratedJava(pageJava, cssJava, cssOutput, stats, warnings);
     }
 
     private static String pageJava(
-        ConversionOptions options,
-        String expression,
-        ComponentPlan componentPlan,
-        boolean referencesCss
-    ) {
+            ConversionOptions options,
+            String expression,
+            ComponentPlan componentPlan,
+            boolean referencesCss) {
         StringBuilder java = new StringBuilder();
         if (!options.packageName()
-            .isBlank()) {
+                .isBlank()) {
             java.append("package ")
-                .append(options.packageName())
-                .append(";\n\n");
+                    .append(options.packageName())
+                    .append(";\n\n");
         }
         java.append("import static ujfe.core.UI.*;\n\n")
-            .append("import ujfe.core.Node;\n")
-            .append("import ujfe.router.Page;\n\n")
-            .append("@Page(\"/\")\n")
-            .append("public final class ")
-            .append(options.className())
-            .append(" {\n\n")
-            .append("    public Node render() {\n")
-            .append("        return ")
-            .append(indentContinuation(expression, 8))
-            .append(";\n")
-            .append("    }\n");
+                .append("import ujfe.core.Node;\n")
+                .append("import ujfe.router.Page;\n\n")
+                .append("@Page(\"/\")\n")
+                .append("public final class ")
+                .append(options.className())
+                .append(" {\n\n")
+                .append("    public Node render() {\n")
+                .append("        return ")
+                .append(indentContinuation(expression, 8))
+                .append(";\n")
+                .append("    }\n");
 
         if (referencesCss) {
             java.append("\n")
-                .append("    public String styles() {\n")
-                .append("        return ")
-                .append(options.cssClassName())
-                .append(".css();\n")
-                .append("    }\n");
+                    .append("    public String styles() {\n")
+                    .append("        return ")
+                    .append(options.cssClassName())
+                    .append(".css();\n")
+                    .append("    }\n");
         }
 
         for (ComponentMethod method : componentPlan.methods()) {
             java.append("\n")
-                .append("    private Node ")
-                .append(method.name())
-                .append("() {\n")
-                .append("        return ")
-                .append(indentContinuation(renderNode(method.node(), 8, componentPlan.skippedNodes(), ComponentPlan.empty()), 8))
-                .append(";\n")
-                .append("    }\n");
+                    .append("    private Node ")
+                    .append(method.name())
+                    .append("() {\n")
+                    .append("        return ")
+                    .append(indentContinuation(
+                            renderNode(method.node(), 8, componentPlan.skippedNodes(), ComponentPlan.empty()), 8))
+                    .append(";\n")
+                    .append("    }\n");
         }
 
         java.append("}\n");
@@ -102,33 +101,32 @@ final class UjfeJavaGenerator {
     private static String cssJava(ConversionOptions options, String css) {
         StringBuilder java = new StringBuilder();
         if (!options.packageName()
-            .isBlank()) {
+                .isBlank()) {
             java.append("package ")
-                .append(options.packageName())
-                .append(";\n\n");
+                    .append(options.packageName())
+                    .append(";\n\n");
         }
         java.append("public final class ")
-            .append(options.cssClassName())
-            .append(" {\n")
-            .append("    private ")
-            .append(options.cssClassName())
-            .append("() {\n")
-            .append("    }\n\n")
-            .append("    public static String css() {\n")
-            .append("        return ")
-            .append(quote(css))
-            .append(";\n")
-            .append("    }\n")
-            .append("}\n");
+                .append(options.cssClassName())
+                .append(" {\n")
+                .append("    private ")
+                .append(options.cssClassName())
+                .append("() {\n")
+                .append("    }\n\n")
+                .append("    public static String css() {\n")
+                .append("        return ")
+                .append(quote(css))
+                .append(";\n")
+                .append("    }\n")
+                .append("}\n");
         return java.toString();
     }
 
     private static String renderRoots(
-        List<HtmlNode> roots,
-        int indent,
-        Set<HtmlNode> skippedNodes,
-        ComponentPlan componentPlan
-    ) {
+            List<HtmlNode> roots,
+            int indent,
+            Set<HtmlNode> skippedNodes,
+            ComponentPlan componentPlan) {
         List<HtmlNode> renderableRoots = withoutSkipped(roots, skippedNodes);
         if (renderableRoots.isEmpty()) {
             return "div()";
@@ -140,18 +138,17 @@ final class UjfeJavaGenerator {
         StringBuilder expression = new StringBuilder("div()");
         for (HtmlNode root : renderableRoots) {
             expression.append("\n                .child(")
-                .append(indentContinuation(renderNode(root, 16, skippedNodes, componentPlan), 16))
-                .append(")");
+                    .append(indentContinuation(renderNode(root, 16, skippedNodes, componentPlan), 16))
+                    .append(")");
         }
         return expression.toString();
     }
 
     private static String renderNode(
-        HtmlNode node,
-        int indent,
-        Set<HtmlNode> skippedNodes,
-        ComponentPlan componentPlan
-    ) {
+            HtmlNode node,
+            int indent,
+            Set<HtmlNode> skippedNodes,
+            ComponentPlan componentPlan) {
         if (node.textNode()) {
             return "text(" + quote(node.text()) + ")";
         }
@@ -172,14 +169,14 @@ final class UjfeJavaGenerator {
 
     private static void appendAttributes(StringBuilder expression, HtmlNode node, int indent) {
         for (Map.Entry<String, String> attribute : node.attributes()
-            .entrySet()) {
+                .entrySet()) {
             String name = attribute.getKey();
             String value = attribute.getValue();
             expression.append("\n")
-                .append(spaces(indent + 8))
-                .append(".attr(")
-                .append(quote(name))
-                .append(", ");
+                    .append(spaces(indent + 8))
+                    .append(".attr(")
+                    .append(quote(name))
+                    .append(", ");
             if (BOOLEAN_ATTRIBUTES.contains(name.toLowerCase(Locale.ROOT)) && value.isBlank()) {
                 expression.append("true");
             } else {
@@ -190,18 +187,18 @@ final class UjfeJavaGenerator {
     }
 
     private static void appendChildren(
-        StringBuilder expression,
-        HtmlNode node,
-        int indent,
-        Set<HtmlNode> skippedNodes,
-        ComponentPlan componentPlan
-    ) {
+            StringBuilder expression,
+            HtmlNode node,
+            int indent,
+            Set<HtmlNode> skippedNodes,
+            ComponentPlan componentPlan) {
         for (HtmlNode child : withoutSkipped(node.children(), skippedNodes)) {
             expression.append("\n")
-                .append(spaces(indent + 8))
-                .append(".child(")
-                .append(indentContinuation(renderNode(child, indent + 16, skippedNodes, componentPlan), indent + 16))
-                .append(")");
+                    .append(spaces(indent + 8))
+                    .append(".child(")
+                    .append(indentContinuation(renderNode(child, indent + 16, skippedNodes, componentPlan),
+                            indent + 16))
+                    .append(")");
         }
     }
 
@@ -223,34 +220,32 @@ final class UjfeJavaGenerator {
     }
 
     private static CssExtraction extractCss(
-        List<HtmlNode> roots,
-        ConversionOptions options,
-        List<String> warnings
-    ) {
+            List<HtmlNode> roots,
+            ConversionOptions options,
+            List<String> warnings) {
         if (options.cssMigrationMode() != CssMigrationMode.EXTRACT) {
             return CssExtraction.empty();
         }
 
         Set<HtmlNode> skippedNodes = Collections.newSetFromMap(new IdentityHashMap<>());
         StringBuilder css = new StringBuilder();
-        int[] blockCount = {0};
+        int[] blockCount = { 0 };
         Path inputDirectory = options.input()
-            .toAbsolutePath()
-            .normalize()
-            .getParent();
+                .toAbsolutePath()
+                .normalize()
+                .getParent();
         collectCss(roots, options, inputDirectory, skippedNodes, css, blockCount, warnings);
         return new CssExtraction(css.toString(), skippedNodes, blockCount[0]);
     }
 
     private static void collectCss(
-        List<HtmlNode> nodes,
-        ConversionOptions options,
-        Path inputDirectory,
-        Set<HtmlNode> skippedNodes,
-        StringBuilder css,
-        int[] blockCount,
-        List<String> warnings
-    ) {
+            List<HtmlNode> nodes,
+            ConversionOptions options,
+            Path inputDirectory,
+            Set<HtmlNode> skippedNodes,
+            StringBuilder css,
+            int[] blockCount,
+            List<String> warnings) {
         for (HtmlNode node : nodes) {
             if (!node.elementNode()) {
                 continue;
@@ -272,27 +267,27 @@ final class UjfeJavaGenerator {
     }
 
     private static boolean tryExtractStylesheetLink(
-        HtmlNode node,
-        ConversionOptions options,
-        Path inputDirectory,
-        StringBuilder css,
-        int[] blockCount,
-        List<String> warnings
-    ) {
+            HtmlNode node,
+            ConversionOptions options,
+            Path inputDirectory,
+            StringBuilder css,
+            int[] blockCount,
+            List<String> warnings) {
         String href = node.attributes()
-            .get("href");
+                .get("href");
         if (href == null || href.isBlank()) {
             warnings.add("Stylesheet link without href was preserved.");
             return false;
         }
         if (href.contains("://") || href.startsWith("//") || href.startsWith("/")) {
-            warnings.add("Stylesheet link was preserved because only relative local stylesheets are extracted: " + href);
+            warnings.add(
+                    "Stylesheet link was preserved because only relative local stylesheets are extracted: " + href);
             return false;
         }
         Path stylesheet = inputDirectory == null
-            ? Path.of(href)
-            : inputDirectory.resolve(href)
-            .normalize();
+                ? Path.of(href)
+                : inputDirectory.resolve(href)
+                        .normalize();
         if (inputDirectory != null && !stylesheet.startsWith(inputDirectory)) {
             warnings.add("Stylesheet link was preserved because it resolves outside the input directory: " + href);
             return false;
@@ -316,9 +311,9 @@ final class UjfeJavaGenerator {
             return false;
         }
         String rel = node.attributes()
-            .getOrDefault("rel", "");
+                .getOrDefault("rel", "");
         for (String token : rel.toLowerCase(Locale.ROOT)
-            .split("\\s+")) {
+                .split("\\s+")) {
             if ("stylesheet".equals(token)) {
                 return true;
             }
@@ -331,10 +326,10 @@ final class UjfeJavaGenerator {
             css.append("\n\n");
         }
         css.append("/* ")
-            .append(label.replace("*/", "* /"))
-            .append(" */\n")
-            .append(body.trim())
-            .append('\n');
+                .append(label.replace("*/", "* /"))
+                .append(" */\n")
+                .append(body.trim())
+                .append('\n');
     }
 
     private static String textContent(HtmlNode node) {
@@ -350,11 +345,10 @@ final class UjfeJavaGenerator {
     }
 
     private static ConversionStats stats(
-        List<HtmlNode> roots,
-        Set<HtmlNode> skippedNodes,
-        int componentMethods,
-        int cssBlocks
-    ) {
+            List<HtmlNode> roots,
+            Set<HtmlNode> skippedNodes,
+            int componentMethods,
+            int cssBlocks) {
         int[] counts = new int[3];
         count(roots, skippedNodes, counts);
         return new ConversionStats(counts[0], counts[1], counts[2], componentMethods, cssBlocks);
@@ -368,7 +362,7 @@ final class UjfeJavaGenerator {
             if (node.elementNode()) {
                 counts[0]++;
                 counts[1] += node.attributes()
-                    .size();
+                        .size();
                 count(node.children(), skippedNodes, counts);
             } else if (node.unsafeNode()) {
                 counts[2]++;
@@ -386,8 +380,8 @@ final class UjfeJavaGenerator {
         String prefix = spaces(spaces);
         for (int index = 1; index < lines.length; index++) {
             result.append('\n')
-                .append(prefix)
-                .append(lines[index]);
+                    .append(prefix)
+                    .append(lines[index]);
         }
         return result.toString();
     }
@@ -418,7 +412,7 @@ final class UjfeJavaGenerator {
             }
         }
         return quoted.append('"')
-            .toString();
+                .toString();
     }
 
     private static String spaces(int count) {
@@ -462,7 +456,8 @@ final class UjfeJavaGenerator {
         private final List<ComponentMethod> methods;
         private final Set<HtmlNode> skippedNodes;
 
-        private ComponentPlan(Map<HtmlNode, String> methodNames, List<ComponentMethod> methods, Set<HtmlNode> skippedNodes) {
+        private ComponentPlan(Map<HtmlNode, String> methodNames, List<ComponentMethod> methods,
+                Set<HtmlNode> skippedNodes) {
             this.methodNames = methodNames;
             this.methods = methods;
             this.skippedNodes = skippedNodes;
@@ -531,8 +526,8 @@ final class UjfeJavaGenerator {
                     return "renderArticle";
                 default:
                     return "render" + Character.toUpperCase(node.tagName()
-                        .charAt(0)) + node.tagName()
-                        .substring(1);
+                            .charAt(0)) + node.tagName()
+                                    .substring(1);
             }
         }
 

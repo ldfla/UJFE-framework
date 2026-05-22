@@ -5,3 +5,4 @@ target/
 *.log
 /docs/roadmap/scripts/
 /docs/roadmap/
+/ujfe-redteam.sh
