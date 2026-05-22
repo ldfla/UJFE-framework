@@ -1,6 +1,13 @@
 # Changelog
 ## Unreleased
 
+## Version 0.26.0-SNAPSHOT - 21/05/2026
+
+- Updated the Maven project version to `0.26.0-SNAPSHOT`.
+- Hardened `UjfeSpringHandlerMapping` so Spring static resource paths are never claimed by the UJFE mapping and registered UJFE page routes remain explicit `GET` ownership.
+- Added Spring MVC coexistence regression coverage for registered UJFE pages, `/_ujfe/*` internal endpoints, REST controllers, regular MVC controllers, actuator-like routes, static resources, missing routes, and servlet security filters.
+- Added Spring integration documentation covering route ownership, handler mapping order, Spring Security, static resources, actuator behavior, and missing-route behavior.
+
 ## Version 0.25.0-SNAPSHOT - 18/05/2026
 
 - Updated the Maven project version to `0.25.0-SNAPSHOT`.

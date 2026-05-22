@@ -4,12 +4,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import ujfe.live.LiveHttpPaths;
+import ujfe.live.StaticAssetHandler;
 import ujfe.router.Router;
 
 import java.util.Objects;
 
 public final class UjfeSpringHandlerMapping extends AbstractHandlerMapping {
     public static final int DEFAULT_ORDER = 100;
+    private static final String INTERNAL_PATH_PREFIX = "/_ujfe/";
     private final Router router;
     private final HttpRequestHandler handler;
 
@@ -22,13 +24,20 @@ public final class UjfeSpringHandlerMapping extends AbstractHandlerMapping {
     @Override
     protected Object getHandlerInternal(HttpServletRequest request) {
         String path = UjfeSpringPaths.pathWithinApplication(request);
-        if (LiveHttpPaths.isInternalPath(path)) {
+        if (isInternalPath(path)) {
             return handler;
+        }
+        if (StaticAssetHandler.isStaticAssetPath(path)) {
+            return null;
         }
         if (!"GET".equals(request.getMethod())) {
             return null;
         }
         return router.resolve(path)
             .isPresent() ? handler : null;
+    }
+
+    private static boolean isInternalPath(String path) {
+        return LiveHttpPaths.isInternalPath(path) || path.startsWith(INTERNAL_PATH_PREFIX);
     }
 }
