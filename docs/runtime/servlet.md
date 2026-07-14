@@ -40,7 +40,7 @@ Add `ujfe-servlet` to a WAR project:
 <dependency>
     <groupId>dev.ujfe</groupId>
     <artifactId>ujfe-servlet</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.26.0-SNAPSHOT</version>
 </dependency>
 ```
 

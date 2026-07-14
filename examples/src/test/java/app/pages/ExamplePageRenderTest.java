@@ -25,6 +25,8 @@ final class ExamplePageRenderTest {
         assertTrue(html.contains("@Page"));
         assertTrue(html.contains("Router"));
         assertTrue(html.contains("CSS modes"));
+        assertTrue(html.contains("Static assets"));
+        assertTrue(html.contains("RenderMode"));
         assertTrue(html.contains("LiveSession"));
     }
 

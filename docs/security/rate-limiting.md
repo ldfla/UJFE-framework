@@ -9,6 +9,8 @@ This protection is enabled by default for:
 
 It does not apply to public page `GET` routes, `/_ujfe/client.js`, `/_ujfe/dev.js`, or `/_ujfe/css`.
 
+In Spring MVC applications, the Spring handler mapping exposes these internal endpoints only under `/_ujfe/*`; non-UJFE routes continue through the host application's controllers, resource handlers, actuator mappings, filters, and not-found flow. See [Spring MVC integration](../integrations/spring.md) for route coexistence details.
+
 ## Why It Exists
 
 Live endpoints can receive frequent requests from browser events, state synchronization, and runtime mutations. A bug in client code, an accidental event loop, malformed automation, or basic abuse can generate excessive request volume.

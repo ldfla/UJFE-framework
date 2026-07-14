@@ -7,8 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import ujfe.core.Node;
+import ujfe.core.RenderMode;
 import ujfe.live.*;
 import ujfe.router.Page;
+import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
 import ujfe.validation.AccessibilityValidator;
 import ujfe.validation.ValidationMode;
@@ -64,6 +66,8 @@ final class UjfeServletTest {
             .startsWith("application/javascript"));
         assertTrue(client.body()
             .contains(LiveHttpPaths.EVENT));
+        assertEquals("public, max-age=300, must-revalidate", client.header("Cache-Control"));
+        assertNotNull(client.header("ETag"));
         assertEquals(200, dev.status());
         assertTrue(dev.body()
             .contains("ujfe-dev-preview"));
@@ -72,6 +76,14 @@ final class UjfeServletTest {
             .startsWith("text/css"));
         assertTrue(css.body()
             .contains("padding"));
+        assertEquals("private, no-cache", css.header("Cache-Control"));
+        assertNotNull(css.header("ETag"));
+
+        TestResponse notModified = service(servlet, TestRequest.get(LiveHttpPaths.CLIENT_SCRIPT)
+            .header("If-None-Match", client.header("ETag")));
+        assertEquals(304, notModified.status());
+        assertEquals(client.header("ETag"), notModified.header("ETag"));
+        assertEquals("", notModified.body());
     }
 
     @Test
@@ -287,6 +299,20 @@ final class UjfeServletTest {
 
         assertEquals(200, service(servlet, TestRequest.get("/")).status());
         assertEquals(200, service(servlet, TestRequest.get("/")).status());
+    }
+
+    @Test
+    void pageResponsesUseRouteRenderModeCacheHeaders() throws Exception {
+        Router router = new Router().register(new RouteDefinition("/", HomePage::new)
+            .withRenderMode(RenderMode.staticPage(Duration.ofSeconds(120))
+                .revalidateOn("home.updated")));
+        UjfeServlet servlet = new UjfeServlet(router);
+
+        TestResponse response = service(servlet, TestRequest.get("/"));
+
+        assertEquals(200, response.status());
+        assertEquals("public, max-age=120", response.header("Cache-Control"));
+        assertEquals("home.updated", response.header("X-UJFE-Revalidate-On"));
     }
 
     @Test
@@ -794,8 +820,8 @@ final class UjfeServletTest {
         private String contextPath = "";
         private String servletPath = "";
         private String pathInfo;
-        private String scheme = "http";
-        private String remoteAddr = "127.0.0.1";
+        private final String scheme = "http";
+        private final String remoteAddr = "127.0.0.1";
         private String body = "";
 
         private TestRequest(String method, String requestUri) {

@@ -1,20 +1,46 @@
 package ujfe.spring;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockServletContext;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.stereotype.Controller;
 import ujfe.core.Node;
+import ujfe.core.RenderMode;
 import ujfe.live.LiveHttpPaths;
 import ujfe.live.LiveSession;
 import ujfe.live.LiveSessionConfig;
 import ujfe.live.SecurityHeadersConfig;
 import ujfe.router.Page;
+import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
 import ujfe.validation.AccessibilityValidator;
 import ujfe.validation.ValidationMode;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,15 +51,212 @@ import static ujfe.core.UI.*;
 final class UjfeSpringHandlerTest {
     @Test
     void mapsOnlyUjfeRoutesAndInternalEndpoints() throws Exception {
-        Router router = new Router().register(new HomePage());
+        Router router = new Router()
+            .register(new HomePage())
+            .register("/dashboard", DashboardPage::new)
+            .register("/assets/example.css", DashboardPage::new);
         try (LiveSession session = new LiveSession(router)) {
             UjfeSpringHandler handler = new UjfeSpringHandler(session);
             UjfeSpringHandlerMapping mapping = new UjfeSpringHandlerMapping(router, handler);
 
             assertNotNull(mapping.getHandler(new MockHttpServletRequest("GET", "/")));
+            assertNotNull(mapping.getHandler(new MockHttpServletRequest("GET", "/dashboard")));
             assertNotNull(mapping.getHandler(new MockHttpServletRequest("GET", "/_ujfe/client.js")));
+            assertNotNull(mapping.getHandler(new MockHttpServletRequest("GET", "/_ujfe/state")));
+            assertNotNull(mapping.getHandler(new MockHttpServletRequest("POST", "/_ujfe/state")));
+            assertNotNull(mapping.getHandler(new MockHttpServletRequest("GET", "/_ujfe/unknown.js")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/api/users")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/api/users/42")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/actuator/health")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/missing")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/favicon.ico")));
             assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/assets/app.css")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/assets/example.css")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/static/example.js")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/public/example.txt")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/webjars/example/example.js")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/css/app.css")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/js/app.js")));
+            assertNull(mapping.getHandler(new MockHttpServletRequest("GET", "/images/logo.png")));
             assertNull(mapping.getHandler(new MockHttpServletRequest("POST", "/")));
+            assertEquals(UjfeSpringHandlerMapping.DEFAULT_ORDER, mapping.getOrder());
+        }
+    }
+
+    @Nested
+    final class SpringMvcCoexistenceTests {
+        @Test
+        void registeredUjfeRoutesAndInternalEndpointsRunThroughSpringMvc() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create()) {
+                MvcResult dashboard = fixture.performGet("/dashboard");
+                assertEquals(200, dashboard.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(dashboard.getResponse()
+                        .getContentType())
+                    .startsWith("text/html"));
+                assertTrue(dashboard.getResponse()
+                    .getContentAsString()
+                    .contains("Dashboard"));
+
+                MvcResult docs = fixture.performGet("/docs");
+                assertEquals(200, docs.getResponse()
+                    .getStatus());
+                assertTrue(docs.getResponse()
+                    .getContentAsString()
+                    .contains("Docs"));
+
+                MvcResult client = fixture.performGet("/_ujfe/client.js");
+                assertEquals(200, client.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(client.getResponse()
+                        .getContentType())
+                    .startsWith("application/javascript"));
+                assertTrue(client.getResponse()
+                    .getContentAsString()
+                    .contains("/_ujfe/event"));
+
+                MvcResult css = fixture.mockMvc.perform(MockMvcRequestBuilders.get("/_ujfe/css")
+                        .param("classes", "p-4"))
+                    .andReturn();
+                assertEquals(200, css.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(css.getResponse()
+                        .getContentType())
+                    .startsWith("text/css"));
+            }
+        }
+
+        @Test
+        void liveEventEndpointRunsThroughUjfeInternalLogic() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create()) {
+                MvcResult page = fixture.performGet("/dashboard");
+                String eventId = firstEventId(page.getResponse()
+                    .getContentAsString());
+
+                MvcResult event = fixture.mockMvc.perform(MockMvcRequestBuilders.post(LiveHttpPaths.EVENT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventId\":\"" + eventId + "\",\"clientState\":{\"localStorage\":{}}}"))
+                    .andReturn();
+
+                assertEquals(200, event.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(event.getResponse()
+                        .getContentType())
+                    .startsWith("application/json"));
+                assertTrue(event.getResponse()
+                    .getContentAsString()
+                    .contains("\"html\""));
+            }
+        }
+
+        @Test
+        void springMvcControllersKeepTheirStatusBodyAndContentType() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create()) {
+                MvcResult users = fixture.performGet("/api/users");
+                assertEquals(200, users.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(users.getResponse()
+                        .getContentType())
+                    .startsWith(MediaType.APPLICATION_JSON_VALUE));
+                assertEquals("{\"source\":\"spring-rest\",\"count\":2}", users.getResponse()
+                    .getContentAsString());
+
+                MvcResult user = fixture.performGet("/api/users/42");
+                assertEquals(202, user.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(user.getResponse()
+                        .getContentType())
+                    .startsWith(MediaType.APPLICATION_JSON_VALUE));
+                assertEquals("{\"id\":\"42\",\"source\":\"spring-rest\"}", user.getResponse()
+                    .getContentAsString());
+
+                MvcResult mvcPage = fixture.performGet("/mvc/page");
+                assertEquals(203, mvcPage.getResponse()
+                    .getStatus());
+                assertTrue(Objects.requireNonNull(mvcPage.getResponse()
+                        .getContentType())
+                    .startsWith(MediaType.TEXT_PLAIN_VALUE));
+                assertEquals("spring-mvc-page", mvcPage.getResponse()
+                    .getContentAsString());
+            }
+        }
+
+        @Test
+        void actuatorLikeAndUnknownRoutesAreNotConvertedToUjfeErrors() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create()) {
+                MvcResult health = fixture.performGet("/actuator/health");
+                assertEquals(200, health.getResponse()
+                    .getStatus());
+                assertEquals("{\"status\":\"UP\"}", health.getResponse()
+                    .getContentAsString());
+
+                MvcResult info = fixture.performGet("/actuator/info");
+                assertEquals(200, info.getResponse()
+                    .getStatus());
+                assertEquals("{\"app\":\"spring\"}", info.getResponse()
+                    .getContentAsString());
+
+                try (LoggerSilencer ignored = LoggerSilencer.attach("org.springframework.web.servlet.PageNotFound")) {
+                    MvcResult missing = fixture.performGet("/missing");
+                    assertEquals(404, missing.getResponse()
+                        .getStatus());
+                    assertFalse(missing.getResponse()
+                        .getContentAsString()
+                        .contains("UJFE_ROUTE_NOT_FOUND"));
+                }
+            }
+        }
+
+        @Test
+        void springStaticResourcesAreNotHijacked() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create()) {
+                assertStaticResource(fixture.performGet("/favicon.ico"), "ujfe-test-favicon");
+                assertStaticResource(fixture.performGet("/assets/example.css"), "body{color:#123456;}");
+                assertStaticResource(fixture.performGet("/static/example.js"), "window.ujfeStaticExample=true;");
+                assertStaticResource(fixture.performGet("/webjars/example/example.js"), "window.ujfeWebjarExample=true;");
+
+                try (LoggerSilencer ignored = LoggerSilencer.attach("org.springframework.web.servlet.resource")) {
+                    MvcResult missingStatic = fixture.performGet("/assets/missing.css");
+                    assertEquals(404, missingStatic.getResponse()
+                        .getStatus());
+                    assertFalse(missingStatic.getResponse()
+                        .getContentAsString()
+                        .contains("UJFE_ROUTE_NOT_FOUND"));
+                }
+            }
+        }
+
+        @Test
+        void servletSecurityFiltersStillApplyToUjfeAndSpringRoutes() throws Exception {
+            try (SpringMvcFixture fixture = SpringMvcFixture.create(requiringAuthHeaderFilter())) {
+                assertEquals(401, fixture.performGet("/dashboard")
+                    .getResponse()
+                    .getStatus());
+                assertEquals(401, fixture.performGet("/api/users")
+                    .getResponse()
+                    .getStatus());
+                assertEquals(401, fixture.performGet("/_ujfe/client.js")
+                    .getResponse()
+                    .getStatus());
+
+                assertEquals(200, fixture.performGet("/dashboard", true)
+                    .getResponse()
+                    .getStatus());
+                assertEquals(200, fixture.performGet("/api/users", true)
+                    .getResponse()
+                    .getStatus());
+                assertEquals(200, fixture.performGet("/_ujfe/client.js", true)
+                    .getResponse()
+                    .getStatus());
+            }
+        }
+
+        private void assertStaticResource(MvcResult result, String expectedBody) throws Exception {
+            assertEquals(200, result.getResponse()
+                .getStatus());
+            assertEquals(expectedBody, result.getResponse()
+                .getContentAsString()
+                .stripTrailing());
         }
     }
 
@@ -167,6 +390,7 @@ final class UjfeSpringHandlerTest {
             handler.handleRequest(request, response);
 
             assertEquals(200, response.getStatus());
+            assertNotNull(response.getContentType());
             assertTrue(response.getContentType()
                 .startsWith("text/html"));
             assertTrue(response.getContentAsString()
@@ -175,7 +399,7 @@ final class UjfeSpringHandlerTest {
                 .contains("Cookie: ativo"));
             assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
             assertEquals("strict-origin-when-cross-origin", response.getHeader("Referrer-Policy"));
-            assertTrue(response.getHeader("Content-Security-Policy")
+            assertTrue(Objects.requireNonNull(response.getHeader("Content-Security-Policy"))
                 .contains("default-src 'self'"));
         }
     }
@@ -226,6 +450,17 @@ final class UjfeSpringHandlerTest {
                 .startsWith("application/javascript"));
             assertTrue(response.getContentAsString()
                 .contains("/_ujfe/event"));
+            assertEquals("public, max-age=300, must-revalidate", response.getHeader("Cache-Control"));
+            assertNotNull(response.getHeader("ETag"));
+
+            MockHttpServletRequest conditionalRequest = new MockHttpServletRequest("GET", "/_ujfe/client.js");
+            conditionalRequest.addHeader("If-None-Match", response.getHeader("ETag"));
+            MockHttpServletResponse conditional = new MockHttpServletResponse();
+            handler.handleRequest(conditionalRequest, conditional);
+
+            assertEquals(304, conditional.getStatus());
+            assertEquals(response.getHeader("ETag"), conditional.getHeader("ETag"));
+            assertEquals("", conditional.getContentAsString());
         }
     }
 
@@ -248,6 +483,7 @@ final class UjfeSpringHandlerTest {
             handler.handleRequest(request, event);
 
             assertEquals(200, event.getStatus());
+            assertNotNull(event.getContentType());
             assertTrue(event.getContentType()
                 .startsWith("application/json"));
             assertTrue(event.getContentAsString()
@@ -517,6 +753,7 @@ final class UjfeSpringHandlerTest {
             }
 
             assertEquals(400, response.getStatus());
+            assertNotNull(response.getContentType());
             assertTrue(response.getContentType()
                 .startsWith("text/plain"));
             assertEquals("Invalid static asset path.", response.getContentAsString());
@@ -538,6 +775,23 @@ final class UjfeSpringHandlerTest {
 
             assertEquals(200, first.getStatus());
             assertEquals(200, second.getStatus());
+        }
+    }
+
+    @Test
+    void pageResponsesUseRouteRenderModeCacheHeaders() throws Exception {
+        Router router = new Router().register(new RouteDefinition("/", HomePage::new)
+            .withRenderMode(RenderMode.staticShell(Duration.ofSeconds(45))
+                .revalidateOn("home.updated")));
+        try (LiveSession session = new LiveSession(router)) {
+            UjfeSpringHandler handler = new UjfeSpringHandler(session);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+
+            handler.handleRequest(new MockHttpServletRequest("GET", "/"), response);
+
+            assertEquals(200, response.getStatus());
+            assertEquals("private, max-age=45", response.getHeader("Cache-Control"));
+            assertEquals("home.updated", response.getHeader("X-UJFE-Revalidate-On"));
         }
     }
 
@@ -579,6 +833,7 @@ final class UjfeSpringHandlerTest {
     private static void assertError(MockHttpServletResponse response, int status, String code, String message)
         throws Exception {
         assertEquals(status, response.getStatus());
+        assertNotNull(response.getContentType());
         assertTrue(response.getContentType()
             .startsWith("application/json"));
         String body = response.getContentAsString();
@@ -591,6 +846,7 @@ final class UjfeSpringHandlerTest {
 
     private static void assertStaticAssetNotFound(MockHttpServletResponse response) throws Exception {
         assertEquals(404, response.getStatus());
+        assertNotNull(response.getContentType());
         assertTrue(response.getContentType()
             .startsWith("text/plain"));
         assertEquals("Static asset not found.", response.getContentAsString());
@@ -609,6 +865,22 @@ final class UjfeSpringHandlerTest {
                     .orElse("missing")))
                 .child(button("Click").onClick(() -> {
                 }));
+        }
+    }
+
+    public static final class DashboardPage {
+        public Node render() {
+            return main()
+                .child(h1("Dashboard"))
+                .child(button("Refresh").onClick(() -> {
+                }));
+        }
+    }
+
+    public static final class DocsPage {
+        public Node render() {
+            return main()
+                .child(h1("Docs"));
         }
     }
 
@@ -632,6 +904,186 @@ final class UjfeSpringHandlerTest {
     public static final class AssetLikePage {
         public Node render() {
             throw new IllegalStateException("asset-like route should not render");
+        }
+    }
+
+    @Configuration
+    @EnableWebMvc
+    static class RouteCoexistenceConfig implements WebMvcConfigurer {
+        @Bean
+        Router ujfeRouter() {
+            return new Router()
+                .register("/dashboard", DashboardPage::new)
+                .register("/docs", DocsPage::new);
+        }
+
+        @Bean
+        LiveSessionConfig ujfeLiveSessionConfig() {
+            return LiveSessionConfig.builder()
+                .disableCsrfProtectionForDevelopmentUnsafe()
+                .build();
+        }
+
+        @Bean
+        LiveSession ujfeLiveSession(Router router, LiveSessionConfig config) {
+            return new LiveSession(router, config);
+        }
+
+        @Bean
+        UjfeSpringHandler ujfeSpringHandler(LiveSession liveSession) {
+            return new UjfeSpringHandler(liveSession);
+        }
+
+        @Bean
+        UjfeSpringHandlerMapping ujfeSpringHandlerMapping(Router router, UjfeSpringHandler handler) {
+            return new UjfeSpringHandlerMapping(router, handler);
+        }
+
+        @Bean
+        ApiController apiController() {
+            return new ApiController();
+        }
+
+        @Bean
+        MvcController mvcController() {
+            return new MvcController();
+        }
+
+        @Bean
+        ActuatorLikeController actuatorLikeController() {
+            return new ActuatorLikeController();
+        }
+
+        @Override
+        public void addResourceHandlers(ResourceHandlerRegistry registry) {
+            registry.addResourceHandler("/favicon.ico")
+                .addResourceLocations("classpath:/ujfe-spring-test/");
+            registry.addResourceHandler("/assets/**")
+                .addResourceLocations("classpath:/ujfe-spring-test/assets/");
+            registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/ujfe-spring-test/static/");
+            registry.addResourceHandler("/webjars/**")
+                .addResourceLocations("classpath:/ujfe-spring-test/webjars/");
+        }
+    }
+
+    @RestController
+    static class ApiController {
+        @GetMapping(value = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE)
+        String users() {
+            return "{\"source\":\"spring-rest\",\"count\":2}";
+        }
+
+        @GetMapping(value = "/api/users/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+        ResponseEntity<String> user(@PathVariable("id") String id) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"id\":\"" +
+                    id +
+                    "\",\"source\":\"spring-rest\"}");
+        }
+    }
+
+    @Controller
+    static class MvcController {
+        @GetMapping(value = "/mvc/page", produces = MediaType.TEXT_PLAIN_VALUE)
+        @ResponseBody
+        ResponseEntity<String> page() {
+            return ResponseEntity.status(203)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("spring-mvc-page");
+        }
+    }
+
+    @RestController
+    static class ActuatorLikeController {
+        @GetMapping(value = "/actuator/health", produces = MediaType.APPLICATION_JSON_VALUE)
+        String health() {
+            return "{\"status\":\"UP\"}";
+        }
+
+        @GetMapping(value = "/actuator/info", produces = MediaType.APPLICATION_JSON_VALUE)
+        String info() {
+            return "{\"app\":\"spring\"}";
+        }
+    }
+
+    private static Filter requiringAuthHeaderFilter() {
+        return (request, response, chain) -> {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+            String path = UjfeSpringPaths.pathWithinApplication(httpRequest);
+            if (isProtectedPath(path) && !"ok".equals(httpRequest.getHeader("X-Test-Auth"))) {
+                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+            chain.doFilter(request, response);
+        };
+    }
+
+    private static boolean isProtectedPath(String path) {
+        return "/dashboard".equals(path)
+            || "/api/users".equals(path)
+            || path.startsWith("/_ujfe/");
+    }
+
+    private static final class SpringMvcFixture implements AutoCloseable {
+        private final AnnotationConfigWebApplicationContext context;
+        private final MockMvc mockMvc;
+
+        private SpringMvcFixture(AnnotationConfigWebApplicationContext context, MockMvc mockMvc) {
+            this.context = context;
+            this.mockMvc = mockMvc;
+        }
+
+        static SpringMvcFixture create(Filter... filters) {
+            AnnotationConfigWebApplicationContext context = new AnnotationConfigWebApplicationContext();
+            context.setServletContext(new MockServletContext());
+            context.register(RouteCoexistenceConfig.class);
+            context.refresh();
+            var builder = MockMvcBuilders.webAppContextSetup(context);
+            if (filters.length > 0) {
+                builder.addFilters(filters);
+            }
+            return new SpringMvcFixture(context, builder.build());
+        }
+
+        MvcResult performGet(String path) throws Exception {
+            return performGet(path, false);
+        }
+
+        MvcResult performGet(String path, boolean authenticated) throws Exception {
+            var request = MockMvcRequestBuilders.get(path);
+            if (authenticated) {
+                request.header("X-Test-Auth", "ok");
+            }
+            return mockMvc.perform(request)
+                .andReturn();
+        }
+
+        @Override
+        public void close() {
+            context.close();
+        }
+    }
+
+    private static final class LoggerSilencer implements AutoCloseable {
+        private final Logger logger;
+        private final boolean useParentHandlers;
+
+        private LoggerSilencer(Logger logger) {
+            this.logger = logger;
+            this.useParentHandlers = logger.getUseParentHandlers();
+            this.logger.setUseParentHandlers(false);
+        }
+
+        static LoggerSilencer attach(String loggerName) {
+            return new LoggerSilencer(Logger.getLogger(loggerName));
+        }
+
+        @Override
+        public void close() {
+            logger.setUseParentHandlers(useParentHandlers);
         }
     }
 

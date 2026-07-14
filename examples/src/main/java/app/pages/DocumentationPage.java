@@ -39,10 +39,12 @@ public final class DocumentationPage implements Component {
                             .child(elementCatalogSection())
                             .child(formSection())
                             .child(cssSection())
+                            .child(assetSection())
                             .child(springSection())
                             .child(securitySection())
                             .child(signalsSection())
                             .child(routerSection())
+                            .child(performanceSection())
                             .child(runtimeActionsSection())
                             .child(lifecycleSection())
                             .child(restSection())
@@ -74,6 +76,8 @@ public final class DocumentationPage implements Component {
                         .child(" with inputs and events"))
                     .child(le().child(strong("CSS"))
                         .child(" with utilities and color scales"))
+                    .child(le().child(strong("Assets"))
+                        .child(" with JavaScript, images, audio, video, and static ownership"))
                     .child(le().child(strong("Spring MVC"))
                         .child(" on the same Tomcat port"))
                     .child(le().child(strong("Security"))
@@ -82,6 +86,8 @@ public final class DocumentationPage implements Component {
                         .child(" with lazy computed values, cache invalidation, and subscribers"))
                     .child(le().child(strong("Router"))
                         .child(" with route sources, deterministic discovery, and AOT metadata direction"))
+                    .child(le().child(strong("Performance"))
+                        .child(" with internal ETags and route RenderMode cache intent"))
                     .child(le().child(strong("Runtime Actions"))
                         .child(" with server-side extension points for rendering, events, errors, and head contributions"))
                     .child(le().child(strong("Lifecycle"))
@@ -279,6 +285,25 @@ public final class DocumentationPage implements Component {
             .child(codeBlock(cssCode()));
     }
 
+    private Node assetSection() {
+        return section()
+            .css(tonePanelClass("emerald", "p-6 flex flex-col gap-4"))
+            .child(h2("Static assets and browser modules").css(toneTitleClass("emerald", "text-2xl")))
+            .child(p("UJFE renders normal HTML references to JavaScript, images, audio, video, fonts, and documents. The framework owns only its internal endpoints under /_ujfe; application assets should be served by Spring resource handlers, a servlet container, a reverse proxy, a CDN, or another static file server.")
+                .css(bodyTextClass("text-base")))
+            .child(
+                div()
+                    .css("grid grid-cols-3 gap-3")
+                    .child(cssPill("JavaScript", "script(), clientModule(...), BrowserApiBridge"))
+                    .child(cssPill("Images", "img(), picture(), source(), data:image/*"))
+                    .child(cssPill("Media", "video(), audio(), track(), canvas(), svg()"))
+                    .child(cssPill("Files", "object(), embed(), iframe(), link()"))
+                    .child(cssPill("Ownership", "host app serves /assets/** and /static/**"))
+                    .child(cssPill("Safety", "path traversal rejected before page rendering"))
+            )
+            .child(codeBlock(assetCode()));
+    }
+
     private Node springSection() {
         return section()
             .css(tonePanelClass("secondary", "p-6 flex flex-col gap-4"))
@@ -381,6 +406,25 @@ public final class DocumentationPage implements Component {
                     .child(cssPill("Validation", "render methods and paths are checked"))
             )
             .child(codeBlock(routerCode()));
+    }
+
+    private Node performanceSection() {
+        return section()
+            .css(tonePanelClass("primary", "p-6 flex flex-col gap-4"))
+            .child(h2("Production cache and runtime performance").css(toneTitleClass("primary", "text-2xl")))
+            .child(p("Internal UJFE assets return ETag and Cache-Control headers in every adapter. Page responses use the route RenderMode so applications can declare cache intent without coupling the page to Netty, Servlet, Spring, or a CDN.")
+                .css(bodyTextClass("text-base")))
+            .child(
+                div()
+                    .css("grid grid-cols-3 gap-3")
+                    .child(cssPill("/_ujfe/client.js", "short public cache with ETag"))
+                    .child(cssPill("/_ujfe/dev.js", "no-cache with ETag"))
+                    .child(cssPill("/_ujfe/css", "private revalidation"))
+                    .child(cssPill("RenderMode.dynamic", "Cache-Control: no-store"))
+                    .child(cssPill("staticPage", "public max-age for public HTML"))
+                    .child(cssPill("staticShell", "private max-age for app shells"))
+            )
+            .child(codeBlock(performanceCode()));
     }
 
     private Node runtimeActionsSection() {
@@ -589,14 +633,13 @@ public final class DocumentationPage implements Component {
                 .css(theme.darkMode()
                     ? "border border-slate-700 rounded bg-slate-950"
                     : "border border-slate-200 rounded bg-white"))
-            .child(video().src("/demo.mp4")
-                .poster("/poster.png")
+            .child(video().src("/assets/demo.mp4")
                 .controls(true)
-                .preload("metadata")
+                .preload("none")
                 .css("w-full rounded border border-slate-200"))
             .child(audio().controls(true)
-                .preload("metadata")
-                .child(source().src("/audio.mp3")
+                .preload("none")
+                .child(source().src("/assets/audio.mp3")
                     .type("audio/mpeg")))
             .child(img().src("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==")
                 .alt("pixel")
@@ -791,20 +834,20 @@ public final class DocumentationPage implements Component {
     private String listAndMediaCode() {
         return "a(\"Home\").attr(\"href\", \"/\")\n"
             + "// Void elements render without closing tags and reject children.\n"
-            + "img().src(\"/logo.png\").alt(\"Logo\")\n"
+            + "img().src(\"/assets/logo.png\").alt(\"Logo\")\n"
             + "picture()\n"
-            + "    .child(source().attr(\"media\", \"(min-width: 800px)\").src(\"/hero-wide.webp\"))\n"
-            + "    .child(img().src(\"/hero.webp\").alt(\"Dashboard\"))\n"
+            + "    .child(source().attr(\"media\", \"(min-width: 800px)\").src(\"/assets/hero-wide.webp\"))\n"
+            + "    .child(img().src(\"/assets/hero.webp\").alt(\"Dashboard\"))\n"
             + "canvas().width(320).height(180).ariaLabel(\"Chart\")\n"
-            + "video().src(\"/demo.mp4\").poster(\"/poster.png\").controls(true)\n"
+            + "video().src(\"/assets/demo.mp4\").poster(\"/assets/poster.png\").controls(true).preload(\"metadata\")\n"
             + "audio().controls(true)\n"
-            + "    .child(source().src(\"/audio.mp3\").type(\"audio/mpeg\"))\n"
-            + "    .child(track().attr(\"kind\", \"captions\").attr(\"srclang\", \"en\").src(\"/captions.vtt\"))\n"
+            + "    .child(source().src(\"/assets/audio.mp3\").type(\"audio/mpeg\"))\n"
+            + "    .child(track().attr(\"kind\", \"captions\").attr(\"srclang\", \"en\").src(\"/assets/captions.vtt\"))\n"
             + "figure().child(svg().attr(\"viewBox\", \"0 0 10 10\")).child(figcaption(\"SVG\"))\n"
             + "map().attr(\"name\", \"primary-map\").child(area().attr(\"shape\", \"rect\").attr(\"coords\", \"0,0,20,20\").href(\"/docs\"))\n"
             + "iframe().src(\"/embedded\").attr(\"loading\", \"lazy\")\n"
-            + "object().attr(\"data\", \"/report.pdf\").type(\"application/pdf\")\n"
-            + "embed().src(\"/preview.pdf\").type(\"application/pdf\")\n"
+            + "object().attr(\"data\", \"/assets/report.pdf\").type(\"application/pdf\")\n"
+            + "embed().src(\"/assets/preview.pdf\").type(\"application/pdf\")\n"
             + "param().attr(\"name\", \"autoplay\").attr(\"value\", \"false\")\n"
             + "ul().child(le().child(\"Item\"))\n"
             + "ol().child(li().child(\"Item\"))\n"
@@ -900,6 +943,47 @@ public final class DocumentationPage implements Component {
             + "    .cssMode(CssMode.EXTERNAL)\n"
             + "    .externalStylesheet(\"/app.css\")\n"
             + "    .build();\n";
+    }
+
+    private String assetCode() {
+        return "// UJFE renders asset references. It does not serve arbitrary filesystem files.\n"
+            + "// Host /assets/** through Spring resources, a servlet container, a reverse proxy, or CDN.\n\n"
+            + "LiveSessionConfig.builder()\n"
+            + "    .cssMode(CssMode.EXTERNAL)\n"
+            + "    .externalStylesheet(\"/assets/app.css\")\n"
+            + "    .head(script().src(\"/assets/app.js\").attr(\"defer\", true))\n"
+            + "    .head(link().attr(\"rel\", \"preload\").href(\"/assets/app.woff2\").attr(\"as\", \"font\"))\n"
+            + "    .build();\n\n"
+            + "img().src(\"/assets/logo.svg\").alt(\"Product logo\")\n"
+            + "picture()\n"
+            + "    .child(source().attr(\"media\", \"(min-width: 960px)\").src(\"/assets/hero-wide.webp\"))\n"
+            + "    .child(img().src(\"/assets/hero.webp\").alt(\"Dashboard\"))\n"
+            + "video().src(\"/assets/demo.mp4\").poster(\"/assets/poster.webp\").controls(true).preload(\"metadata\")\n"
+            + "audio().controls(true).child(source().src(\"/assets/audio.mp3\").type(\"audio/mpeg\"))\n"
+            + "canvas().width(640).height(320).ariaLabel(\"Chart canvas\")\n"
+            + "object().attr(\"data\", \"/assets/report.pdf\").type(\"application/pdf\")\n\n"
+            + "// Metadata-only client module descriptor for app-owned JavaScript.\n"
+            + "clientModule(\"charts\")\n"
+            + "    .src(\"/assets/charts.js\")\n"
+            + "    .action(\"render\", ChartRequest.class)\n"
+            + "    .target(\"#chart\")\n"
+            + "    .errorTarget(\"#chart-error\")\n"
+            + "    .defer(true);\n";
+    }
+
+    private String performanceCode() {
+        return "Router router = new Router()\n"
+            + "    .register(new RouteDefinition(\"/\", HomePage::new)\n"
+            + "        .withRenderMode(RenderMode.staticShell(Duration.ofSeconds(30))))\n"
+            + "    .register(new RouteDefinition(\"/marketing\", MarketingPage::new)\n"
+            + "        .withRenderMode(RenderMode.staticPage(Duration.ofMinutes(10))))\n"
+            + "    .register(new RouteDefinition(\"/feed\", FeedPage::new)\n"
+            + "        .withRenderMode(RenderMode\n"
+            + "            .staleWhileRevalidate(Duration.ofSeconds(60), Duration.ofMinutes(5))\n"
+            + "            .revalidateOn(\"feed.updated\")));\n\n"
+            + "// Dynamic is the default and emits Cache-Control: no-store.\n"
+            + "new RouteDefinition(\"/account\", AccountPage::new)\n"
+            + "    .withRenderMode(RenderMode.dynamic());\n";
     }
 
     private String springCode() {

@@ -6,9 +6,11 @@ import ujfe.runtime.lifecycle.LifecycleRuntime;
 import ujfe.runtime.lifecycle.LifecycleTracker;
 
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class UjfeContextTest {
@@ -37,6 +39,15 @@ final class UjfeContextTest {
         assertTrue(executed.get());
         assertTrue(runtime.isMounted(lifecycle));
         assertTrue(lifecycle.mounted.get());
+    }
+
+    @Test
+    void registersCssClassesWithoutRegexAllocation() {
+        UjfeContext context = UjfeContext.create();
+
+        context.registerCssClasses("  p-4\tgap-2\np-4  text-slate-900 ");
+
+        assertIterableEquals(List.of("p-4", "gap-2", "text-slate-900"), context.cssClasses());
     }
 
     private static final class CountingLifecycle implements Lifecycle {

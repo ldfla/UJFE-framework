@@ -5,8 +5,10 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.*;
 import org.junit.jupiter.api.Test;
 import ujfe.core.Node;
+import ujfe.core.RenderMode;
 import ujfe.live.*;
 import ujfe.router.Page;
+import ujfe.router.RouteDefinition;
 import ujfe.router.Router;
 import ujfe.runtime.action.RuntimeActionRegistry;
 import ujfe.runtime.action.RuntimeErrorContext;
@@ -347,6 +349,56 @@ final class UjfeHttpHandlerTest {
                 .get(HttpHeaderNames.CONTENT_TYPE)
                 .startsWith("text/plain"));
             assertEquals("Invalid static asset path.", responseBody(response));
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void internalAssetsUseEtagsAndConditionalResponses() {
+        try (LiveSession session = new LiveSession(new Router().register(new HomePage()))) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            FullHttpResponse client = send(channel, request(HttpMethod.GET, LiveHttpPaths.CLIENT_SCRIPT, ""));
+            String etag = client.headers()
+                .get(HttpHeaderNames.ETAG);
+            FullHttpRequest conditional = request(HttpMethod.GET, LiveHttpPaths.CLIENT_SCRIPT, "");
+            conditional.headers()
+                .set(HttpHeaderNames.IF_NONE_MATCH, etag);
+            FullHttpResponse notModified = send(channel, conditional);
+            FullHttpResponse css = send(channel, request(HttpMethod.GET, LiveHttpPaths.CSS + "?classes=p-4%20gap-2", ""));
+
+            assertEquals(HttpResponseStatus.OK, client.status());
+            assertEquals("public, max-age=300, must-revalidate", client.headers()
+                .get(HttpHeaderNames.CACHE_CONTROL));
+            assertNotNull(etag);
+            assertEquals(HttpResponseStatus.NOT_MODIFIED, notModified.status());
+            assertEquals(etag, notModified.headers()
+                .get(HttpHeaderNames.ETAG));
+            assertEquals(0, notModified.content()
+                .readableBytes());
+            assertEquals("private, no-cache", css.headers()
+                .get(HttpHeaderNames.CACHE_CONTROL));
+            assertNotNull(css.headers()
+                .get(HttpHeaderNames.ETAG));
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    void pageResponsesUseRouteRenderModeCacheHeaders() {
+        Router router = new Router().register(new RouteDefinition("/", HomePage::new)
+            .withRenderMode(RenderMode.staticShell(Duration.ofSeconds(45))
+                .revalidateOn("home.updated")));
+        try (LiveSession session = new LiveSession(router)) {
+            EmbeddedChannel channel = new EmbeddedChannel(new UjfeHttpHandler(session));
+
+            FullHttpResponse response = send(channel, request(HttpMethod.GET, "/", ""));
+
+            assertEquals(HttpResponseStatus.OK, response.status());
+            assertEquals("private, max-age=45", response.headers()
+                .get(HttpHeaderNames.CACHE_CONTROL));
+            assertEquals("home.updated", response.headers()
+                .get("X-UJFE-Revalidate-On"));
             channel.finishAndReleaseAll();
         }
     }

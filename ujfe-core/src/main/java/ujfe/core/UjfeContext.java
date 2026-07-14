@@ -95,17 +95,23 @@ public final class UjfeContext {
     }
 
     public void registerCssClasses(String classes) {
-        if (classes == null || classes.trim()
-            .isEmpty()) {
+        if (classes == null || classes.isBlank()) {
             return;
         }
 
-        String[] tokens = classes.trim()
-            .split("\\s+");
-        for (String token : tokens) {
-            if (!token.isEmpty()) {
-                cssClasses.add(token);
+        int tokenStart = -1;
+        for (int index = 0; index < classes.length(); index++) {
+            if (Character.isWhitespace(classes.charAt(index))) {
+                if (tokenStart >= 0) {
+                    cssClasses.add(classes.substring(tokenStart, index));
+                    tokenStart = -1;
+                }
+            } else if (tokenStart < 0) {
+                tokenStart = index;
             }
+        }
+        if (tokenStart >= 0) {
+            cssClasses.add(classes.substring(tokenStart));
         }
     }
 

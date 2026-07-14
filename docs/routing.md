@@ -16,6 +16,12 @@ UJFE runtime routing distinguishes framework endpoints, static assets, and page 
 
 This prevents normal browser asset requests from becoming UJFE page render failures.
 
+## Spring MVC Ownership
+
+In Spring Boot and Spring MVC applications, `UjfeSpringHandlerMapping` returns a handler only for registered UJFE `GET` page routes and internal `/_ujfe/*` runtime endpoints. It returns no handler for unregistered paths, static asset-like paths, Spring MVC controllers, REST APIs, actuator endpoints, or missing routes.
+
+The default Spring handler mapping order is documented in [Spring MVC integration](integrations/spring.md). Spring's normal handler mapping order, filter chain, resource handling, actuator mappings, and not-found behavior remain active for non-UJFE paths.
+
 ## Missing Pages
 
 Missing page routes return a safe UJFE error response with `UJFE_ROUTE_NOT_FOUND`. The response does not expose stack traces or internal exception messages.

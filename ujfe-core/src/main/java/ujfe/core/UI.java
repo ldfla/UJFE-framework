@@ -1,6 +1,7 @@
 package ujfe.core;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
@@ -36,6 +37,216 @@ public final class UI {
 
     public static Node component(Component component) {
         return new ComponentNode(component);
+    }
+
+    public static RouteBuilder route(String pattern) {
+        return new RouteBuilder(pattern);
+    }
+
+    public static ActionButton actionButton(String label, String actionUrl) {
+        return new ActionButton(label, actionUrl);
+    }
+
+    public static ActionButton actionButton(String label, Runnable handler) {
+        return new ActionButton(label, handler);
+    }
+
+    public static ActionForm actionForm(String actionUrl) {
+        return new ActionForm(actionUrl);
+    }
+
+    public static <T> DataGrid<T> dataGrid(Collection<T> rows) {
+        return new DataGrid<>(rows);
+    }
+
+    public static FormField field(String name) {
+        return new FormField(name);
+    }
+
+    public static ObjectSchema objectSchema() {
+        return ObjectSchema.create();
+    }
+
+    public static ObjectEditor objectEditor(ObjectSchema schema) {
+        return new ObjectEditor(schema);
+    }
+
+    public static AudioPlayer audioPlayer(String sourceUrl) {
+        return new AudioPlayer(sourceUrl);
+    }
+
+    public static RealtimeSubscription realtime(String endpoint) {
+        return new RealtimeSubscription(endpoint);
+    }
+
+    public static ClientModule clientModule(String name) {
+        return new ClientModule(name);
+    }
+
+    public static BrowserApiBridge browserBridge(String name) {
+        return new BrowserApiBridge(name);
+    }
+
+    public static WebAuthnBridge webAuthnLogin(String challengeUrl, String responseUrl) {
+        return new WebAuthnBridge(WebAuthnBridge.Mode.AUTHENTICATE, challengeUrl, responseUrl);
+    }
+
+    public static WebAuthnBridge webAuthnRegistration(String challengeUrl, String responseUrl) {
+        return new WebAuthnBridge(WebAuthnBridge.Mode.REGISTER, challengeUrl, responseUrl);
+    }
+
+    public static UiContract contract(String name) {
+        return new UiContract(name);
+    }
+
+    public static ScopedStyle scopedStyle(String componentId) {
+        return new ScopedStyle(componentId);
+    }
+
+    public static UiComponent uiComponent(String componentId) {
+        return new UiComponent(componentId);
+    }
+
+    public static <T> DataLoader<T> loader(Class<T> type) {
+        return new DataLoader<>(type);
+    }
+
+    public static <T> LoadBoundary<T> loadBoundary(LoadResult<T> result) {
+        return new LoadBoundary<>(result);
+    }
+
+    public static Sparkline sparkline(java.util.List<Integer> values) {
+        return new Sparkline(values);
+    }
+
+    public static AlertList alertList() {
+        return new AlertList();
+    }
+
+    public static HealthPanel healthPanel() {
+        return new HealthPanel();
+    }
+
+    public static ComponentPreview componentPreview(String title) {
+        return new ComponentPreview(title);
+    }
+
+    public static GraphBuilder graphBuilder(String id) {
+        return new GraphBuilder(id);
+    }
+
+    public static WorkflowTimeline workflowTimeline() {
+        return new WorkflowTimeline();
+    }
+
+    public static Element badge(String label) {
+        return badge(label, "neutral");
+    }
+
+    public static Element badge(String label, String tone) {
+        return span(label)
+            .data("ujfe-badge", "true")
+            .data("ujfe-tone", tone);
+    }
+
+    public static Element statusIndicator(String label, String status) {
+        return span()
+            .role("status")
+            .data("ujfe-status-indicator", status)
+            .child(span()
+                .aria("hidden", "true")
+                .data("ujfe-status-dot", status))
+            .child(span(label));
+    }
+
+    public static Element metricTile(String label, String value) {
+        return metricTile(label, value, null, "neutral");
+    }
+
+    public static Element metricTile(String label, String value, String hint, String tone) {
+        Element tile = article()
+            .data("ujfe-metric-tile", "true")
+            .data("ujfe-tone", tone)
+            .child(p(label)
+                .data("ujfe-metric-label", "true"))
+            .child(strong(value)
+                .data("ujfe-metric-value", "true"));
+        if (hint != null && !hint.isBlank()) {
+            tile.child(p(hint)
+                .data("ujfe-metric-hint", "true"));
+        }
+        return tile;
+    }
+
+    public static Element toolbar(Node... children) {
+        Element toolbar = div()
+            .role("toolbar")
+            .data("ujfe-toolbar", "true");
+        Arrays.stream(children)
+            .forEach(toolbar::child);
+        return toolbar;
+    }
+
+    public static Element sectionHeader(String title, String description) {
+        Element header = UI.header()
+            .data("ujfe-section-header", "true")
+            .child(h2(title));
+        if (description != null && !description.isBlank()) {
+            header.child(p(description));
+        }
+        return header;
+    }
+
+    public static Element splitView(Node primary, Node secondary) {
+        return div()
+            .data("ujfe-split-view", "true")
+            .child(section()
+                .data("ujfe-split-primary", "true")
+                .child(primary))
+            .child(aside()
+                .data("ujfe-split-secondary", "true")
+                .child(secondary));
+    }
+
+    public static Element toast(String message, String tone) {
+        return div()
+            .role("status")
+            .aria("live", "polite")
+            .data("ujfe-toast", "true")
+            .data("ujfe-tone", tone)
+            .child(message);
+    }
+
+    public static Element modalDialog(String title, Node body) {
+        return dialog()
+            .role("dialog")
+            .aria("modal", "true")
+            .ariaLabel(title)
+            .data("ujfe-modal", "true")
+            .child(h2(title))
+            .child(body);
+    }
+
+    public static Element workflowBanner(String status, String message) {
+        return div()
+            .role("status")
+            .data("ujfe-workflow-banner", "true")
+            .data("ujfe-workflow-status", status)
+            .child(strong(status))
+            .child(p(message));
+    }
+
+    public static Element diffSummary(String title, int added, int changed, int removed) {
+        return section()
+            .data("ujfe-diff-summary", "true")
+            .child(h3(title))
+            .child(dl()
+                .child(dt("Added"))
+                .child(dd(Integer.toString(added)))
+                .child(dt("Changed"))
+                .child(dd(Integer.toString(changed)))
+                .child(dt("Removed"))
+                .child(dd(Integer.toString(removed))));
     }
 
     public static Element html(Node... children) {

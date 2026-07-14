@@ -45,6 +45,11 @@ Live HTTP requests use UJFE internal endpoints:
 
 Application code usually does not call these endpoints directly. They are documented to make the runtime behavior explicit and testable.
 
+`/_ujfe/client.js`, `/_ujfe/dev.js`, and `/_ujfe/css` return `ETag` and
+`Cache-Control` headers. Adapters return `304 Not Modified` when
+`If-None-Match` matches the current content. See
+[Runtime performance](runtime/performance.md).
+
 ## Event Payload
 
 `/_ujfe/event` accepts a JSON object with an opaque event id, an optional string value, and optional client state:
